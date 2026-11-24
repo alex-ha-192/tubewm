@@ -134,7 +134,7 @@ class Charms:
             self.run_and_quit("tube-start")
         elif name == "share":
             # Wait for the charms to leave the screen before capturing.
-            self.run_and_quit("sleep 0.35; tube-share region")
+            self.run_and_quit("sleep 0.35; tube-share")
         elif name in ("settings", "devices"):
             self.go(name)
 

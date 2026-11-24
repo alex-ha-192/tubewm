@@ -208,8 +208,9 @@ bindsym --locked XF86AudioPlay  exec playerctl play-pause
 bindsym --locked XF86AudioNext  exec playerctl next
 bindsym --locked XF86AudioPrev  exec playerctl previous
 
-bindsym Print       exec $tubebin/tube-share screen
-bindsym Shift+Print exec $tubebin/tube-share region
+bindsym Print         exec $tubebin/tube-share
+bindsym $mod+Shift+s  exec $tubebin/tube-share
+bindsym Shift+Print   exec $tubebin/tube-share screen
 
 ### Window rules ------------------------------------------------------------
 
