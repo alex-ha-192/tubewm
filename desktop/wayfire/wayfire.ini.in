@@ -9,7 +9,7 @@
 
 [core]
 plugins = \
-  alpha animate autostart command decoration expo fast-switcher foreign-toplevel \
+  alpha animate autostart command @DECOR@ expo fast-switcher foreign-toplevel \
   grid gtk-shell idle ipc ipc-rules move place resize session-lock \
   shortcuts-inhibit vswipe vswitch wayfire-shell window-rules wm-actions \
   xdg-activation
@@ -45,7 +45,9 @@ cursor_size = 24
 
 # ── windows ────────────────────────────────────────────────────────────────
 
-[decoration]
+# Title bars: tube-decor (square Metro close button) once plugins/build.sh
+# has built it, otherwise Wayfire's stock decoration. Same options either way.
+[@DECOR@]
 font = Open Sans
 font_color = @FG_RGBA@
 title_height = 32

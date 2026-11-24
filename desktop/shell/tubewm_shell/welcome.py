@@ -198,7 +198,7 @@ class Welcome:
         tips = (
             ("start", "Click the tile at the top left, or press the Windows key and S. "
                       "Your apps and tiles live here."),
-            ("swipe", "Three fingers sideways on the touchpad moves between your desktops."),
+            ("swipe", "Three fingers sideways on the touchpad move between your desktops."),
             ("power", "The power button asks first: sleep, sign out, restart or shut down. "
                       "Closing the lid locks and sleeps."),
         )
