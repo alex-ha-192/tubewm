@@ -9,8 +9,10 @@ brightness, wi-fi, battery, notifications, power).
 Between them is the handle for the window you're in. Point at it and the
 window's name appears. Drag it down to a side of the screen for half, into
 a corner for a quarter, or let go in the middle to fill the screen; an
-accent outline shows where the window will go. (Each window's own title
-strip has its close button.)
+accent outline shows where the window will go. Drag it along the strip onto
+a desktop's name (or +) to move the window there; let go anywhere else on
+the strip to leave it be. Right-click it for the same as a menu. (Each
+window's own title strip has its close button.)
 
 When an app goes full screen (F11, a video's full-screen button) the strip
 slides up out of the way, and back when it leaves.
@@ -398,6 +400,8 @@ class Strip:
 
     def refresh_desktops(self):
         entries, spare = self.desktop_entries()
+        spare_index = max([i for i, _n, _c in entries], default=-1) + 1
+        self.names = [(i, n) for i, n, _c in entries]
         key = (tuple(entries), spare)
         if getattr(self, "_desk_key", None) == key:
             return False
@@ -412,6 +416,7 @@ class Strip:
                 b.get_style_context().add_class("current")
             b.connect("clicked", lambda _b, n=i: spawn("tube-desktops", "go", str(n + 1)))
             b.connect("button-press-event", self.on_desk_press, i)
+            b.desk = i
             self.desks.pack_start(b, False, False, 0)
         if spare:
             b = Gtk.Button(label="+")
@@ -419,6 +424,7 @@ class Strip:
             b.get_style_context().add_class("strip-desk")
             b.set_tooltip_text("a new desktop")
             b.connect("clicked", lambda *_: spawn("tube-desktops", "new"))
+            b.desk = spare_index
             self.desks.pack_start(b, False, False, 0)
         self.desks.show_all()
         return False
@@ -451,6 +457,11 @@ class Strip:
         return False
 
     def on_press(self, _w, event):
+        if event.button == 3:
+            self.window = self.window or wm.focused()
+            if self.window:
+                self.move_menu(event)
+            return True
         if event.button != 1:
             return False
         self.window = self.window or wm.focused()
@@ -462,6 +473,21 @@ class Strip:
         w, h = common.monitor_size(self.win)
         return w, h
 
+    def desk_at(self, x, y):
+        """The desktop button (or +) under a point on the strip, if any."""
+        if y >= HEIGHT:
+            return None
+        for b in self.desks.get_children():
+            bx = b.translate_coordinates(self.win, 0, 0)[0]
+            if bx <= x < bx + b.get_allocated_width() and hasattr(b, "desk"):
+                return b
+        return None
+
+    def mark_drop(self, target):
+        for b in self.desks.get_children():
+            ctx = b.get_style_context()
+            (ctx.add_class if b is target else ctx.remove_class)("drop")
+
     def on_motion(self, _w, event):
         d = self.drag
         if not d:
@@ -471,6 +497,17 @@ class Strip:
                 return True
             d["on"] = True
             self.preview = self.preview or Preview()
+        if event.y_root < HEIGHT:
+            # Along the strip: onto a desktop's name moves the window there;
+            # anywhere else on the strip, letting go does nothing.
+            target = self.desk_at(event.x_root, event.y_root)
+            self.mark_drop(target)
+            d["zone"] = None
+            d["desk"] = target.desk if target is not None else None
+            self.preview.hide()
+            return True
+        self.mark_drop(None)
+        d["desk"] = None
         w, h = self.screen()
         zone = zone_for(event.x_root, event.y_root, w, h)
         d["zone"] = zone
@@ -481,11 +518,43 @@ class Strip:
         d, self.drag = self.drag, None
         if self.preview:
             self.preview.hide()
+        self.mark_drop(None)
         if d and d.get("on") and self.window:
-            wm.snap(self.window["id"], d["zone"])
+            if d.get("desk") is not None:
+                self.move_to(d["desk"])
+            elif d.get("zone"):
+                wm.snap(self.window["id"], d["zone"])
         if not self.hovered:
             self.set_handle_visible(False)
         return True
+
+    def move_to(self, desk):
+        """Take the window you're in to another desktop, and go with it."""
+        win_id = self.window["id"]
+        wm.send_to_pivot(win_id, desk)
+        wm.go_to_pivot(desk)
+        wm.focus(win_id)
+
+    def move_menu(self, event):
+        menu = Gtk.Menu()
+        menu.get_style_context().add_class("tube-menu")
+        head = Gtk.MenuItem(label="move to")
+        head.set_sensitive(False)
+        menu.append(head)
+        cur = (self.window or {}).get("workspace")
+        names = getattr(self, "names", [])
+        for i, name in names:
+            item = Gtk.MenuItem(label=name)
+            item.set_sensitive(i != cur)
+            item.connect("activate", lambda _m, n=i: self.move_to(n))
+            menu.append(item)
+        spare = max([i for i, _n in names], default=-1) + 1
+        item = Gtk.MenuItem(label="a new desktop")
+        item.connect("activate", lambda _m: self.move_to(spare))
+        menu.append(item)
+        menu.show_all()
+        menu.attach_to_widget(self.handle, None)
+        menu.popup_at_pointer(event)
 
 
 def main(argv=None):

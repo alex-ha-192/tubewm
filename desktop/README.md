@@ -46,9 +46,13 @@ day to day. Everything is a click away; keys are extras.
   free space if there is some; otherwise the desktop is retiled so nothing
   is covered (up to four; a fifth gets a desktop of its own). File pickers
   and password prompts open centred and are never tiled. Dragging a window
-  to the screen's edge never sends it to another desktop: use Super+Tab.
+  to the screen's edge never sends it to another desktop. To move one on
+  purpose, drag the strip's handle onto a desktop's name (or `+` for a new
+  one), or right-click the handle and pick one under "move to".
 * **Full screen** is only for when an app asks (F11, a video's full-screen
   button, Super+F): the strip slides up out of the way and back after.
+* **Notifications** come in as a band across the top and go away after a
+  few seconds; the last twenty stay in the panel under the time.
 * **Desktops** look after themselves. There is always a spare `+` at the end
   of the strip. Open something there and it becomes a desktop named after it
   (`web`, `code`, `music`, `web 2`…). Leave a desktop empty and it goes away.

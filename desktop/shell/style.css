@@ -345,6 +345,7 @@ window.strip { background-color: @tube_bg; }
 }
 .strip-desk:hover, .strip-word:hover { color: @tube_fg; }
 .strip-desk.current { color: @tube_fg; }
+.strip-desk.drop { color: #FFFFFF; background-color: @tube_accent; }
 .strip-clock { color: @tube_fg; padding: 0 0 0 10px; }
 .strip-status { padding: 0 24px 0 16px; min-height: 40px; background: none; border: none;
                 border-radius: 0; box-shadow: none; }
