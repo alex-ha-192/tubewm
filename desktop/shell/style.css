@@ -178,3 +178,37 @@ popover.tube-popover entry.field, popover.tube-popover combobox.field button {
 }
 popover.tube-popover entry.field:focus { border-color: @tube_accent; }
 popover.tube-popover .caption { color: @tube_subtle; margin-top: 6px; }
+
+/* ── popups under the bar (desktop menu, flyouts) ───────────────────────── */
+.tube-popup {
+    background-color: @tube_surface;
+    min-width: 260px;
+    padding: 8px 0;
+    box-shadow: 0 16px 40px rgba(0, 0, 0, 0.6);
+}
+.tube-popup-entry {
+    margin: 4px 12px 8px;
+    padding: 6px 8px;
+    font-size: 18px;
+    font-weight: 300;
+    color: @tube_fg;
+    background-color: @tube_shell;
+    border: 2px solid @tube_surface_hi;
+    border-radius: 0;
+    box-shadow: none;
+}
+.tube-popup-entry:focus { border-color: @tube_accent; }
+.tube-popup-item {
+    min-height: 40px;
+    padding: 0 20px;
+    border-radius: 0;
+    font-size: 15px;
+    color: @tube_fg;
+    background: none;
+    border: none;
+    box-shadow: none;
+}
+.tube-popup-item:hover { background-color: @tube_accent; }
+.tube-popup-item:disabled label { color: @tube_subtle; }
+.tube-popup-rule { margin: 6px 0; background-color: @tube_surface_hi; min-height: 1px; }
+.tube-popup-hint { padding: 0 20px 6px; font-size: 12px; color: @tube_subtle; }

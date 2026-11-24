@@ -1,14 +1,9 @@
-"""tube-pivots: the named workspaces ("pivots") and the Wayfire config built from them.
+"""tube-wayfire-config: write ~/.config/wayfire.ini from tubewm's template.
 
-Pivot names live in ~/.config/tubewm/pivots, one per line. Under Wayfire each
-pivot is one column of the workspace grid, so adding or removing a pivot
-rewrites ~/.config/wayfire.ini (Wayfire reloads it by itself).
-
-    tube-pivots                  list the pivots
-    tube-pivots add NAME         add one at the end
-    tube-pivots rename N NAME    rename pivot N (counting from 1)
-    tube-pivots remove N         remove pivot N
-    tube-pivots render           rewrite wayfire.ini (tube-render runs this)
+The template (desktop/wayfire/wayfire.ini.in) is filled in with the palette
+and the keyboard layout, and ~/.config/tubewm/wayfire.ini, if it exists, is
+merged on top. Wayfire notices the new file and reloads it by itself.
+tube-render runs this; so can you.
 """
 
 import argparse
@@ -19,43 +14,17 @@ import sys
 
 from . import common
 
-PIVOTS = os.path.join(common.CONFIG, "tubewm", "pivots")
 KEYBOARD = os.path.join(common.CONFIG, "tubewm", "keyboard")
 USER_INI = os.path.join(common.CONFIG, "tubewm", "wayfire.ini")
 WAYFIRE_INI = os.path.join(common.CONFIG, "wayfire.ini")
 TEMPLATE = os.path.normpath(os.path.join(common.SHELL_DIR, "..", "wayfire", "wayfire.ini.in"))
 
-DEFAULT = ["home", "web", "code", "chat"]
-MAX = 10
-KEYBOARD_DEFAULT = {"layout": "gb", "variant": "", "options": ""}
-
-
-def clean(name):
-    name = re.sub(r"\s+", " ", (name or "").strip().lower())
-    return name[:24]
-
-
-def load():
-    try:
-        with open(PIVOTS) as fh:
-            names = [clean(line) for line in fh if line.strip() and not line.startswith("#")]
-        if names:
-            return names[:MAX]
-    except OSError:
-        pass
-    return list(DEFAULT)
-
-
-def save(names):
-    names = [clean(n) for n in names if clean(n)][:MAX] or ["home"]
-    os.makedirs(os.path.dirname(PIVOTS), exist_ok=True)
-    tmp = PIVOTS + ".tmp"
-    with open(tmp, "w") as fh:
-        fh.write("# tubewm pivots (workspaces), left to right. Edit freely, or right-click the bar.\n")
-        fh.write("\n".join(names) + "\n")
-    os.replace(tmp, PIVOTS)
-    render()
-    return names
+# Desktops are columns of Wayfire's workspace grid. The grid is always ten
+# wide; tube-desktops shows only the ones in use, plus a spare.
+COLUMNS = 10
+# Empty means "what the system uses": the session launcher exports
+# XKB_DEFAULT_* from the same file, and libxkbcommon falls back to those.
+KEYBOARD_DEFAULT = {"layout": "", "variant": "", "options": ""}
 
 
 def keyboard():
@@ -65,7 +34,9 @@ def keyboard():
             for line in fh:
                 if "=" in line and not line.lstrip().startswith("#"):
                     k, v = line.split("=", 1)
-                    kb[k.strip().lower()] = v.strip().strip('"')
+                    k = k.strip().lower()
+                    k = k[len("xkb_"):] if k.startswith("xkb_") else k  # XKB_LAYOUT=gb
+                    kb[k] = v.strip().strip("'\"")
     except OSError:
         pass
     return kb
@@ -79,25 +50,24 @@ def _rgba(hex_, alpha=1.0):
     return "%.3f %.3f %.3f %.2f" % (r, g, b, alpha)
 
 
-def _pivot_bindings(n):
+def _desktop_bindings():
     lines = []
-    for i in range(1, min(n, MAX) + 1):
+    for i in range(1, COLUMNS + 1):
         key = "KEY_%d" % (i % 10)
         lines.append("binding_%d = <super> %s" % (i, key))
         lines.append("with_win_%d = <super> <shift> %s" % (i, key))
     return "\n".join(lines)
 
 
-def build(names=None, pal=None):
+def build(pal=None):
     """The text of wayfire.ini: the template, filled in, with the user's own
     ~/.config/tubewm/wayfire.ini merged on top."""
-    names = names or load()
     pal = pal or common.load_palette()
     kb = keyboard()
     values = {
-        "PIVOTS": str(len(names)),
-        "PIVOT_BINDINGS": _pivot_bindings(len(names)),
-        "XKB_LAYOUT": kb.get("layout", "gb"),
+        "COLUMNS": str(COLUMNS),
+        "DESKTOP_BINDINGS": _desktop_bindings(),
+        "XKB_LAYOUT": kb.get("layout", ""),
         "XKB_VARIANT": kb.get("variant", ""),
         "XKB_OPTIONS": kb.get("options", ""),
     }
@@ -111,7 +81,7 @@ def build(names=None, pal=None):
     text = re.sub(r"@([A-Z0-9_]+)@", lambda m: values.get(m.group(1), m.group(0)), text)
     missing = re.findall(r"@([A-Z0-9_]+)@", text)
     if missing:
-        raise SystemExit("tube-pivots: template has unknown fields: %s" % ", ".join(sorted(set(missing))))
+        raise SystemExit("tube-wayfire-config: template has unknown fields: %s" % ", ".join(sorted(set(missing))))
     return _merge_user(text)
 
 
@@ -124,7 +94,7 @@ def _merge_user(text):
     try:
         user.read(USER_INI)
     except configparser.Error as err:
-        print("tube-pivots: ignoring %s: %s" % (USER_INI, err), file=sys.stderr)
+        print("tube-wayfire-config: ignoring %s: %s" % (USER_INI, err), file=sys.stderr)
         return _header() + text
     out, section, done = [], None, set()
 
@@ -186,37 +156,15 @@ def render(quiet=True):
         fh.write(text)
     os.replace(tmp, WAYFIRE_INI)  # Wayfire notices and reloads
     if not quiet:
-        print("tube-pivots: wrote %s" % WAYFIRE_INI)
+        print("tube-wayfire-config: wrote %s" % WAYFIRE_INI)
     return True
 
 
 def main(argv=None):
-    parser = argparse.ArgumentParser(prog="tube-pivots", description=__doc__.splitlines()[0])
-    parser.add_argument("action", nargs="?", default="list",
-                        choices=["list", "add", "rename", "remove", "render"])
-    parser.add_argument("args", nargs="*")
+    parser = argparse.ArgumentParser(prog="tube-wayfire-config", description=__doc__.splitlines()[0])
     parser.add_argument("--quiet", "-q", action="store_true")
     a = parser.parse_args(argv)
-    names = load()
-    if a.action == "list":
-        for i, n in enumerate(names, 1):
-            print("%2d  %s" % (i, n))
-    elif a.action == "add":
-        if len(names) >= MAX:
-            raise SystemExit("tube-pivots: %d pivots is the most" % MAX)
-        save(names + [" ".join(a.args) or "new"])
-    elif a.action == "rename":
-        i = int(a.args[0]) - 1
-        names[i] = " ".join(a.args[1:])
-        save(names)
-    elif a.action == "remove":
-        i = int(a.args[0]) - 1
-        if len(names) <= 1:
-            raise SystemExit("tube-pivots: you need at least one pivot")
-        names.pop(i)
-        save(names)
-    elif a.action == "render":
-        render(quiet=a.quiet)
+    render(quiet=a.quiet)
     return 0
 
 

@@ -1,7 +1,7 @@
 # tubewm for Wayfire.
 #
 # tube-render writes ~/.config/wayfire.ini from this file every time the
-# accent or the list of pivots changes, so edits to wayfire.ini are lost.
+# accent or the keyboard layout changes, so edits to wayfire.ini are lost.
 # Put your own settings in ~/.config/tubewm/wayfire.ini instead: any
 # [section] and key there is merged on top of this file.
 #
@@ -13,8 +13,8 @@ plugins = \
   grid gtk-shell idle ipc ipc-rules move place resize session-lock \
   shortcuts-inhibit vswipe vswitch wayfire-shell window-rules wm-actions \
   xdg-activation
-# One pivot per column; tube-pivots adds and removes columns.
-vwidth = @PIVOTS@
+# Each desktop is a column. tube-desktops shows the ones in use on the bar.
+vwidth = @COLUMNS@
 vheight = 1
 background_color = @SHELL_RGBA@
 # Title bars on every app that will take them: something to grab with the mouse.
@@ -130,7 +130,7 @@ send_win_right = none
 send_win_up = none
 send_win_down = none
 send_win_last = none
-@PIVOT_BINDINGS@
+@DESKTOP_BINDINGS@
 
 [vswipe]
 enable_horizontal = true
@@ -141,7 +141,7 @@ duration = 260ms circle
 background = @SHELL_RGBA@
 gap = 0
 
-# Every pivot side by side; drag windows between them with the mouse.
+# Every desktop side by side (Super+Tab); drag windows between them.
 [expo]
 toggle = <super> KEY_TAB
 background = @SHELL_RGBA@
@@ -181,8 +181,6 @@ binding_lock = <super> KEY_L
 command_lock = loginctl lock-session
 binding_switcher = <super> KEY_SLASH
 command_switcher = ~/.local/bin/tube-switcher
-binding_bar = <super> KEY_Z
-command_bar = ~/.local/bin/tube-bar --toggle
 binding_shot = KEY_SYSRQ
 command_shot = ~/.local/bin/tube-share screen
 binding_shot_region = <shift> KEY_SYSRQ | <super> <shift> KEY_S
@@ -214,14 +212,16 @@ command_prev = playerctl previous
 [idle]
 toggle = none
 screensaver_timeout = -1
-dpms_timeout = -1
+# The screen turns off after 10 minutes; tube-idle dims and locks before that.
+dpms_timeout = 600
 disable_on_fullscreen = true
 
 [autostart]
 autostart_wf_shell = false
 0_env = dbus-update-activation-environment --systemd WAYLAND_DISPLAY XDG_CURRENT_DESKTOP=wayfire XDG_SESSION_TYPE=wayland WAYFIRE_SOCKET
-bar = ~/.local/bin/tube-bar
+desktops = ~/.local/bin/tube-desktops daemon
+bar = waybar -c ~/.config/waybar/wayfire.jsonc
 notifications = mako
-wallpaper = ~/.local/bin/tube-wallpaper daemon
+wallpaper = ~/.local/bin/tube-wallpaper show
 idle = ~/.local/bin/tube-idle
 start = ~/.local/bin/tube-start

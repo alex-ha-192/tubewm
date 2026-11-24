@@ -1,0 +1,188 @@
+// tubewm · waybar under Wayfire
+// Left: the start tile, the desktops (tube-desktops keeps them; right-click
+// one for its menu, + makes a new one), and the window you're in.
+// Right: tray, status with icons, the date and the clock.
+{
+    "layer": "top",
+    "position": "top",
+    "height": 56,
+    "spacing": 0,
+    "modules-left": [
+        "custom/start",
+        "custom/desktop-1",
+        "custom/desktop-2",
+        "custom/desktop-3",
+        "custom/desktop-4",
+        "custom/desktop-5",
+        "custom/desktop-6",
+        "custom/desktop-7",
+        "custom/desktop-8",
+        "custom/desktop-9",
+        "custom/desktop-10",
+        "custom/desktop-new",
+        "wayfire/window"
+    ],
+    "modules-center": [],
+    "modules-right": [
+        "tray",
+        "network",
+        "backlight",
+        "pulseaudio",
+        "battery",
+        "clock#date",
+        "clock"
+    ],
+    "custom/start": {
+        "format": " ",
+        "tooltip": false,
+        "on-click": "~/.local/bin/tube-start",
+        "on-click-right": "~/.local/bin/tube-charms"
+    },
+    "custom/desktop-1": {
+        "exec": "sed -n 1p \"$XDG_RUNTIME_DIR/tubewm-desktops.bar\"",
+        "return-type": "json",
+        "interval": "once",
+        "signal": 8,
+        "on-click": "~/.local/bin/tube-desktops go 1",
+        "on-click-right": "~/.local/bin/tube-desktops menu 1"
+    },
+    "custom/desktop-2": {
+        "exec": "sed -n 2p \"$XDG_RUNTIME_DIR/tubewm-desktops.bar\"",
+        "return-type": "json",
+        "interval": "once",
+        "signal": 8,
+        "on-click": "~/.local/bin/tube-desktops go 2",
+        "on-click-right": "~/.local/bin/tube-desktops menu 2"
+    },
+    "custom/desktop-3": {
+        "exec": "sed -n 3p \"$XDG_RUNTIME_DIR/tubewm-desktops.bar\"",
+        "return-type": "json",
+        "interval": "once",
+        "signal": 8,
+        "on-click": "~/.local/bin/tube-desktops go 3",
+        "on-click-right": "~/.local/bin/tube-desktops menu 3"
+    },
+    "custom/desktop-4": {
+        "exec": "sed -n 4p \"$XDG_RUNTIME_DIR/tubewm-desktops.bar\"",
+        "return-type": "json",
+        "interval": "once",
+        "signal": 8,
+        "on-click": "~/.local/bin/tube-desktops go 4",
+        "on-click-right": "~/.local/bin/tube-desktops menu 4"
+    },
+    "custom/desktop-5": {
+        "exec": "sed -n 5p \"$XDG_RUNTIME_DIR/tubewm-desktops.bar\"",
+        "return-type": "json",
+        "interval": "once",
+        "signal": 8,
+        "on-click": "~/.local/bin/tube-desktops go 5",
+        "on-click-right": "~/.local/bin/tube-desktops menu 5"
+    },
+    "custom/desktop-6": {
+        "exec": "sed -n 6p \"$XDG_RUNTIME_DIR/tubewm-desktops.bar\"",
+        "return-type": "json",
+        "interval": "once",
+        "signal": 8,
+        "on-click": "~/.local/bin/tube-desktops go 6",
+        "on-click-right": "~/.local/bin/tube-desktops menu 6"
+    },
+    "custom/desktop-7": {
+        "exec": "sed -n 7p \"$XDG_RUNTIME_DIR/tubewm-desktops.bar\"",
+        "return-type": "json",
+        "interval": "once",
+        "signal": 8,
+        "on-click": "~/.local/bin/tube-desktops go 7",
+        "on-click-right": "~/.local/bin/tube-desktops menu 7"
+    },
+    "custom/desktop-8": {
+        "exec": "sed -n 8p \"$XDG_RUNTIME_DIR/tubewm-desktops.bar\"",
+        "return-type": "json",
+        "interval": "once",
+        "signal": 8,
+        "on-click": "~/.local/bin/tube-desktops go 8",
+        "on-click-right": "~/.local/bin/tube-desktops menu 8"
+    },
+    "custom/desktop-9": {
+        "exec": "sed -n 9p \"$XDG_RUNTIME_DIR/tubewm-desktops.bar\"",
+        "return-type": "json",
+        "interval": "once",
+        "signal": 8,
+        "on-click": "~/.local/bin/tube-desktops go 9",
+        "on-click-right": "~/.local/bin/tube-desktops menu 9"
+    },
+    "custom/desktop-10": {
+        "exec": "sed -n 10p \"$XDG_RUNTIME_DIR/tubewm-desktops.bar\"",
+        "return-type": "json",
+        "interval": "once",
+        "signal": 8,
+        "on-click": "~/.local/bin/tube-desktops go 10",
+        "on-click-right": "~/.local/bin/tube-desktops menu 10"
+    },
+    "custom/desktop-new": {
+        "exec": "sed -n 11p \"$XDG_RUNTIME_DIR/tubewm-desktops.bar\"",
+        "return-type": "json",
+        "interval": "once",
+        "signal": 8,
+        "on-click": "~/.local/bin/tube-desktops new"
+    },
+    "wayfire/window": {
+        "format": "{title}",
+        "max-length": 60,
+        "icon": false
+    },
+    "tray": {
+        "icon-size": 16,
+        "spacing": 14
+    },
+    "network": {
+        "format-wifi": "{essid}",
+        "format-ethernet": "wired",
+        "format-disconnected": "offline",
+        "format-linked": "no address",
+        "tooltip-format": "{ifname} · {ipaddr}",
+        "tooltip-format-wifi": "{essid} · {signalStrength}% · {ipaddr}",
+        "on-click": "~/.local/bin/tube-charms --settings"
+    },
+    "backlight": {
+        "format": "{percent}",
+        "tooltip-format": "brightness {percent}%",
+        "on-scroll-up": "TUBE_OSD_STEP=2 ~/.local/bin/tube-osd brightness up",
+        "on-scroll-down": "TUBE_OSD_STEP=2 ~/.local/bin/tube-osd brightness down",
+        "smooth-scrolling-threshold": 6
+    },
+    "pulseaudio": {
+        "format": "{volume}",
+        "format-muted": "muted",
+        "tooltip-format": "volume {volume}% · {desc}",
+        "on-click": "~/.local/bin/tube-osd volume mute",
+        "on-scroll-up": "TUBE_OSD_STEP=2 ~/.local/bin/tube-osd volume up",
+        "on-scroll-down": "TUBE_OSD_STEP=2 ~/.local/bin/tube-osd volume down",
+        "smooth-scrolling-threshold": 6,
+        "on-click-right": "pavucontrol"
+    },
+    "battery": {
+        "states": {
+            "low": 20,
+            "critical": 10
+        },
+        "format": "{capacity}%",
+        "format-charging": "{capacity}%",
+        "format-plugged": "{capacity}%",
+        "tooltip-format": "battery {capacity}% · {timeTo}"
+    },
+    "clock#date": {
+        "format": "{:%A %d %B}",
+        "tooltip-format": "<tt>{calendar}</tt>",
+        "calendar": {
+            "mode": "month",
+            "format": {
+                "today": "<b><u>{}</u></b>"
+            }
+        }
+    },
+    "clock": {
+        "format": "{:%H:%M}",
+        "tooltip": false,
+        "on-click": "~/.local/bin/tube-charms"
+    }
+}
