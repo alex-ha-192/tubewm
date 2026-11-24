@@ -50,26 +50,61 @@ window.tube.tube-transparent { background-color: transparent; }
 .tile-title  { font-size: 20px; font-weight: 300; color: #FFFFFF; }
 .tile-text   { font-size: 14px; font-weight: 400; color: alpha(#FFFFFF, 0.85); }
 .tile-letter { font-size: 44px; font-weight: 300; color: #FFFFFF; }
+.tile-hero.huge { font-size: 76px; }
+.tile-mono   { font-family: monospace; font-size: 12.5px; color: #FFFFFF; }
+.tile-note-big { font-size: 26px; font-weight: 300; color: #FFFFFF; }
 
-.apps-link {
-    background: transparent;
-    border: none;
-    padding: 4px 0;
-    color: @tube_subtle;
-    font-size: 17px;
-    font-weight: 300;
-}
-.apps-link label { font-size: 17px; font-weight: 300; color: @tube_subtle; }
-.apps-link:hover label, .apps-link:focus label { color: @tube_fg; }
+/* dragging: the tile stays dim in place, a ghost follows the pointer */
+.tile.lifted { opacity: 0.25; }
+.tile.ghost  { background-color: alpha(@tube_accent_light, 0.85); }
 
-/* ── apps list ──────────────────────────────────────────── */
-.apps flowboxchild { padding: 0; margin: 0; background: transparent; }
-.apps flowboxchild:focus, .apps flowboxchild:selected { background: @tube_surface_hi; }
-.app-row { padding: 4px 14px 4px 4px; }
-.app-row:hover { background: @tube_surface; }
+/* the + tile at the end of the grid */
+.tile.add-tile { background-color: transparent; color: @tube_dim; box-shadow: inset 0 0 0 2px @tube_surface_hi; }
+.tile.add-tile:hover, .tile.add-tile:focus { color: @tube_fg; box-shadow: inset 0 0 0 2px @tube_subtle; }
+
+
+/* ── app list (right column) ─────────────────────────── */
+.apps, .apps row { background: transparent; }
+.apps row { padding: 0; border: none; }
+.apps row:hover .app-row { background: @tube_surface; }
+.apps row:focus .app-row { background: @tube_surface_hi; }
+.app-row { padding: 5px 10px 5px 0; }
 .app-icon { background-color: @tube_accent; min-width: 40px; min-height: 40px; color: #FFFFFF; }
-.app-name { font-size: 16px; font-weight: 400; color: @tube_fg; }
-.app-letter { font-size: 30px; font-weight: 300; color: @tube_accent_light; padding: 6px 0 0 6px; }
+.app-name { font-size: 19px; font-weight: 300; color: @tube_fg; }
+.app-letter { font-size: 30px; font-weight: 300; color: @tube_accent_light; padding: 14px 0 4px 2px; }
+.pin-mark { color: @tube_subtle; }
+
+/* ── menus and popovers ─────────────────────────────────── */
+menu.tube-menu, .tube-menu menu {
+    background: @tube_surface;
+    color: @tube_fg;
+    border: 2px solid @tube_surface_hi;
+    border-radius: 0;
+    box-shadow: none;
+    padding: 6px 0;
+    font-family: "Open Sans", sans-serif;
+}
+.tube-menu menuitem, .tube-menu menu menuitem {
+    padding: 7px 22px;
+    font-size: 14px;
+    color: @tube_fg;
+    border-radius: 0;
+}
+.tube-menu menuitem:hover, .tube-menu menu menuitem:hover { background: @tube_accent; color: #FFFFFF; }
+.tube-menu menuitem:disabled { color: @tube_dim; }
+.tube-menu separator { background: @tube_surface_hi; min-height: 1px; margin: 4px 0; }
+.tube-menu arrow { color: @tube_subtle; }
+
+popover.tube-popover {
+    background: @tube_surface;
+    color: @tube_fg;
+    border: 2px solid @tube_accent;
+    border-radius: 0;
+    box-shadow: none;
+    font-family: "Open Sans", sans-serif;
+}
+button.accent-button { background: @tube_accent; color: #FFFFFF; border: none; padding: 6px 22px; }
+button.accent-button:hover { background: @tube_accent_light; }
 
 entry.search {
     background: @tube_surface;
@@ -83,16 +118,6 @@ entry.search {
     min-width: 300px;
 }
 entry.search:focus { border-color: @tube_accent; }
-
-/* ── semantic zoom ──────────────────────────────────────── */
-.zoom-group {
-    background-color: @tube_surface;
-    color: @tube_fg;
-    border: none;
-    padding: 0 24px 18px 24px;
-}
-.zoom-group:hover, .zoom-group:focus { background-color: @tube_accent; }
-.zoom-group label { font-size: 56px; font-weight: 300; }
 
 /* ── charms ─────────────────────────────────────────────── */
 .charms-bar { background-color: @tube_surface; }
@@ -135,3 +160,21 @@ entry.search:focus { border-color: @tube_accent; }
 scale trough { background: @tube_surface_hi; min-height: 6px; border: none; }
 scale highlight { background: @tube_accent; border: none; }
 scale slider { background: @tube_fg; min-width: 12px; min-height: 22px; border: none; margin: -8px 0; }
+
+.flyout button.wall { border: none; padding: 0; min-width: 90px; min-height: 51px; }
+.flyout button.wall:hover { box-shadow: inset 0 0 0 2px alpha(#FFFFFF, 0.5); }
+.flyout button.wall.current, .flyout button.wall-off.current { box-shadow: inset 0 0 0 3px #FFFFFF; }
+.flyout button.wall-off { border: 2px solid @tube_surface_hi; padding: 0; min-height: 51px; color: @tube_subtle; }
+.flyout button.link.armed-link { color: @tube_urgent; }
+
+popover.tube-popover entry.field, popover.tube-popover combobox.field button {
+    background: @tube_surface_hi;
+    color: @tube_fg;
+    border: 2px solid @tube_surface_hi;
+    border-radius: 0;
+    box-shadow: none;
+    padding: 4px 8px;
+    min-height: 30px;
+}
+popover.tube-popover entry.field:focus { border-color: @tube_accent; }
+popover.tube-popover .caption { color: @tube_subtle; margin-top: 6px; }

@@ -45,6 +45,8 @@ mkdir -p "$(dirname "$accent_file")"
 printf 'TUBEWM_ACCENT=%s\n' "$hex" > "$accent_file"
 
 tube-render --quiet
+# Redraw the wallpaper in the new colour, if one is set.
+command -v tube-wallpaper >/dev/null && tube-wallpaper refresh >/dev/null 2>&1 || true
 
 # Reload whatever is running. Each step is best effort.
 # A sway reload also restarts waybar (it is sway's bar command), so only

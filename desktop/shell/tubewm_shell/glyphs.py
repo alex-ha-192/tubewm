@@ -268,6 +268,111 @@ def _sound(cr):
     cr.arc(12, 12, 9, -0.85, 0.85)
 
 
+def _weather(cr):
+    _circle(cr, 9, 9, 4)
+    cr.stroke()
+    for i in range(6):
+        a = math.pi * (0.9 + i * 0.3)
+        cr.move_to(9 + 5.8 * math.cos(a), 9 + 5.8 * math.sin(a))
+        cr.line_to(9 + 7.6 * math.cos(a), 9 + 7.6 * math.sin(a))
+    cr.stroke()
+    cr.move_to(8, 20.5)
+    cr.line_to(19, 20.5)
+    cr.arc_negative(19, 17, 3.5, math.pi / 2, -math.pi / 2)
+    cr.arc_negative(14.5, 13.5, 4.5, -math.pi * 0.1, -math.pi * 0.95)
+    cr.arc_negative(9, 17, 3.5, -math.pi / 2, math.pi / 2)
+
+
+def _disk(cr):
+    cr.rectangle(2.5, 6, 19, 12)
+    cr.move_to(2.5, 13)
+    cr.line_to(21.5, 13)
+    cr.stroke()
+    _circle(cr, 17.5, 15.5, 1)
+    cr.fill()
+
+
+def _network(cr):
+    for r in (4, 8.5, 13):
+        cr.new_sub_path()
+        cr.arc(12, 20, r, math.pi * 1.25, math.pi * 1.75)
+    cr.stroke()
+    _circle(cr, 12, 20, 1.3)
+    cr.fill()
+
+
+def _note(cr):
+    cr.move_to(3, 3)
+    cr.line_to(21, 3)
+    cr.line_to(21, 15)
+    cr.line_to(15, 21)
+    cr.line_to(3, 21)
+    cr.close_path()
+    cr.move_to(21, 15)
+    cr.line_to(15, 15)
+    cr.line_to(15, 21)
+    cr.move_to(7, 8)
+    cr.line_to(17, 8)
+    cr.move_to(7, 12)
+    cr.line_to(14, 12)
+
+
+def _bell(cr):
+    cr.move_to(4, 17.5)
+    cr.line_to(20, 17.5)
+    cr.line_to(18, 14.5)
+    cr.line_to(18, 10)
+    cr.arc_negative(12, 10, 6, 0, math.pi)
+    cr.line_to(6, 14.5)
+    cr.close_path()
+    cr.move_to(10, 20.5)
+    cr.line_to(14, 20.5)
+
+
+def _windows(cr):
+    cr.rectangle(2.5, 7.5, 13, 12)
+    cr.move_to(6.5, 7.5)
+    cr.line_to(6.5, 3.5)
+    cr.line_to(21.5, 3.5)
+    cr.line_to(21.5, 15)
+    cr.line_to(15.5, 15)
+
+
+def _recent(cr):
+    cr.move_to(5, 2.5)
+    cr.line_to(14, 2.5)
+    cr.line_to(19, 7.5)
+    cr.line_to(19, 11)
+    cr.move_to(11, 21.5)
+    cr.line_to(5, 21.5)
+    cr.line_to(5, 2.5)
+    cr.stroke()
+    _circle(cr, 16.5, 17, 4.5)
+    cr.move_to(16.5, 14.5)
+    cr.line_to(16.5, 17)
+    cr.line_to(18.5, 18)
+
+
+def _plus(cr):
+    cr.move_to(12, 4)
+    cr.line_to(12, 20)
+    cr.move_to(4, 12)
+    cr.line_to(20, 12)
+
+
+def _pin(cr):
+    cr.move_to(9, 3)
+    cr.line_to(15, 3)
+    cr.move_to(10, 3)
+    cr.line_to(10, 10)
+    cr.line_to(6, 14)
+    cr.line_to(18, 14)
+    cr.line_to(14, 10)
+    cr.line_to(14, 3)
+    cr.move_to(12, 14)
+    cr.line_to(12, 21)
+
+
 GLYPHS = {
     "search": _search, "share": _share, "start": _start, "devices": _devices,
     "settings": _settings, "lock": _lock, "power": _power, "sleep": _sleep,
@@ -275,7 +380,9 @@ GLYPHS = {
     "apps": _apps, "terminal": _terminal, "folder": _folder, "files": _folder,
     "web": _web, "code": _code, "chat": _chat, "mail": _mail, "photo": _photo,
     "game": _game, "calendar": _calendar, "clock": _clock, "battery": _battery,
-    "system": _system, "bluetooth": _bluetooth, "sound": _sound,
+    "system": _system, "bluetooth": _bluetooth, "sound": _sound, "weather": _weather,
+    "disk": _disk, "network": _network, "note": _note, "bell": _bell, "windows": _windows,
+    "recent": _recent, "plus": _plus, "pin": _pin,
 }
 
 

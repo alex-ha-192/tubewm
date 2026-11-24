@@ -37,7 +37,7 @@ done
 say()  { printf '\033[1m%s\033[0m\n' "$*"; }
 note() { printf '  %s\n' "$*"; }
 
-BINARIES=(tube-accent tube-charms tube-lock tube-osd tube-render tube-share tube-snap tube-start tube-switcher)
+BINARIES=(tube-accent tube-charms tube-lock tube-osd tube-render tube-share tube-snap tube-start tube-switcher tube-wallpaper)
 
 # Static configs: installed once, yours to edit afterwards.
 STATIC=(sway/config waybar/config.jsonc waybar/style.css)
@@ -74,19 +74,19 @@ if [ "$deps" = 1 ]; then
     if command -v apt-get >/dev/null; then
         sudo apt-get install -y sway swaybg swayidle swaylock waybar fuzzel mako-notifier foot \
             grim slurp wl-clipboard jq playerctl brightnessctl libnotify-bin wireplumber \
-            python3-gi gir1.2-gtk-3.0 gir1.2-gtklayershell-0.1 fonts-open-sans
+            python3-gi python3-gi-cairo gir1.2-gtk-3.0 gir1.2-gtklayershell-0.1 fonts-open-sans
     elif command -v pacman >/dev/null; then
         sudo pacman -S --needed sway swaybg swayidle swaylock waybar fuzzel mako foot \
             grim slurp wl-clipboard jq playerctl brightnessctl libnotify wireplumber \
-            python-gobject gtk3 gtk-layer-shell ttf-opensans
+            python-gobject python-cairo gtk3 gtk-layer-shell ttf-opensans
     elif command -v dnf >/dev/null; then
         sudo dnf install -y sway swaybg swayidle swaylock waybar fuzzel mako foot \
             grim slurp wl-clipboard jq playerctl brightnessctl libnotify wireplumber \
-            python3-gobject gtk3 gtk-layer-shell open-sans-fonts
+            python3-gobject python3-cairo gtk3 gtk-layer-shell open-sans-fonts
     elif command -v zypper >/dev/null; then
         sudo zypper install -y sway swaybg swayidle swaylock waybar fuzzel mako foot \
             grim slurp wl-clipboard jq playerctl brightnessctl libnotify-tools wireplumber \
-            python3-gobject-Gdk typelib-1_0-GtkLayerShell-0_1 open-sans-fonts
+            python3-gobject-Gdk python3-gobject-cairo typelib-1_0-GtkLayerShell-0_1 open-sans-fonts
     else
         note "unknown package manager; install the packages listed in desktop/README.md yourself"
     fi
@@ -158,15 +158,17 @@ fi
 done
 mkdir -p "$CONFIG/sway/config.d" "$CONFIG/tubewm/accent.d"
 
-if [ ! -e "$CONFIG/tubewm/start.toml" ]; then
-    cp "$REPO/desktop/start/start.toml" "$CONFIG/tubewm/start.toml"
-    note "tubewm/start.toml (your start tiles)"
-fi
-
 if [ -n "$accent" ]; then
     TUBEWM_HOME=$DEST "$DEST/desktop/bin/tube-accent" "$accent" >/dev/null
 fi
 TUBEWM_HOME=$DEST "$DEST/desktop/bin/tube-render"
+
+# A wallpaper drawn from the accent, unless you've picked one (or turned it off).
+if [ ! -e "$CONFIG/tubewm/wallpaper" ] && [ ! -e "$CONFIG/tubewm/wallpaper-off" ]; then
+    if TUBEWM_HOME=$DEST "$DEST/desktop/bin/tube-wallpaper" fade 2>/dev/null; then
+        note "wallpaper: fade (change it with tube-wallpaper list, or in settings)"
+    fi
+fi
 
 # ── GTK / GNOME settings ─────────────────────────────────────────────────
 if [ "$gsettings_ok" = 1 ] && command -v gsettings >/dev/null \

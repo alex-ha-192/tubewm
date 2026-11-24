@@ -215,6 +215,9 @@ class Charms:
         self.mark_accent()
         box.pack_start(grid, False, False, 0)
 
+        box.pack_start(_section("wallpaper"), False, False, 0)
+        box.pack_start(self.build_wallpapers(), False, False, 0)
+
         if common.have("wpctl"):
             box.pack_start(_section("volume"), False, False, 0)
             vol = Gtk.Scale.new_with_range(Gtk.Orientation.HORIZONTAL, 0, 100, 1)
@@ -270,12 +273,62 @@ class Charms:
             power.add(btn)
         box.pack_start(power, False, False, 0)
 
-        box.pack_start(_section("more"), False, False, 0)
-        box.pack_start(_text("Your desktop lives in ~/.config/sway/config and "
-                             "~/.config/tubewm/start.toml."), False, False, 0)
-        box.pack_start(_button("edit start tiles", lambda *_: self.run_and_quit(
-            "xdg-open \"$HOME/.config/tubewm/start.toml\""), "link"), False, False, 0)
+        box.pack_start(_section("start"), False, False, 0)
+        box.pack_start(_text("Drag tiles to move them. Right-click one to resize, recolour, "
+                             "set up or unpin it. Right-click an app in the list to pin it."),
+                       False, False, 0)
+        reset = _button("reset start to the default tiles", self.on_reset_start, "link")
+        box.pack_start(reset, False, False, 0)
         return scroll
+
+    def on_reset_start(self, btn):
+        if not btn.get_style_context().has_class("armed-link"):
+            btn.get_style_context().add_class("armed-link")
+            btn.set_label("click again to reset your tiles")
+            return
+        from . import layout
+        layout.reset()
+        btn.get_style_context().remove_class("armed-link")
+        btn.set_label("start tiles reset")
+
+    def build_wallpapers(self):
+        grid = Gtk.FlowBox()
+        grid.set_selection_mode(Gtk.SelectionMode.NONE)
+        grid.set_max_children_per_line(3)
+        grid.set_min_children_per_line(3)
+        grid.set_column_spacing(4)
+        grid.set_row_spacing(4)
+        grid.set_homogeneous(True)
+        self.walls = []
+        try:
+            from . import wallpaper
+        except ImportError:  # no pycairo
+            return _text("Install pycairo for wallpapers.")
+        cur = wallpaper.current()
+        for name, (_fn, blurb) in wallpaper.STYLES.items():
+            btn = Gtk.Button()
+            btn.get_style_context().add_class("wall")
+            btn.set_tooltip_text("%s: %s" % (name, blurb))
+            surf = wallpaper.render(name, 90, 51)
+            pb = Gdk.pixbuf_get_from_surface(surf, 0, 0, 90, 51)
+            btn.add(Gtk.Image.new_from_pixbuf(pb))
+            btn.name = name
+            btn.connect("clicked", self.on_wallpaper)
+            if name == cur:
+                btn.get_style_context().add_class("current")
+            grid.add(btn)
+            self.walls.append(btn)
+        off = _button("none", self.on_wallpaper, "wall-off")
+        off.name = "off"
+        grid.add(off)
+        self.walls.append(off)
+        return grid
+
+    def on_wallpaper(self, btn):
+        common.sh(["tube-wallpaper", btn.name], timeout=20)
+        for b in self.walls:
+            ctx = b.get_style_context()
+            (ctx.add_class if b is btn else ctx.remove_class)("current")
 
     def mark_accent(self):
         cur = common.load_palette()["ACCENT"]
@@ -284,9 +337,15 @@ class Charms:
             (ctx.add_class if sw.hex == cur else ctx.remove_class)("current")
 
     def on_accent(self, _btn, name):
-        common.sh(["tube-accent", name], timeout=10)
+        common.sh(["tube-accent", name], timeout=20)
         common.apply_css()
         self.mark_accent()
+        if hasattr(self, "walls"):
+            from . import wallpaper
+            for b in self.walls:
+                if b.name in wallpaper.STYLES:
+                    surf = wallpaper.render(b.name, 90, 51)
+                    b.get_child().set_from_pixbuf(Gdk.pixbuf_get_from_surface(surf, 0, 0, 90, 51))
 
     def on_dnd(self, btn):
         common.sh("makoctl mode -t do-not-disturb")

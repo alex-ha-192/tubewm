@@ -1,76 +1,24 @@
 """tube-start: the start screen.
 
-A full-screen panorama of tile groups that scrolls sideways, an "all apps"
-list you reach by typing or with the link at the bottom, and a semantic
-zoom (Ctrl+minus) that shrinks the groups to big names for quick jumping.
+Your pinned tiles on the left: app shortcuts and live tiles that you add,
+drag around, resize, recolour and unpin in place. Every app on the right,
+in one alphabetical column; type anywhere to filter it.
 """
 
 import argparse
+import math
 import os
 import pwd
-import sys
 
-from . import common, tiles
+from . import common, layout, tiles
 
 from gi.repository import Gdk, Gio, GLib, Gtk, Pango  # noqa: E402
 
-try:
-    import tomllib
-except ImportError:  # Python < 3.11
-    import tomli as tomllib  # type: ignore
-
-CONFIG_PATH = os.path.join(common.CONFIG, "tubewm", "start.toml")
-DEFAULT_CONFIG = os.path.join(common.SHELL_DIR, "..", "start", "start.toml")
-
-ROW_PX = tiles.UNIT + tiles.GUTTER
-LEFT = 120  # left margin of the panorama, in px
-
-
-def load_config():
-    for path in (CONFIG_PATH, DEFAULT_CONFIG):
-        if os.path.exists(path):
-            try:
-                with open(path, "rb") as fh:
-                    return tomllib.load(fh)
-            except (OSError, tomllib.TOMLDecodeError) as err:
-                print("tube-start: can't read %s: %s" % (path, err), file=sys.stderr)
-    return {"group": []}
-
-
-BAND = 4  # tiles are packed into bands four units wide, like a wide tile
-
-
-def pack(specs, rows):
-    """First fit, row by row, inside bands BAND units wide; when a band is
-    full the next one starts to its right. 2x2 and bigger tiles sit on even
-    cells so small tiles cluster in 2x2 blocks. Returns [(spec, col, row)]
-    and the group's width in units."""
-    occupied = set()
-    placed = []
-    width = 0
-    for spec in specs:
-        w, h = tiles.SIZES.get(spec.get("size", "medium"), (2, 2))
-        w, h = min(w, BAND), min(h, rows)
-        step = 1 if (w, h) == (1, 1) else 2
-        band = 0
-        while band < 100:
-            spot = None
-            for row in range(0, rows - h + 1, step):
-                for col in range(band * BAND, band * BAND + BAND - w + 1, step):
-                    cells = {(col + dx, row + dy) for dx in range(w) for dy in range(h)}
-                    if not cells & occupied:
-                        spot = (col, row, cells)
-                        break
-                if spot:
-                    break
-            if spot:
-                col, row, cells = spot
-                occupied |= cells
-                placed.append((spec, col, row))
-                width = max(width, col + w)
-                break
-            band += 1
-    return placed, width
+CELL = tiles.UNIT + tiles.GUTTER
+LEFT = 120     # left margin, px
+APPS_W = 380   # width of the app list column
+DRAG_START = 10
+LONG_PRESS = 600  # ms
 
 
 def user_name():
@@ -81,200 +29,473 @@ def user_name():
         return os.environ.get("USER", "")
 
 
+def pack(specs, cols):
+    """Row-major first fit in a grid `cols` units wide. Tiles of 2x2 and up
+    sit on even cells; small tiles fill 2x2 blocks before moving on, so
+    they gather in little squares.
+    Returns [(index, col, row, w, h)], the rows used, and the occupied cells."""
+    occupied = set()
+    placed = []
+    rows_used = 0
+
+    def candidates(w, h, row):
+        if (w, h) == (1, 1):
+            for bcol in range(0, cols, 2):
+                for dr in (0, 1):
+                    for dc in (0, 1):
+                        if bcol + dc < cols:
+                            yield bcol + dc, row + dr
+        else:
+            for col in range(0, cols - w + 1, 2):
+                yield col, row
+
+    for i, spec in enumerate(specs):
+        w, h = tiles.SIZES.get(spec.get("size", "medium"), (2, 2))
+        w = min(w, cols)
+        row = 0
+        while True:
+            spot = None
+            for col, r in candidates(w, h, row):
+                cells = {(col + dx, r + dy) for dx in range(w) for dy in range(h)}
+                if not cells & occupied:
+                    spot = (col, r, cells)
+                    break
+            if spot:
+                occupied |= spot[2]
+                placed.append((i, spot[0], spot[1], w, h))
+                rows_used = max(rows_used, spot[1] + h)
+                break
+            row += 2
+    return placed, rows_used, occupied
+
+
 class StartScreen:
     def __init__(self, mode):
         self.pal = common.apply_css()
-        self.cfg = load_config()
-        settings = self.cfg.get("start", {})
+        self.data = layout.load()
         self.win = common.make_layer_window("start")
         self.win.connect("key-press-event", self.on_key)
+        self.drag = None
+        self.just_dragged = False
+        self.tile_widgets = []
+        self.placed = []
+        self.first_show = True
 
-        _w, screen_h = common.monitor_size()
-        rows = settings.get("rows") or max(4, min(8, (screen_h - 300) // ROW_PX))
-        self.rows = int(rows) - int(rows) % 2 if int(rows) > 1 else 2
+        screen_w, screen_h = common.monitor_size()
+        avail = screen_w - LEFT - APPS_W - 100 - 60
+        cols = max(4, min(16, (avail + tiles.GUTTER) // CELL))
+        self.cols = cols - cols % 2
 
         root = Gtk.Box(orientation=Gtk.Orientation.VERTICAL)
         self.win.add(root)
 
-        # Header row: title on the left, search and user on the right.
         head = Gtk.Box(spacing=24)
         head.set_margin_start(LEFT)
         head.set_margin_end(60)
         head.set_margin_top(36)
-        head.set_margin_bottom(34)
-        self.title = Gtk.Label(label=settings.get("title", "start"), xalign=0)
+        head.set_margin_bottom(30)
+        self.title = Gtk.Label(label=self.data.get("title", "start"), xalign=0)
         self.title.get_style_context().add_class("panorama-header")
         head.pack_start(self.title, False, False, 0)
         user = Gtk.Label(label=user_name())
         user.get_style_context().add_class("user-label")
         user.set_valign(Gtk.Align.CENTER)
         head.pack_end(user, False, False, 0)
-        self.entry = Gtk.SearchEntry()
-        self.entry.set_placeholder_text("search apps")
-        self.entry.get_style_context().add_class("search")
-        self.entry.set_valign(Gtk.Align.CENTER)
-        self.entry.connect("search-changed", self.on_search)
-        self.entry.connect("activate", self.on_search_activate)
-        self.entry.set_no_show_all(True)
-        head.pack_end(self.entry, False, False, 0)
         root.pack_start(head, False, False, 0)
 
-        self.stack = Gtk.Stack()
-        self.stack.set_transition_type(Gtk.StackTransitionType.CROSSFADE)
-        self.stack.set_transition_duration(180)
-        self.stack.set_vhomogeneous(False)
-        root.pack_start(self.stack, True, True, 0)
+        body = Gtk.Box(spacing=100)
+        body.set_margin_start(LEFT)
+        body.set_margin_end(60)
+        root.pack_start(body, True, True, 0)
 
-        self.tile_widgets = []
-        self.group_offsets = []
-        self.stack.add_named(self.build_tiles(), "tiles")
-        self.stack.add_named(self.build_apps(screen_h), "apps")
-        self.stack.add_named(self.build_zoom(), "zoom")
+        body.pack_start(self.build_tile_area(), True, True, 0)
+        body.pack_start(self.build_app_column(), False, False, 0)
 
-        foot = Gtk.Box()
-        foot.set_margin_start(LEFT)
-        foot.set_margin_bottom(30)
-        self.apps_link = Gtk.Button(label="all apps  ›")
-        self.apps_link.set_relief(Gtk.ReliefStyle.NONE)
-        self.apps_link.get_style_context().add_class("apps-link")
-        self.apps_link.connect("clicked", lambda *_: self.show("apps"))
-        foot.pack_start(self.apps_link, False, False, 0)
-        root.pack_end(foot, False, False, 0)
-
+        self.rebuild()
         self.win.show_all()
-        self.scheduler = tiles.FlipScheduler(self.tile_widgets)
-        self.animate_in()
+        self.scheduler = tiles.FlipScheduler(lambda: self.tile_widgets)
         if mode in ("apps", "search"):
-            self.show("apps", focus_search=(mode == "search"))
-        elif mode == "zoom":
-            self.show("zoom")
+            self.entry.grab_focus() if mode == "search" else self.focus_first_app()
         elif self.tile_widgets:
             self.tile_widgets[0].grab_focus()
 
-    # ── tiles ────────────────────────────────────────────────────────
-    def build_tiles(self):
-        scroll = Gtk.ScrolledWindow()
-        scroll.set_policy(Gtk.PolicyType.AUTOMATIC, Gtk.PolicyType.NEVER)
-        scroll.set_overlay_scrolling(True)
-        scroll.connect("scroll-event", self.on_wheel)
-        self.tiles_scroll = scroll
-        strip = Gtk.Box(spacing=80)
-        strip.set_margin_start(LEFT)
-        strip.set_margin_end(LEFT)
-        strip.set_valign(Gtk.Align.START)
-        scroll.add(strip)
-
-        x = LEFT
-        col_base = 0
-        for group in self.cfg.get("group", []):
-            specs = [s for s in (self.resolve(t) for t in group.get("tiles", [])) if s]
-            if not specs:
-                continue
-            placed, width = pack(specs, self.rows)
-            box = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=18)
-            name = Gtk.Label(label=group.get("name", ""), xalign=0)
-            name.get_style_context().add_class("group-title")
-            box.pack_start(name, False, False, 0)
-            fixed = Gtk.Fixed()
-            fixed.set_size_request(tiles.px(width), tiles.px(self.rows))
-            for spec, col, row in placed:
-                tile = tiles.make(spec, self.on_tile)
-                tile.column = col_base + col
-                fixed.put(tile, col * ROW_PX, row * ROW_PX)
-                self.tile_widgets.append(tile)
-            box.pack_start(fixed, False, False, 0)
-            strip.pack_start(box, False, False, 0)
-            self.group_offsets.append((group.get("name", ""), x - LEFT))
-            x += tiles.px(width) + 80
-            col_base += width + 1
-        return scroll
+    # ── tile area ────────────────────────────────────────────────────
+    def build_tile_area(self):
+        self.tile_scroll = Gtk.ScrolledWindow()
+        self.tile_scroll.set_policy(Gtk.PolicyType.NEVER, Gtk.PolicyType.AUTOMATIC)
+        self.tile_scroll.set_overlay_scrolling(True)
+        self.tile_scroll.set_size_request(tiles.px(self.cols), -1)
+        self.tile_scroll.set_halign(Gtk.Align.START)
+        self.overlay = Gtk.Overlay()
+        self.fixed = Gtk.Fixed()
+        self.fixed.set_halign(Gtk.Align.START)
+        self.fixed.set_valign(Gtk.Align.START)
+        self.overlay.add(self.fixed)
+        self.ghost = Gtk.Box()
+        self.ghost.get_style_context().add_class("tile")
+        self.ghost.get_style_context().add_class("ghost")
+        self.ghost.set_halign(Gtk.Align.START)
+        self.ghost.set_valign(Gtk.Align.START)
+        self.ghost.set_no_show_all(True)
+        self.overlay.add_overlay(self.ghost)
+        self.overlay.set_overlay_pass_through(self.ghost, True)
+        bottom = Gtk.Box(orientation=Gtk.Orientation.VERTICAL)
+        bottom.pack_start(self.overlay, False, False, 0)
+        bottom.set_margin_bottom(60)
+        self.tile_scroll.add(bottom)
+        return self.tile_scroll
 
     def resolve(self, spec):
-        spec = dict(spec)
-        kind = spec.get("type", "app")
-        if kind == "app":
-            info = common.find_app(spec.get("app"))
-            if info is None and not spec.get("exec"):
-                return None
-            spec["_info"] = info
-            if not spec.get("label") and info is not None:
-                spec["label"] = (info.get_display_name() or "").lower()
-        elif kind == "battery" and tiles._battery()[0] is None:
-            return None  # no battery: nothing to show
-        elif spec.get("app"):
-            spec["_info"] = common.find_app(spec["app"])
+        if spec.get("type", "app") == "app" or spec.get("app"):
+            spec["_info"] = common.find_app(spec.get("app")) if spec.get("app") else None
         return spec
+
+    def rebuild(self, focus_index=None):
+        for child in self.fixed.get_children():
+            self.fixed.remove(child)
+            child.destroy()
+        self.tile_widgets = []
+        specs = [self.resolve(s) for s in self.data["tiles"]]
+        self.placed, rows, occupied = pack(specs, self.cols)
+        for i, col, row, w, h in self.placed:
+            tile = tiles.make(specs[i], self.on_tile)
+            tile.index = i
+            tile.cell = (col, row)
+            self.wire(tile)
+            self.fixed.put(tile, col * CELL, row * CELL)
+            self.tile_widgets.append(tile)
+        # The + tile goes on its own row under everything else.
+        col, row = 0, rows
+        add = Gtk.Button()
+        add.set_relief(Gtk.ReliefStyle.NONE)
+        add.get_style_context().add_class("tile")
+        add.get_style_context().add_class("add-tile")
+        add.set_size_request(tiles.UNIT, tiles.UNIT)
+        add.set_tooltip_text("add a live tile")
+        add.add(tiles.glyphs.Glyph("plus", 26))
+        add.connect("clicked", self.add_menu)
+        self.fixed.put(add, col * CELL, row * CELL)
+        self.add_button = add
+        self.fixed.set_size_request(tiles.px(self.cols), tiles.px(max(rows, row + 1)))
+        self.fixed.show_all()
+        if self.first_show:
+            self.first_show = False
+            self.animate_in()
+        else:
+            for t in self.tile_widgets:
+                t.get_style_context().remove_class("entering")
+            if hasattr(self, "scheduler"):
+                self.scheduler.refresh()
+        if focus_index is not None:
+            for t in self.tile_widgets:
+                if t.index == focus_index:
+                    t.grab_focus()
+        self.refresh_pins()
 
     def animate_in(self):
         def reveal(tile):
             tile.get_style_context().remove_class("entering")
             return False
         for tile in self.tile_widgets:
-            GLib.timeout_add(70 + 35 * tile.column, reveal, tile)
+            col, row = tile.cell
+            GLib.timeout_add(60 + 28 * (col + row), reveal, tile)
 
-    def on_wheel(self, scroll, event):
-        adj = scroll.get_hadjustment()
-        ok, dx, dy = event.get_scroll_deltas()
-        if not ok:
-            dy = {Gdk.ScrollDirection.UP: -1, Gdk.ScrollDirection.DOWN: 1}.get(event.direction, 0)
-            dx = {Gdk.ScrollDirection.LEFT: -1, Gdk.ScrollDirection.RIGHT: 1}.get(event.direction, 0)
-        adj.set_value(adj.get_value() + (dx + dy) * 90)
-        return True
+    def save(self):
+        layout.save(self.data)
 
+    # ── clicking ─────────────────────────────────────────────────────
     def on_tile(self, tile):
-        spec = tile.spec
-        kind = spec.get("type", "app")
-        if kind == "action":
-            self.run_action(spec.get("action"))
+        if self.just_dragged:
+            self.just_dragged = False
             return
-        if spec.get("exec"):
-            common.run_detached(spec["exec"])
-        elif spec.get("_info") is not None:
-            common.launch_app(spec["_info"])
-        else:
+        if tile.kind == "note":
+            self.edit_params(tile)
             return
-        if kind == "music" and spec.get("exec", "").startswith("playerctl"):
-            GLib.timeout_add(300, lambda: tile.refresh() or False)
-            return  # play/pause in place, stay open
-        self.quit()
-
-    def run_action(self, action):
-        if action in ("apps", "search"):
-            self.show("apps", focus_search=(action == "search"))
-        elif action == "zoom":
-            self.show("zoom")
-        elif action == "accent":
-            common.run_detached("tube-accent random")
-            GLib.timeout_add(600, lambda: common.apply_css() and False)
-        elif action in ("charms", "settings", "lock", "devices"):
-            cmd = {"charms": "tube-charms", "settings": "tube-charms --settings",
-                   "devices": "tube-charms --devices", "lock": "tube-lock"}[action]
-            common.run_detached(cmd)
+        if not tile.activate_tile():
             self.quit()
 
-    # ── all apps ─────────────────────────────────────────────────────
-    def build_apps(self, screen_h):
+    # ── dragging ─────────────────────────────────────────────────────
+    def wire(self, tile):
+        tile.add_events(Gdk.EventMask.BUTTON_PRESS_MASK | Gdk.EventMask.BUTTON_RELEASE_MASK
+                        | Gdk.EventMask.POINTER_MOTION_MASK)
+        tile.connect("button-press-event", self.on_press)
+        tile.connect("motion-notify-event", self.on_motion)
+        tile.connect("button-release-event", self.on_release)
+        tile.connect("popup-menu", lambda t: self.tile_menu(t, None) or True)
+
+    def on_press(self, tile, event):
+        if event.button == 3:
+            self.tile_menu(tile, event)
+            return True
+        if event.button == 1:
+            self.drag = {"tile": tile, "x": event.x_root, "y": event.y_root,
+                         "ox": event.x, "oy": event.y, "on": False}
+            # Holding still opens the tile menu, for touchscreens.
+            self.drag["hold"] = GLib.timeout_add(LONG_PRESS, self._long_press, tile)
+        return False
+
+    def _long_press(self, tile):
+        d = self.drag
+        if d:
+            d["hold"] = None
+        if d and d["tile"] is tile and not d["on"]:
+            self.drag = None
+            self.just_dragged = True  # swallow the click that follows the release
+            self.tile_menu(tile, None)
+        return False
+
+    def _cancel_hold(self, d):
+        if d and d.get("hold"):
+            GLib.source_remove(d["hold"])
+            d["hold"] = None
+
+    def on_motion(self, tile, event):
+        d = self.drag
+        if not d or d["tile"] is not tile:
+            return False
+        if not d["on"]:
+            if math.hypot(event.x_root - d["x"], event.y_root - d["y"]) < DRAG_START:
+                return False
+            d["on"] = True
+            self._cancel_hold(d)
+            self.ghost.set_size_request(tile.pw, tile.ph)
+            self.ghost.show()
+            tile.get_style_context().add_class("lifted")
+        x, y = tile.translate_coordinates(self.fixed, int(event.x), int(event.y))
+        gx = max(0, min(x - d["ox"], tiles.px(self.cols) - tile.pw))
+        gy = max(0, y - d["oy"])
+        self.ghost.set_margin_start(int(gx))
+        self.ghost.set_margin_top(int(gy))
+        d["gx"], d["gy"] = gx, gy
+        return True
+
+    def on_release(self, tile, event):
+        d, self.drag = self.drag, None
+        self._cancel_hold(d)
+        if not d or not d["on"]:
+            return False
+        self.ghost.hide()
+        tile.get_style_context().remove_class("lifted")
+        self.just_dragged = True
+        GLib.timeout_add(150, self._clear_drag_flag)
+        col = int(round(d["gx"] / CELL))
+        row = int(round(d["gy"] / CELL))
+        self.move_to_cell(tile.index, col, row)
+        return True
+
+    def _clear_drag_flag(self):
+        self.just_dragged = False
+        return False
+
+    def move_to_cell(self, index, col, row):
+        """Drop tile `index` on a cell: onto another tile it takes that
+        tile's place; onto an empty cell it goes before whatever follows."""
+        for i, c, r, w, h in self.placed:
+            if i != index and c <= col < c + w and r <= row < r + h:
+                self.move(index, i)
+                return
+        later = [i for i, c, r, w, h in self.placed if (r, c) > (row, col) and i != index]
+        if not later:
+            self.move(index, len(self.data["tiles"]) - 1)
+        else:
+            nxt = min(later)
+            self.move(index, nxt - 1 if nxt > index else nxt)
+
+    def move(self, index, new_pos):
+        """Move tile `index` so it ends up at position `new_pos`."""
+        tl = self.data["tiles"]
+        new_pos = max(0, min(new_pos, len(tl) - 1))
+        if not 0 <= index < len(tl) or index == new_pos:
+            return
+        tl.insert(new_pos, tl.pop(index))
+        self.save()
+        self.rebuild(focus_index=new_pos)
+
+    # ── tile menu ────────────────────────────────────────────────────
+    def tile_menu(self, tile, event):
+        menu = Gtk.Menu()
+        menu.get_style_context().add_class("tube-menu")
+        spec = self.data["tiles"][tile.index]
+
+        def item(label, cb, parent=menu, sensitive=True):
+            it = Gtk.MenuItem(label=label)
+            it.set_sensitive(sensitive)
+            it.connect("activate", lambda *_: cb())
+            parent.append(it)
+            return it
+
+        def sub(label):
+            it = Gtk.MenuItem(label=label)
+            m = Gtk.Menu()
+            it.set_submenu(m)
+            menu.append(it)
+            return m
+
+        if tile.kind == "app":
+            item("open", lambda: self.on_tile(tile))
+        sizes = sub("size")
+        for s in tiles.SIZE_ORDER:
+            if s in tile.sizes:
+                mark = "●  " if s == tile.size else "    "
+                item(mark + s, lambda s=s: self.set_prop(tile.index, "size", s), sizes)
+        colours = sub("colour")
+        cur = spec.get("color", "accent")
+        for name, value in [("accent", "accent"), ("dark", "dark")] + common.named_accents():
+            mark = "●  " if value == cur else "    "
+            item(mark + name, lambda v=value: self.set_prop(tile.index, "color", v), colours)
+        if tile.params:
+            item("set up…", lambda: self.edit_params(tile))
+        menu.append(Gtk.SeparatorMenuItem())
+        item("move earlier", lambda: self.move(tile.index, tile.index - 1), sensitive=tile.index > 0)
+        item("move later", lambda: self.move(tile.index, tile.index + 1),
+             sensitive=tile.index < len(self.data["tiles"]) - 1)
+        menu.append(Gtk.SeparatorMenuItem())
+        item("unpin from start", lambda: self.unpin(tile.index))
+        menu.show_all()
+        menu.attach_to_widget(tile, None)
+        if event is not None:
+            menu.popup_at_pointer(event)
+        else:
+            menu.popup_at_widget(tile, Gdk.Gravity.CENTER, Gdk.Gravity.NORTH_WEST, None)
+        self._menu = menu
+
+    def set_prop(self, index, key, value):
+        spec = self.data["tiles"][index]
+        if key == "color" and value == "accent":
+            spec.pop("color", None)
+        else:
+            spec[key] = value
+        self.save()
+        self.rebuild(focus_index=index)
+
+    def unpin(self, index):
+        del self.data["tiles"][index]
+        self.save()
+        self.rebuild()
+        self.refresh_pins()
+
+    def edit_params(self, tile):
+        pop = Gtk.Popover()
+        pop.set_relative_to(tile)
+        pop.get_style_context().add_class("tube-popover")
+        box = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=8)
+        box.set_margin_start(18)
+        box.set_margin_end(18)
+        box.set_margin_top(16)
+        box.set_margin_bottom(16)
+        head = Gtk.Label(label=tile.title, xalign=0)
+        head.get_style_context().add_class("group-title")
+        box.pack_start(head, False, False, 0)
+        entries = {}
+        for param in tile.params:
+            key, label, default = param[:3]
+            choices = param[3] if len(param) > 3 else None
+            lab = Gtk.Label(label=label, xalign=0)
+            lab.get_style_context().add_class("caption")
+            box.pack_start(lab, False, False, 0)
+            value = str(tile.spec.get(key, default) or "")
+            if choices:
+                ent = Gtk.ComboBoxText()
+                for c in choices:
+                    ent.append(c, c)
+                ent.set_active_id(value if value in choices else choices[0])
+                ent.get_text = ent.get_active_id
+            else:
+                ent = Gtk.Entry()
+                ent.set_text(value)
+                ent.set_width_chars(32)
+                ent.connect("activate", lambda *_: save())
+            ent.get_style_context().add_class("field")
+            box.pack_start(ent, False, False, 0)
+            entries[key] = ent
+
+        def save(*_):
+            spec = self.data["tiles"][tile.index]
+            for key, ent in entries.items():
+                val = ent.get_text().strip()
+                if val:
+                    spec[key] = val
+                else:
+                    spec.pop(key, None)
+            pop.popdown()
+            self.save()
+            self.rebuild(focus_index=tile.index)
+
+        btn = Gtk.Button(label="save")
+        btn.get_style_context().add_class("accent-button")
+        btn.set_halign(Gtk.Align.START)
+        btn.connect("clicked", save)
+        box.pack_start(btn, False, False, 6)
+        pop.add(box)
+        box.show_all()
+        pop.popup()
+
+    def add_menu(self, button):
+        menu = Gtk.Menu()
+        menu.get_style_context().add_class("tube-menu")
+        for name, cls in tiles.KINDS.items():
+            if not cls.addable:
+                continue
+            it = Gtk.MenuItem()
+            lab = Gtk.Label(xalign=0)
+            lab.set_markup("%s  <span alpha='60%%'>%s</span>" % (
+                GLib.markup_escape_text(cls.title), GLib.markup_escape_text(cls.blurb)))
+            it.add(lab)
+            it.connect("activate", lambda _i, n=name: self.add_tile({"type": n}))
+            menu.append(it)
+        menu.append(Gtk.SeparatorMenuItem())
+        hint = Gtk.MenuItem(label="apps: right-click one in the list and pin it")
+        hint.connect("activate", lambda *_: self.focus_first_app())
+        menu.append(hint)
+        menu.show_all()
+        menu.attach_to_widget(button, None)
+        menu.popup_at_widget(button, Gdk.Gravity.SOUTH_WEST, Gdk.Gravity.NORTH_WEST, None)
+        self._menu = menu
+
+    def add_tile(self, spec):
+        cls = tiles.KINDS.get(spec.get("type", "app"), tiles.AppTile)
+        spec.setdefault("size", cls.default_size)
+        for param in cls.params:
+            key, default = param[0], param[2]
+            if default and key != "label":
+                spec.setdefault(key, default)
+        self.data["tiles"].append(spec)
+        self.save()
+        self.rebuild(focus_index=len(self.data["tiles"]) - 1)
+        GLib.idle_add(self.scroll_to_end)
+
+    def scroll_to_end(self):
+        adj = self.tile_scroll.get_vadjustment()
+        adj.set_value(adj.get_upper())
+        return False
+
+    # ── app list ─────────────────────────────────────────────────────
+    def build_app_column(self):
+        col = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=14)
+        col.set_size_request(APPS_W, -1)
+        col.get_style_context().add_class("app-column")
+        head = Gtk.Label(label="apps", xalign=0)
+        head.get_style_context().add_class("page-header")
+        col.pack_start(head, False, False, 0)
+        self.entry = Gtk.SearchEntry()
+        self.entry.set_placeholder_text("search")
+        self.entry.get_style_context().add_class("search")
+        self.entry.connect("search-changed", lambda *_: self.listbox.invalidate_filter())
+        self.entry.connect("activate", self.on_search_activate)
+        col.pack_start(self.entry, False, False, 0)
+
         scroll = Gtk.ScrolledWindow()
-        scroll.set_policy(Gtk.PolicyType.AUTOMATIC, Gtk.PolicyType.NEVER)
-        scroll.connect("scroll-event", self.on_wheel)
-        flow = Gtk.FlowBox()
-        flow.set_orientation(Gtk.Orientation.VERTICAL)
-        per_col = max(5, (screen_h - 330) // 52)
-        flow.set_min_children_per_line(per_col)
-        flow.set_max_children_per_line(per_col)
-        flow.set_selection_mode(Gtk.SelectionMode.NONE)
-        flow.set_activate_on_single_click(True)
-        flow.set_column_spacing(48)
-        flow.set_row_spacing(4)
-        flow.set_valign(Gtk.Align.START)
-        flow.set_halign(Gtk.Align.START)
-        flow.set_margin_start(LEFT - 4)
-        flow.set_margin_end(LEFT)
-        flow.get_style_context().add_class("apps")
-        flow.connect("child-activated", self.on_app_child)
-        flow.set_filter_func(self.filter_app)
-        scroll.add(flow)
-        self.flow = flow
+        scroll.set_policy(Gtk.PolicyType.NEVER, Gtk.PolicyType.AUTOMATIC)
+        scroll.set_overlay_scrolling(True)
+        scroll.set_margin_bottom(40)
+        self.listbox = Gtk.ListBox()
+        self.listbox.get_style_context().add_class("apps")
+        self.listbox.set_selection_mode(Gtk.SelectionMode.NONE)
+        self.listbox.set_activate_on_single_click(True)
+        self.listbox.set_filter_func(self.filter_row)
+        self.listbox.connect("row-activated", self.on_app_row)
+        scroll.add(self.listbox)
+        col.pack_start(scroll, True, True, 0)
 
         apps = [a for a in Gio.AppInfo.get_all() if a.should_show()]
         apps.sort(key=lambda a: (a.get_display_name() or "").lower())
@@ -285,42 +506,96 @@ class StartScreen:
             first = first if first.isalpha() else "#"
             if first != letter:
                 letter = first
+                row = Gtk.ListBoxRow()
+                row.app = None
+                row.set_activatable(False)
+                row.set_can_focus(False)
                 lab = Gtk.Label(label=letter, xalign=0)
                 lab.get_style_context().add_class("app-letter")
-                child = Gtk.FlowBoxChild()
-                child.add(lab)
-                child.app = None
-                child.set_can_focus(False)
-                flow.add(child)
-            flow.add(self.app_row(app))
-        return scroll
+                row.add(lab)
+                self.listbox.add(row)
+            self.listbox.add(self.app_row(app))
+        return col
 
     def app_row(self, app):
-        row = Gtk.Box(spacing=14)
-        row.get_style_context().add_class("app-row")
-        row.set_size_request(300, 48)
+        box = Gtk.Box(spacing=16)
+        box.get_style_context().add_class("app-row")
         square = Gtk.Box()
         square.get_style_context().add_class("app-icon")
         square.set_size_request(40, 40)
-        glyph = tiles.glyph_for({"_info": app}, app.get_display_name(), 24)
-        square.set_center_widget(glyph)
-        row.pack_start(square, False, False, 0)
-        name = Gtk.Label(label=app.get_display_name(), xalign=0)
+        square.set_center_widget(tiles.glyph_for({"_info": app}, app.get_display_name(), 24))
+        box.pack_start(square, False, False, 0)
+        name = Gtk.Label(label=(app.get_display_name() or "").lower(), xalign=0)
         name.get_style_context().add_class("app-name")
         name.set_ellipsize(Pango.EllipsizeMode.END)
-        name.set_max_width_chars(24)
-        row.pack_start(name, True, True, 0)
-        child = Gtk.FlowBoxChild()
-        child.add(row)
-        child.app = app
-        child.set_tooltip_text(app.get_description() or app.get_display_name())
-        return child
+        box.pack_start(name, True, True, 0)
+        pin = tiles.glyphs.Glyph("pin", 16)
+        pin.get_style_context().add_class("pin-mark")
+        pin.set_no_show_all(True)
+        box.pack_end(pin, False, False, 0)
+        row = Gtk.ListBoxRow()
+        row.add(box)
+        row.app = app
+        row.app_id = (app.get_id() or "").removesuffix(".desktop")
+        row.pin_mark = pin
+        row.set_tooltip_text(app.get_description() or app.get_display_name())
+        row.add_events(Gdk.EventMask.BUTTON_PRESS_MASK)
+        row.connect("button-press-event", self.on_app_press)
+        row.connect("popup-menu", lambda r: self.app_menu(r, None) or True)
+        return row
 
-    def filter_app(self, child):
+    def pinned_ids(self):
+        return {t.get("app") for t in self.data["tiles"] if t.get("type", "app") == "app"}
+
+    def refresh_pins(self):
+        if not hasattr(self, "listbox"):
+            return
+        pinned = self.pinned_ids()
+        for row in self.listbox.get_children():
+            if getattr(row, "app", None) is not None:
+                row.pin_mark.set_visible(row.app_id in pinned)
+
+    def on_app_press(self, row, event):
+        if event.button == 3:
+            self.app_menu(row, event)
+            return True
+        return False
+
+    def app_menu(self, row, event):
+        menu = Gtk.Menu()
+        menu.get_style_context().add_class("tube-menu")
+        open_it = Gtk.MenuItem(label="open")
+        open_it.connect("activate", lambda *_: self.on_app_row(self.listbox, row))
+        menu.append(open_it)
+        if row.app_id in self.pinned_ids():
+            it = Gtk.MenuItem(label="unpin from start")
+            it.connect("activate", lambda *_: self.unpin_app(row.app_id))
+        else:
+            it = Gtk.MenuItem(label="pin to start")
+            it.connect("activate", lambda *_: self.pin_app(row))
+        menu.append(it)
+        menu.show_all()
+        menu.attach_to_widget(row, None)
+        if event is not None:
+            menu.popup_at_pointer(event)
+        else:
+            menu.popup_at_widget(row, Gdk.Gravity.SOUTH_WEST, Gdk.Gravity.NORTH_WEST, None)
+        self._menu = menu
+
+    def pin_app(self, row):
+        self.add_tile({"type": "app", "app": row.app_id, "size": "medium"})
+
+    def unpin_app(self, app_id):
+        for i, t in enumerate(self.data["tiles"]):
+            if t.get("type", "app") == "app" and t.get("app") == app_id:
+                self.unpin(i)
+                return
+
+    def filter_row(self, row):
         text = self.entry.get_text().strip().lower()
         if not text:
             return True
-        app = getattr(child, "app", None)
+        app = getattr(row, "app", None)
         if app is None:
             return False
         words = [app.get_display_name(), app.get_name(), app.get_executable(),
@@ -330,96 +605,59 @@ class StartScreen:
         hay = " ".join(w for w in words if w).lower()
         return all(word in hay for word in text.split())
 
-    def on_search(self, _entry):
-        self.flow.invalidate_filter()
+    def visible_app_rows(self):
+        return [r for r in self.listbox.get_children()
+                if getattr(r, "app", None) is not None and self.filter_row(r)]
 
     def on_search_activate(self, _entry):
-        for child in self.flow.get_children():
-            if getattr(child, "app", None) is not None and child.get_child_visible() \
-                    and self.filter_app(child):
-                self.on_app_child(self.flow, child)
-                return
+        rows = self.visible_app_rows()
+        if rows:
+            self.on_app_row(self.listbox, rows[0])
 
-    def on_app_child(self, _flow, child):
-        if getattr(child, "app", None) is not None:
-            common.launch_app(child.app)
+    def on_app_row(self, _lb, row):
+        if getattr(row, "app", None) is not None:
+            common.launch_app(row.app)
             self.quit()
 
-    # ── semantic zoom ────────────────────────────────────────────────
-    def build_zoom(self):
-        box = Gtk.FlowBox()
-        box.set_selection_mode(Gtk.SelectionMode.NONE)
-        box.set_max_children_per_line(4)
-        box.set_min_children_per_line(min(4, max(1, len(self.group_offsets))))
-        box.set_column_spacing(10)
-        box.set_row_spacing(10)
-        box.set_margin_start(LEFT)
-        box.set_margin_end(LEFT)
-        box.set_valign(Gtk.Align.START)
-        box.set_halign(Gtk.Align.START)
-        for name, offset in self.group_offsets:
-            btn = Gtk.Button()
-            lab = Gtk.Label(label=name, xalign=0, yalign=1)
-            btn.add(lab)
-            btn.set_size_request(310, 230)
-            btn.get_style_context().add_class("zoom-group")
-            btn.connect("clicked", self.on_zoom_pick, offset)
-            box.add(btn)
-        return box
+    def focus_first_app(self):
+        rows = self.visible_app_rows()
+        if rows:
+            rows[0].grab_focus()
 
-    def on_zoom_pick(self, _btn, offset):
-        self.show("tiles")
-        GLib.idle_add(lambda: self.tiles_scroll.get_hadjustment().set_value(offset) or False)
-
-    # ── navigation ───────────────────────────────────────────────────
-    def show(self, page, focus_search=False):
-        self.stack.set_visible_child_name(page)
-        self.title.set_text({"apps": "apps", "zoom": self.cfg.get("start", {}).get("title", "start")}
-                            .get(page, self.cfg.get("start", {}).get("title", "start")))
-        self.entry.set_visible(page == "apps")
-        self.apps_link.set_visible(page == "tiles")
-        if page == "apps":
-            if focus_search:
-                self.entry.grab_focus()
-            else:
-                for child in self.flow.get_children():
-                    if getattr(child, "app", None) is not None:
-                        child.grab_focus()
-                        break
-        elif page == "tiles":
-            self.entry.set_text("")
-            if self.tile_widgets:
-                self.tile_widgets[0].grab_focus()
-
+    # ── keys ─────────────────────────────────────────────────────────
     def on_key(self, _win, event):
-        page = self.stack.get_visible_child_name()
-        ctrl = event.state & Gdk.ModifierType.CONTROL_MASK
         key = event.keyval
+        mods = event.state & (Gdk.ModifierType.CONTROL_MASK | Gdk.ModifierType.MOD1_MASK)
         if key == Gdk.KEY_Escape:
-            if page == "apps" and self.entry.get_text():
+            if self.drag and self.drag.get("on"):
+                self.ghost.hide()
+                self.drag["tile"].get_style_context().remove_class("lifted")
+                self.drag = None
+            elif self.entry.get_text():
                 self.entry.set_text("")
-            elif page != "tiles":
-                self.show("tiles")
             else:
                 self.quit()
             return True
-        if ctrl and key in (Gdk.KEY_minus, Gdk.KEY_KP_Subtract):
-            self.show("zoom")
+        focus = self.win.get_focus()
+        # Alt+arrows move the focused tile.
+        if (event.state & Gdk.ModifierType.MOD1_MASK) and isinstance(focus, tiles.Tile):
+            if key in (Gdk.KEY_Left, Gdk.KEY_Up):
+                self.move(focus.index, focus.index - 1)
+                return True
+            if key in (Gdk.KEY_Right, Gdk.KEY_Down):
+                self.move(focus.index, focus.index + 1)
+                return True
+        if isinstance(focus, Gtk.ListBoxRow) and key == Gdk.KEY_p \
+                and event.state & Gdk.ModifierType.CONTROL_MASK:
+            if focus.app_id in self.pinned_ids():
+                self.unpin_app(focus.app_id)
+            else:
+                self.pin_app(focus)
             return True
-        if ctrl and key in (Gdk.KEY_plus, Gdk.KEY_equal, Gdk.KEY_KP_Add):
-            self.show("tiles")
-            return True
-        if page == "tiles" and key in (Gdk.KEY_Page_Down, Gdk.KEY_Page_Up):
-            adj = self.tiles_scroll.get_hadjustment()
-            sign = 1 if key == Gdk.KEY_Page_Down else -1
-            adj.set_value(adj.get_value() + sign * adj.get_page_size() * 0.8)
-            return True
-        # Typing anywhere searches.
+        # Typing anywhere searches the app list.
         text = event.string
-        if not ctrl and text and text.isprintable() and not text.isspace() \
-                and not self.entry.has_focus():
-            if page != "apps":
-                self.show("apps")
+        if not mods and text and text.isprintable() and not text.isspace() \
+                and not self.entry.has_focus() and not isinstance(focus, Gtk.Entry):
             self.entry.grab_focus_without_selecting()
             self.entry.set_text(self.entry.get_text() + text)
             self.entry.set_position(-1)
@@ -433,15 +671,18 @@ class StartScreen:
 def main(argv=None):
     parser = argparse.ArgumentParser(prog="tube-start", description=__doc__.splitlines()[0])
     group = parser.add_mutually_exclusive_group()
-    group.add_argument("--apps", action="store_true", help="open on the all apps list")
+    group.add_argument("--apps", action="store_true", help="open with the app list focused")
     group.add_argument("--search", action="store_true", help="open with the search box focused")
-    group.add_argument("--zoom", action="store_true", help="open zoomed out to the group names")
     parser.add_argument("--close", action="store_true", help="close start if it is open")
+    parser.add_argument("--reset", action="store_true",
+                        help="forget your tile layout and go back to the default one")
     args = parser.parse_args(argv)
 
+    if args.reset:
+        layout.reset()
     if not common.toggle_instance("start", close_only=args.close):
         return 0
-    mode = "apps" if args.apps else "search" if args.search else "zoom" if args.zoom else "tiles"
+    mode = "apps" if args.apps else "search" if args.search else "tiles"
     StartScreen(mode)
     Gtk.main()
     return 0
