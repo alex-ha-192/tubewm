@@ -215,7 +215,9 @@ disable_on_fullscreen = true
 
 [autostart]
 autostart_wf_shell = false
-0_env = dbus-update-activation-environment --systemd WAYLAND_DISPLAY XDG_CURRENT_DESKTOP=wayfire XDG_SESSION_TYPE=wayland WAYFIRE_SOCKET
+# Tell the portals (file pickers, screen sharing) which desktop this is; if
+# one started early with the wrong idea, start it again.
+0_env = dbus-update-activation-environment --systemd WAYLAND_DISPLAY XDG_CURRENT_DESKTOP=wayfire XDG_SESSION_TYPE=wayland WAYFIRE_SOCKET && systemctl --user try-restart xdg-desktop-portal.service
 desktops = ~/.local/bin/tube-desktops daemon
 # The strip along the top: start, desktops, the window handle and the time.
 bar = ~/.local/bin/tube-strip

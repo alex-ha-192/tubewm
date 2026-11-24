@@ -94,7 +94,7 @@ exec swayidle -w \
     before-sleep '$tubebin/tube-lock'
 
 # Let portals and user services see the Wayland session.
-exec dbus-update-activation-environment --systemd WAYLAND_DISPLAY XDG_CURRENT_DESKTOP=sway SWAYSOCK
+exec dbus-update-activation-environment --systemd WAYLAND_DISPLAY XDG_CURRENT_DESKTOP=sway SWAYSOCK && systemctl --user try-restart xdg-desktop-portal.service
 
 # Open on start, like the phone did.
 exec $tubebin/tube-start

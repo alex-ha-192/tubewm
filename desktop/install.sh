@@ -98,7 +98,7 @@ if [ "$uninstall" = 1 ]; then
     for f in gtk-3.0/user.css gtk-4.0/user.css foot/local.ini; do
         [ -f "$CONFIG/$f" ] && [ ! -s "$CONFIG/$f" ] && rm -f "$CONFIG/$f"
     done
-    for d in sway/config.d sway waybar/icons waybar mako fuzzel foot swaylock gtklock gtk-3.0 gtk-4.0; do
+    for d in sway/config.d sway waybar/icons waybar mako fuzzel foot swaylock gtklock gtk-3.0 gtk-4.0 xdg-desktop-portal; do
         rmdir "$CONFIG/$d" 2>/dev/null || true
     done
     note "kept ~/.config/tubewm (start tiles, accent, backups)"
