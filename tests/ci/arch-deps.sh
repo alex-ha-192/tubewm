@@ -14,6 +14,8 @@ lint=(shellcheck python-pyflakes git)
 pacman -Syu --noconfirm --needed "${desktop[@]}" "${session[@]}" "${apps[@]}" "${lint[@]}"
 
 echo "versions:"
-for c in sway foot waybar fuzzel mako swaylock tmux nvim mpv kitty hx shellcheck python3; do
-    printf '  %-10s %s\n' "$c" "$($c --version 2>&1 | head -n1 || $c -V 2>&1 | head -n1)"
+for c in foot waybar fuzzel swaylock nvim mpv kitty helix shellcheck python3; do
+    printf '  %-10s %s\n' "$c" "$($c --version 2>&1 | grep -m1 -E '[0-9]+\.[0-9]+')"
 done
+printf '  %-10s %s\n' tmux "$(tmux -V)"
+pacman -Q sway mako gtk3 gtk4 | sed 's/^/  /'

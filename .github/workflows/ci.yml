@@ -30,6 +30,9 @@ jobs:
     timeout-minutes: 30
     container:
       image: archlinux:latest
+      # Arch's sway binary carries cap_sys_nice; without it in the bounding
+      # set, exec fails with "Operation not permitted".
+      options: --cap-add SYS_NICE
     steps:
       - name: git (so checkout keeps .git)
         run: pacman -Syu --noconfirm --needed git

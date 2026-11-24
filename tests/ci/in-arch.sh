@@ -8,6 +8,6 @@ set -euo pipefail
 repo=$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)
 engine=$(command -v podman || command -v docker) || { echo "need podman or docker" >&2; exit 1; }
 check=${1:-run-all.sh}
-exec "$engine" run --rm -t -v "$repo:/src:ro" archlinux:latest bash -c "
+exec "$engine" run --rm -t --cap-add SYS_NICE -v "$repo:/src:ro" archlinux:latest bash -c "
     cp -r /src /repo && cd /repo &&
     tests/ci/arch-deps.sh >/dev/null && tests/ci/$check"

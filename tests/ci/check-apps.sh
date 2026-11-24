@@ -68,24 +68,27 @@ if have mpv; then
 else skip "mpv not installed"; fi
 
 if have kitty; then
-    out=$(run kitty --debug-config 2>&1); rc=$?
+    # kitty dropped --debug-config; load the config through kitty's own
+    # loader, which logs every line it ignores.
+    out=$(run kitty +runpy "from kitty.config import load_config; load_config('$C/kitty/kitty.conf')" 2>&1); rc=$?
     if printf '%s' "$out" | grep -qiE 'invalid|ignoring|unknown'; then
-        fail "kitty complains about its config:"; printf '%s\n' "$out" | grep -iE 'invalid|ignoring|unknown' | sed 's/^/        /'
+        fail "kitty complains about its config:"; printf '%s\n' "$out" | sed 's/^/        /'
     elif [ $rc = 0 ]; then
-        pass "kitty $(version_of kitty --version) reads kitty.conf + tubewm.conf without complaint"
+        pass "kitty $(version_of kitty --version) loads kitty.conf + tubewm.conf without complaint"
     else
-        warn "kitty --debug-config could not run here (exit $rc)"
+        warn "kitty's config loader could not run here (exit $rc): $(printf '%s' "$out" | tail -n1)"
     fi
 else skip "kitty not installed"; fi
 
-if have hx; then
-    # helix validates the theme named in config.toml when it loads it; a bad
-    # theme is reported by --health's config check on recent versions.
-    out=$(run hx --health 2>&1 | head -n 20)
+hx=$(command -v helix || command -v hx || true)
+if [ -n "$hx" ]; then
+    # helix loads config.toml and the theme it names at startup; --health
+    # reports a config or theme it can't load.
+    out=$(run "$hx" --health 2>&1 | head -n 20)
     if printf '%s' "$out" | grep -qiE 'error|failed'; then
         fail "helix reports a config problem:"; printf '%s\n' "$out" | sed 's/^/        /'
     else
-        pass "helix $(version_of hx --version) health check is clean"
+        pass "helix $(version_of "$hx" --version) health check is clean"
     fi
 else skip "helix not installed"; fi
 
