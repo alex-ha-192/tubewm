@@ -106,10 +106,12 @@ Start is a grid of tiles on the left and every installed app on the right.
   choose *pin to start*. Pinned apps have a small pin mark.
 * **Move a tile:** drag it. Dropping it on another tile takes that tile's place;
   dropping it in a gap puts it there. `Alt+Arrows` moves the focused tile.
-* **Change a tile:** right-click it, or press and hold on a touchscreen. The menu
-  has *size* (small, medium, wide, large, whichever the tile supports),
-  *colour* (accent, dark, or one of the palette accents), *set up…* for tiles
-  with options, *move earlier / later* and *unpin*.
+* **Open a live tile:** click it. Its detail panel slides in from the right
+  (music controls, the month, the forecast, your notifications, open windows…).
+  The back arrow, `Esc` or a click on the tiles closes it again.
+* **Change a tile:** right-click it. The menu has *size* (small, medium, wide,
+  large, whichever the tile supports), *colour* (accent, dark, or one of the
+  palette accents), *set up…* for tiles with options, and *unpin*.
 * **Add a live tile:** press the **+** under your tiles and pick one.
 * **Start over:** `tube-start --reset`, or the link in the settings flyout.
 
@@ -124,7 +126,7 @@ skipped. A `start.toml` from an older tubewm is converted the first time.
 | clock | the time and date | |
 | calendar | today, or the month at large size | |
 | weather | temperature and conditions from wttr.in, every 30 minutes | place |
-| music | what's playing, with album art (any MPRIS player); click to play / pause | |
+| music | what's playing, with album art (any MPRIS player); click for play, pause, skip | |
 | photos | random pictures from a folder, turning over | folder |
 | messages | your latest notifications | |
 | recent | files you opened recently | |

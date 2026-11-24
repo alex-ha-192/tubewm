@@ -215,6 +215,8 @@ def run_detached(cmd):
     if not cmd:
         return
     if os.environ.get("SWAYSOCK") and shutil.which("swaymsg"):
+        # sway runs it with sway's own PATH, so hand ours along.
+        cmd = "PATH=%s; %s" % (shlex.quote(os.environ.get("PATH", "")), cmd)
         subprocess.Popen(["swaymsg", "exec", "--", cmd],
                          stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
     else:
