@@ -3,6 +3,7 @@
 #   tube-osd volume up|down|mute
 #   tube-osd mic mute
 #   tube-osd brightness up|down
+PATH="$(dirname "$(readlink -f "$0")"):$PATH"  # find the other tube-* commands
 set -u
 step=${TUBE_OSD_STEP:-5}
 idfile=${XDG_RUNTIME_DIR:-/tmp}/tube-osd.id
