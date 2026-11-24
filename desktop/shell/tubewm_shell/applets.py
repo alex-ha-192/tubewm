@@ -10,7 +10,6 @@ import datetime
 import json
 import os
 import re
-import subprocess
 import urllib.parse
 
 from gi.repository import GLib, Gtk, Pango

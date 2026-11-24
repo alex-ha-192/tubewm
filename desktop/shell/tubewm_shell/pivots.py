@@ -13,7 +13,6 @@ rewrites ~/.config/wayfire.ini (Wayfire reloads it by itself).
 
 import argparse
 import configparser
-import io
 import os
 import re
 import sys
