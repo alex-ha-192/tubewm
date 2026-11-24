@@ -25,11 +25,13 @@ DATA = os.environ.get("XDG_DATA_HOME", os.path.join(HOME, ".local", "share"))
 TUBEWM_HOME = os.environ.get("TUBEWM_HOME", os.path.join(DATA, "tubewm"))
 RUNTIME = os.environ.get("XDG_RUNTIME_DIR", "/tmp")
 SHELL_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-# tubewm's own commands (tube-lock, tube-charms…) live beside the shell, so
-# they work even when ~/.local/bin isn't on PATH.
 BIN_DIR = os.path.normpath(os.path.join(SHELL_DIR, "..", "bin"))
-if os.path.isdir(BIN_DIR) and BIN_DIR not in os.environ.get("PATH", "").split(":"):
-    os.environ["PATH"] = BIN_DIR + ":" + os.environ.get("PATH", "/usr/bin:/bin")
+
+# Sway started from a display manager often has no ~/.local/bin on its PATH
+# (Arch and its derivatives don't add it), so make sure the other tube-*
+# commands are found from here whatever PATH we were given.
+if BIN_DIR not in os.environ.get("PATH", "").split(os.pathsep):
+    os.environ["PATH"] = BIN_DIR + os.pathsep + os.environ.get("PATH", "/usr/bin:/bin")
 
 PALETTE_DEFAULTS = {
     "BG": "#000000",

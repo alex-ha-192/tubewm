@@ -1,0 +1,58 @@
+#!/bin/sh
+# tubewm-session: start the tubewm desktop from a login screen or a console.
+#
+#   tubewm-session            Sway (the default)
+#   tubewm-session wayfire    Wayfire
+#
+# Installed to /usr/local/bin by ./install.sh and named in the "tubewm" entry
+# on the login screen. It sets up what a login screen doesn't: ~/.local/bin
+# on PATH, the keyboard layout you picked, the Wayland hints apps look for,
+# and a log of the session in ~/.local/state/tubewm/session.log.
+
+comp=${1:-sway}
+[ $# -gt 0 ] && shift
+
+case ":$PATH:" in
+    *":$HOME/.local/bin:"*) ;;
+    *) PATH="$HOME/.local/bin:$PATH" ;;
+esac
+export PATH
+
+# The layout picked in the installer or the welcome (tube-keyboard writes it).
+kb=${XDG_CONFIG_HOME:-$HOME/.config}/tubewm/keyboard
+if [ -r "$kb" ]; then
+    # shellcheck disable=SC1090
+    . "$kb"
+    [ -n "${XKB_LAYOUT:-}" ] && export XKB_DEFAULT_LAYOUT="$XKB_LAYOUT"
+    [ -n "${XKB_VARIANT:-}" ] && export XKB_DEFAULT_VARIANT="$XKB_VARIANT"
+    [ -n "${XKB_OPTIONS:-}" ] && export XKB_DEFAULT_OPTIONS="$XKB_OPTIONS"
+fi
+
+export XDG_SESSION_TYPE=wayland
+export XDG_CURRENT_DESKTOP="$comp" XDG_SESSION_DESKTOP="$comp"
+export MOZ_ENABLE_WAYLAND=1
+export QT_QPA_PLATFORM="wayland;xcb"
+export ELECTRON_OZONE_PLATFORM_HINT=auto
+export _JAVA_AWT_WM_NONREPARENTING=1
+if [ -z "${QT_QPA_PLATFORMTHEME:-}" ]; then
+    if command -v qt6ct >/dev/null 2>&1 || command -v qt5ct >/dev/null 2>&1; then
+        export QT_QPA_PLATFORMTHEME=qt5ct
+    fi
+fi
+
+state=${XDG_STATE_HOME:-$HOME/.local/state}/tubewm
+mkdir -p "$state"
+log=$state/session.log
+[ -f "$log" ] && mv -f "$log" "$log.old"
+
+case $comp in
+    sway)
+        # The NVIDIA driver works with wlroots but sway refuses it without this.
+        [ -d /sys/module/nvidia ] && set -- --unsupported-gpu "$@"
+        exec sway "$@" >"$log" 2>&1 ;;
+    wayfire)
+        exec wayfire "$@" >"$log" 2>&1 ;;
+    *)
+        echo "tubewm-session: unknown compositor '$comp' (use sway or wayfire)" >&2
+        exit 2 ;;
+esac

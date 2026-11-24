@@ -36,15 +36,20 @@ artwork.
 ```sh
 git clone https://github.com/alex-ha-192/tubewm
 cd tubewm
-desktop/install.sh --deps          # --deps installs packages with apt, pacman, dnf or zypper
+./install.sh
 ```
 
-Then log into a sway session (or `swaymsg reload` if you're already in one).
+The installer at the top of the repository sets up everything, including the
+packages, your keyboard layout and a **tubewm** entry on the sign-in screen;
+see the main [README](../README.md#installation). Underneath it runs
+`desktop/install.sh`, which only touches your home folder and can be used on
+its own (`--deps` fetches the packages too):
 
 * Everything goes into your home directory: the scripts to `~/.local/share/tubewm`
   with links in `~/.local/bin` (make sure that's on your `PATH`), configs to `~/.config`.
 * Every config file it replaces is copied to `~/.config/tubewm/backup/<date>/` first.
-* `desktop/install.sh --uninstall` removes it and restores the most recent backup.
+* `desktop/install.sh --uninstall` removes it and puts back the configs you had before tubewm
+  (kept in `~/.config/tubewm/backup/original/` by the first install).
 * `--no-gsettings` leaves your GTK settings alone; `--accent teal` picks an accent.
 * Re-run the installer after `git pull` to update. Your start tiles, accent and wallpaper are kept.
 
@@ -165,17 +170,20 @@ Generated files (the ones with colours in them) carry a "do not edit" header;
 
 ```
 desktop/
-  install.sh            installer / updater / uninstaller
+  install.sh            home-folder installer / updater / uninstaller (../install.sh wraps it)
   config/               installed once, then yours to edit
     sway/config
+    sway/config.d/20-tubewm-laptop.conf   managed: lid, power button, first-login welcome
     waybar/config.jsonc, waybar/style.css
+  session/              the tubewm-session launcher and the sign-in screen entries
   templates/            rendered with the palette into ~/.config on every accent change
     sway/tubewm-colors, waybar/tubewm.css, mako/config, fuzzel/fuzzel.ini,
     foot/foot.ini, swaylock/config, gtklock/style.css, gtk-3.0/gtk.css, gtk-4.0/gtk.css
   bin/                  tube-* commands (bash, plus two Python entry points)
   shell/                the start screen, charms and wallpapers (Python, GTK 3, gtk-layer-shell, cairo)
     style.css           their stylesheet; colours are filled in at start-up
-    tubewm_shell/       start.py, layout.py, tiles.py, charms.py, wallpaper.py, glyphs.py, common.py
+    tubewm_shell/       start.py, layout.py, tiles.py, charms.py, wallpaper.py, glyphs.py, common.py,
+                        welcome.py (first login), keyboard.py (tube-keyboard)
   start/default.toml    the start layout new users get
 ../palette/             shared colours (also read by the apps/ themes)
 ```

@@ -1,0 +1,16 @@
+#!/usr/bin/env python3
+"""tube-welcome: see desktop/shell/tubewm_shell/welcome.py."""
+import os
+import sys
+
+here = os.path.dirname(os.path.realpath(__file__))
+for path in (os.path.join(here, "..", "shell"),
+             os.path.join(os.environ.get("XDG_DATA_HOME", os.path.expanduser("~/.local/share")),
+                          "tubewm", "desktop", "shell")):
+    if os.path.isdir(os.path.join(path, "tubewm_shell")):
+        sys.path.insert(0, os.path.abspath(path))
+        break
+
+from tubewm_shell.welcome import main  # noqa: E402
+
+sys.exit(main())

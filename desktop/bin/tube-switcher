@@ -1,5 +1,6 @@
 #!/usr/bin/env bash
 # tube-switcher: pick any open window (all workspaces) and jump to it.
+PATH="$(dirname "$(readlink -f "$0")"):$PATH"  # find the other tube-* commands
 set -euo pipefail
 
 list=$(swaymsg -t get_tree | jq -r '

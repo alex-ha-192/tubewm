@@ -10,6 +10,7 @@
 # Writes ~/.config/tubewm/accent, re-renders the configs, reloads sway,
 # waybar and mako, then runs every executable in ~/.config/tubewm/accent.d/
 # with the new colour as $1 (app themes hook in there).
+PATH="$(dirname "$(readlink -f "$0")"):$PATH"  # find the other tube-* commands
 set -euo pipefail
 
 TUBEWM_HOME=${TUBEWM_HOME:-${XDG_DATA_HOME:-$HOME/.local/share}/tubewm}

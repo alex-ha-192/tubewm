@@ -5,11 +5,15 @@
 #   desktop/install.sh --deps          also install the packages it needs (sudo)
 #   desktop/install.sh --accent teal   pick the accent at the same time
 #   desktop/install.sh --no-gsettings  leave GTK / GNOME settings alone
-#   desktop/install.sh --uninstall     remove tubewm and restore the last backup
+#   desktop/install.sh --uninstall     remove tubewm and put your old configs back
+#
+# Most people want ./install.sh at the top of the repository instead, which
+# runs this and also sets up the login screen and keyboard.
 #
 # Nothing is installed system-wide except packages with --deps. Every config
 # file that would be replaced is first copied to
-# ~/.config/tubewm/backup/<date>/.
+# ~/.config/tubewm/backup/<date>/, and the very first install also keeps
+# ~/.config/tubewm/backup/original/, which --uninstall puts back.
 set -euo pipefail
 
 REPO=$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)
@@ -28,7 +32,7 @@ while [ $# -gt 0 ]; do
         --no-gsettings) gsettings_ok=0 ;;
         --accent) accent=${2:?--accent needs a name or #hex}; shift ;;
         --uninstall) uninstall=1 ;;
-        -h|--help) sed -n '2,12p' "$0" | sed 's/^# \{0,1\}//'; exit 0 ;;
+        -h|--help) sed -n '2,16p' "$0" | sed 's/^# \{0,1\}//'; exit 0 ;;
         *) echo "install.sh: unknown option $1" >&2; exit 2 ;;
     esac
     shift
@@ -37,7 +41,18 @@ done
 say()  { printf '\033[1m%s\033[0m\n' "$*"; }
 note() { printf '  %s\n' "$*"; }
 
-BINARIES=(tube-accent tube-charms tube-lock tube-osd tube-render tube-share tube-snap tube-start tube-switcher tube-wallpaper)
+# Every command in desktop/bin, so new ones are linked without editing this.
+BINARIES=()
+for b in "$REPO"/desktop/bin/*; do
+    [ -f "$b" ] && [ -x "$b" ] && BINARIES+=("$(basename "$b")")
+done
+
+# Managed snippets for sway: replaced on every update, removed on uninstall.
+MANAGED=()
+for f in "$REPO"/desktop/config/sway/config.d/*.conf; do
+    [ -f "$f" ] && MANAGED+=("sway/config.d/$(basename "$f")")
+done
+ORIGINAL=$BACKUPS/original
 
 # Static configs: installed once, yours to edit afterwards.
 STATIC=(sway/config waybar/config.jsonc waybar/style.css)
@@ -45,25 +60,47 @@ STATIC=(sway/config waybar/config.jsonc waybar/style.css)
 # ── uninstall ────────────────────────────────────────────────────────────
 if [ "$uninstall" = 1 ]; then
     say "Removing tubewm"
-    for b in "${BINARIES[@]}"; do
-        [ -L "$BIN/$b" ] && rm -f "$BIN/$b"
+    # Links into our install, whatever their name (older installs had fewer).
+    for l in "$BIN"/tube-*; do
+        [ -L "$l" ] && case $(readlink "$l") in "$DEST"/*) rm -f "$l" ;; esac
     done
     rm -rf "$DEST"
-    last=$(ls -1d "$BACKUPS"/*/ 2>/dev/null | tail -n1 || true)
-    if [ -n "$last" ]; then
-        note "restoring configs from $last"
-        (cd "$last" && find . -type f ! -name gsettings.txt -print0) | while IFS= read -r -d '' f; do
+    for rel in "${MANAGED[@]}" sway/config.d/10-tubewm-keyboard.conf sway/config.d/50-tubewm-wallpaper.conf; do
+        rm -f "$CONFIG/$rel"
+    done
+    # Put back what was there before tubewm: the original backup if there is
+    # one, else the oldest dated backup (installs from before 'original').
+    src=$ORIGINAL
+    [ -d "$src" ] || src=$(ls -1d "$BACKUPS"/2*/ 2>/dev/null | head -n1 || true)
+    src=${src%/}
+    if [ -n "$src" ] && [ -d "$src" ]; then
+        note "restoring configs from $src"
+        (cd "$src" && find . -type f ! -name gsettings.txt ! -name created.txt -print0) | while IFS= read -r -d '' f; do
+            f=${f#./}
             mkdir -p "$CONFIG/$(dirname "$f")"
-            cp -f "$last/$f" "$CONFIG/$f"
+            cp -f "$src/$f" "$CONFIG/$f"
         done
-        if [ -f "$last/gsettings.txt" ] && command -v gsettings >/dev/null; then
+        # Files tubewm created where there was nothing before.
+        if [ -f "$src/created.txt" ]; then
+            while IFS= read -r f; do
+                [ -n "$f" ] && rm -f "$CONFIG/$f"
+            done < "$src/created.txt"
+        fi
+        if [ -f "$src/gsettings.txt" ] && command -v gsettings >/dev/null; then
             while read -r schema key value; do
                 gsettings set "$schema" "$key" "$value" 2>/dev/null || true
-            done < "$last/gsettings.txt"
+            done < "$src/gsettings.txt"
         fi
     else
         note "no backup found; generated configs in $CONFIG were left in place"
     fi
+    # Empty include files tube-render made for you, and folders left empty.
+    for f in gtk-3.0/user.css gtk-4.0/user.css foot/local.ini; do
+        [ -f "$CONFIG/$f" ] && [ ! -s "$CONFIG/$f" ] && rm -f "$CONFIG/$f"
+    done
+    for d in sway/config.d sway waybar/icons waybar mako fuzzel foot swaylock gtklock gtk-3.0 gtk-4.0; do
+        rmdir "$CONFIG/$d" 2>/dev/null || true
+    done
     note "kept ~/.config/tubewm (start tiles, accent, backups)"
     exit 0
 fi
@@ -71,25 +108,7 @@ fi
 # ── packages ─────────────────────────────────────────────────────────────
 if [ "$deps" = 1 ]; then
     say "Installing packages"
-    if command -v apt-get >/dev/null; then
-        sudo apt-get install -y sway swaybg swayidle swaylock waybar fuzzel mako-notifier foot \
-            grim slurp wl-clipboard jq playerctl brightnessctl libnotify-bin wireplumber \
-            python3-gi python3-gi-cairo gir1.2-gtk-3.0 gir1.2-gtklayershell-0.1 fonts-open-sans
-    elif command -v pacman >/dev/null; then
-        sudo pacman -S --needed sway swaybg swayidle swaylock waybar fuzzel mako foot \
-            grim slurp wl-clipboard jq playerctl brightnessctl libnotify wireplumber \
-            python-gobject python-cairo gtk3 gtk-layer-shell ttf-opensans
-    elif command -v dnf >/dev/null; then
-        sudo dnf install -y sway swaybg swayidle swaylock waybar fuzzel mako foot \
-            grim slurp wl-clipboard jq playerctl brightnessctl libnotify wireplumber \
-            python3-gobject python3-cairo gtk3 gtk-layer-shell open-sans-fonts
-    elif command -v zypper >/dev/null; then
-        sudo zypper install -y sway swaybg swayidle swaylock waybar fuzzel mako foot \
-            grim slurp wl-clipboard jq playerctl brightnessctl libnotify-tools wireplumber \
-            python3-gobject-Gdk python3-gobject-cairo typelib-1_0-GtkLayerShell-0_1 open-sans-fonts
-    else
-        note "unknown package manager; install the packages listed in desktop/README.md yourself"
-    fi
+    "$REPO/install.sh" --packages-only
 fi
 
 # ── checks ───────────────────────────────────────────────────────────────
@@ -110,8 +129,21 @@ else
 fi
 
 # ── files ────────────────────────────────────────────────────────────────
+# The first install keeps what was there before tubewm in backup/original,
+# including a list of the files that didn't exist yet, for --uninstall.
+first_install=0
+[ -d "$ORIGINAL" ] || [ -d "$DEST" ] || first_install=1
 backup() { # path relative to $CONFIG
     local f=$CONFIG/$1
+    if [ "$first_install" = 1 ]; then
+        mkdir -p "$ORIGINAL"
+        if [ -e "$f" ]; then
+            mkdir -p "$ORIGINAL/$(dirname "$1")"
+            [ -e "$ORIGINAL/$1" ] || cp -a "$f" "$ORIGINAL/$1"
+        else
+            grep -qxF "$1" "$ORIGINAL/created.txt" 2>/dev/null || echo "$1" >> "$ORIGINAL/created.txt"
+        fi
+    fi
     [ -e "$f" ] || return 0
     mkdir -p "$BACKUP/$(dirname "$1")"
     cp -a "$f" "$BACKUP/$1"
@@ -156,6 +188,13 @@ fi
 (cd "$REPO/desktop/templates" && find . -type f | sed 's|^\./||') | while read -r rel; do
     backup "$rel"
 done
+# Wayfire's config is rendered too, when this checkout has it.
+[ -d "$REPO/desktop/wayfire" ] && backup wayfire.ini
+for rel in "${MANAGED[@]}"; do
+    backup "$rel"
+    mkdir -p "$CONFIG/$(dirname "$rel")"
+    cp "$REPO/desktop/config/$rel" "$CONFIG/$rel"
+done
 mkdir -p "$CONFIG/sway/config.d" "$CONFIG/tubewm/accent.d"
 
 if [ -n "$accent" ]; then
@@ -175,6 +214,13 @@ if [ "$gsettings_ok" = 1 ] && command -v gsettings >/dev/null \
         && gsettings list-schemas 2>/dev/null | grep -x org.gnome.desktop.interface >/dev/null; then
     say "Setting GTK preferences (dark, Open Sans, no title bar buttons)"
     mkdir -p "$BACKUP"
+    if [ "$first_install" = 1 ]; then
+        for kv in "org.gnome.desktop.interface color-scheme" "org.gnome.desktop.interface font-name" \
+                  "org.gnome.desktop.interface gtk-theme" "org.gnome.desktop.wm.preferences button-layout"; do
+            # shellcheck disable=SC2086
+            printf '%s %s\n' "$kv" "$(gsettings get $kv 2>/dev/null)" >> "$ORIGINAL/gsettings.txt" || true
+        done
+    fi
     for kv in "org.gnome.desktop.interface color-scheme" "org.gnome.desktop.interface font-name" \
               "org.gnome.desktop.interface gtk-theme" "org.gnome.desktop.wm.preferences button-layout"; do
         # shellcheck disable=SC2086
@@ -189,6 +235,7 @@ fi
 [ -d "$BACKUP" ] || note "nothing needed backing up"
 
 say "Done"
+[ -n "${TUBEWM_FROM_INSTALLER:-}" ] && exit 0
 note "Log into sway (or run 'swaymsg reload' if it is already running)."
 note "Super+S start · Super+C charms · Super+Tab switch · Super+, / Super+. snap"
 note "Change the accent any time: tube-accent list"
