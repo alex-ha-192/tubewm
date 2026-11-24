@@ -57,13 +57,13 @@
 										<property name="name">avatar-label</property>
 										<property name="width-request">44</property>
 										<property name="height-request">44</property>
-										<property name="label">@INITIAL@</property>
+										<property name="label">{{INITIAL}}</property>
 									</object>
 								</child>
 								<child>
 									<object class="GtkLabel" id="user-label">
 										<property name="name">user-label</property>
-										<property name="label">@USERNAME@</property>
+										<property name="label">{{USERNAME}}</property>
 									</object>
 								</child>
 							</object>
@@ -161,7 +161,7 @@
 									<object class="GtkLabel" id="keyboard-label">
 										<property name="name">keyboard-label</property>
 										<property name="halign">start</property>
-										<property name="label">@KEYBOARD@</property>
+										<property name="label">{{KEYBOARD}}</property>
 									</object>
 								</child>
 							</object>

@@ -21,6 +21,14 @@ else
 fi
 printf '%s\n' "$out" | sed 's/^/        /'
 
+# tube-wayfire-config reads its template from the installed copy, so a fresh
+# install must carry it even though CI has no Wayfire to render it with.
+if [ -f "$SANDBOX_HOME/.local/share/tubewm/desktop/wayfire/wayfire.ini.in" ]; then
+    pass "the Wayfire template was installed"
+else
+    fail "install.sh did not copy desktop/wayfire (tube-wayfire-config needs wayfire.ini.in)"
+fi
+
 check_render() { # check_render LABEL
     local label=$1 f out
 
