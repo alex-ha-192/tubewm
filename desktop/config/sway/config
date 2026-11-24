@@ -105,6 +105,7 @@ bindsym $mod+l exec $tubebin/tube-lock
 bindsym $mod+z exec pkill -SIGUSR1 waybar
 bindsym $mod+Tab exec $tubebin/tube-switcher
 bindsym $mod+Shift+e exec $tubebin/tube-charms --power
+bindsym $mod+Shift+c reload
 
 # Uncomment to open start by tapping the Super key on its own.
 # bindsym --release Super_L exec $tubebin/tube-start
