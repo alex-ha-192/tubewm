@@ -187,24 +187,19 @@ def fullscreen(win_id, state=True):
         _sway("[con_id=%d] fullscreen %s" % (win_id, "enable" if state else "disable"))
 
 
+GRID_SLOTS = {"left": "l", "right": "r", "top-left": "tl", "top-right": "tr",
+              "bottom-left": "bl", "bottom-right": "br", "max": "c"}
+# wlroots edge bits: top 1, bottom 2, left 4, right 8.
+HALF_EDGES = {7: "left", 11: "right"}
+OPPOSITE = {"left": "right", "right": "left"}
+
+
 def snap(win_id, zone):
     """zone: left, right, top-left, top-right, bottom-left, bottom-right, max."""
     if WAYFIRE:
-        o = _focused_output()
-        if not o:
-            return
-        a = o.get("workarea") or o.get("geometry")
-        x, y, w, h = a["x"], a["y"], a["width"], a["height"]
-        half_w, half_h = w // 2, h // 2
-        geo = {
-            "left": (x, y, half_w, h), "right": (x + half_w, y, w - half_w, h),
-            "top-left": (x, y, half_w, half_h), "top-right": (x + half_w, y, w - half_w, half_h),
-            "bottom-left": (x, y + half_h, half_w, h - half_h),
-            "bottom-right": (x + half_w, y + half_h, w - half_w, h - half_h),
-            "max": (x, y, w, h),
-        }[zone]
-        _try(lambda: _wf("window-rules/configure-view", {
-            "id": win_id, "geometry": dict(zip(("x", "y", "width", "height"), geo))}))
+        # Through the grid plugin, so the window is properly tiled (and
+        # animates), and the desktops daemon hears about it and pairs it.
+        _try(lambda: _wf("grid/slot_" + GRID_SLOTS[zone], {"view_id": win_id}))
     elif SWAY:
         side = "left" if "left" in zone else "right" if "right" in zone else None
         if zone == "max":
@@ -212,6 +207,36 @@ def snap(win_id, zone):
         elif side:
             _sway("[con_id=%d] focus" % win_id)
             subprocess.run(["tube-snap", side], check=False)
+
+
+def pair(view):
+    """A window was just snapped to half the screen: put the window you used
+    before it on the same desktop into the other half, so the two share the
+    screen. `view` is Wayfire's description of the snapped window."""
+    side = HALF_EDGES.get(view.get("tiled-edges"))
+    if not WAYFIRE or not side:
+        return None
+    try:
+        views = _wf("window-rules/list-views")
+    except (OSError, WayfireError):
+        return None
+    outs = {o["id"]: o for o in _wf_outputs()}
+    out = outs.get(view.get("output-id"))
+    here = _wf_view_workspace(view, out)
+    others = [v for v in views
+              if v.get("id") != view.get("id") and v.get("role") == "toplevel"
+              and v.get("mapped") and v.get("parent", -1) == -1
+              and v.get("layer") in ("workspace", None)
+              and not v.get("minimized") and not v.get("fullscreen")
+              and v.get("output-id") == view.get("output-id")
+              and _wf_view_workspace(v, out) == here]
+    if not others:
+        return None
+    partner = max(others, key=lambda v: v.get("last-focus-timestamp", 0))
+    if HALF_EDGES.get(partner.get("tiled-edges")) == OPPOSITE[side]:
+        return None  # already sharing
+    snap(partner["id"], OPPOSITE[side])
+    return partner["id"]
 
 
 # ── pivots (workspaces) ────────────────────────────────────────────────────

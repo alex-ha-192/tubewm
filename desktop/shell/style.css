@@ -266,8 +266,7 @@ button.applet-button.icon-button.transport.main:hover { background: alpha(#FFFFF
 .tube-popup {
     background-color: @tube_surface;
     min-width: 260px;
-    padding: 8px 0;
-    box-shadow: 0 16px 40px rgba(0, 0, 0, 0.6);
+    padding: 12px 0;
 }
 .tube-popup-entry {
     margin: 4px 12px 8px;
@@ -283,15 +282,17 @@ button.applet-button.icon-button.transport.main:hover { background: alpha(#FFFFF
 .tube-popup-entry:focus { border-color: @tube_accent; }
 .tube-popup-item {
     min-height: 40px;
-    padding: 0 20px;
+    padding: 0 28px 0 24px;
     border-radius: 0;
-    font-size: 15px;
+    font-size: 20px;
+    font-weight: 300;
     color: @tube_fg;
     background: none;
     border: none;
     box-shadow: none;
 }
-.tube-popup-item:hover { background-color: @tube_accent; }
+.tube-popup-item:hover { background: none; }
+.tube-popup-item:hover label { color: @tube_accent_light; }
 .tube-popup-item:disabled label { color: @tube_subtle; }
 .tube-popup-rule { margin: 6px 0; background-color: @tube_surface_hi; min-height: 1px; }
 .tube-popup-hint { padding: 0 20px 6px; font-size: 12px; color: @tube_subtle; }
@@ -319,3 +320,44 @@ window.pano { background-color: @tube_bg; }
 .pano-search { font-size: 38px; font-weight: 300; color: @tube_fg; background: none; border: none;
                border-bottom: 2px solid @tube_accent; box-shadow: none; border-radius: 0;
                padding: 4px 0; margin-bottom: 18px; min-width: 600px; }
+
+/* ── the strip along the top ────────────────────────────────────────────── */
+window.strip { background-color: @tube_bg; }
+.strip-row { min-height: 40px; }
+.strip-start { min-width: 14px; min-height: 14px; padding: 0; margin: 0 16px 0 24px;
+               background: @tube_accent; border: none; border-radius: 0; box-shadow: none; }
+.strip-start:hover { background: @tube_accent_light; }
+.strip-desk, .strip-clock, .strip-word {
+    font-size: 20px; font-weight: 300; padding: 0 11px; min-height: 40px;
+    color: @tube_subtle; background: none; border: none; border-radius: 0; box-shadow: none;
+}
+.strip-desk:hover, .strip-word:hover { color: @tube_fg; }
+.strip-desk.current { color: @tube_fg; }
+.strip-clock { color: @tube_fg; padding: 0 24px 0 12px; }
+.strip-word { font-size: 15px; font-weight: 400; color: @tube_fg; }
+.strip-handle { padding-left: 28px; }
+.strip-title { font-size: 15px; color: #B0B0B0; }
+
+/* ── status: the panel behind the time ──────────────────────────────────── */
+.status { background-color: @tube_bg; }
+.status-box { padding: 22px 48px 32px 48px; }
+.status-time { font-size: 120px; font-weight: 300; color: @tube_fg; letter-spacing: -3px; }
+.status-date { font-size: 24px; font-weight: 300; color: #B0B0B0; margin-bottom: 40px; }
+.status-name, .status-value { font-size: 20px; font-weight: 300; color: @tube_fg; }
+.status-value { color: #B0B0B0; }
+.status-row-button { padding: 0; margin: 0; background: none; border: none; box-shadow: none; min-height: 0; }
+.status-row-button:hover .status-name { color: @tube_accent_light; }
+.status-line { padding: 0; margin: 0; }
+.status-line trough { min-height: 2px; background-color: @tube_surface_hi; border: none; border-radius: 0; }
+.status-line highlight { min-height: 4px; margin: -1px 0; background-color: @tube_accent; border: none; border-radius: 0; }
+.status-line slider { min-width: 10px; min-height: 22px; margin: -10px 0; background-color: @tube_fg;
+                      border: none; border-radius: 0; box-shadow: none; }
+.status-notes-head { margin-top: 44px; margin-bottom: 10px; }
+.status-header { font-size: 32px; font-weight: 300; color: @tube_fg; }
+.status-note { margin-bottom: 14px; }
+.status-note-title { font-size: 16px; font-weight: 600; color: @tube_fg; }
+.status-note-body { font-size: 16px; color: #B0B0B0; }
+.status-word { font-size: 18px; font-weight: 300; color: @tube_fg; padding: 0; min-height: 0;
+               background: none; border: none; box-shadow: none; }
+.status-word:hover label { color: @tube_accent_light; }
+.status-small { font-size: 15px; }
