@@ -21,17 +21,25 @@ else
 fi
 printf '%s\n' "$out" | sed 's/^/        /'
 
+# The placeholders tube-render fills: @NAME@ and @NAME_RAW@ for each name
+# in its names=(...) list.
+palette_names=$(sed -n 's/^names=(\(.*\))$/\1/p' "$REPO/desktop/bin/tube-render" | tr ' ' '|')
+[ -n "$palette_names" ] || palette_names='[A-Z][A-Z0-9_]*'
+palette_re="@($palette_names)(_RAW)?@"
+
 check_render() { # check_render LABEL
     local label=$1 f out
 
     section "configs rendered for $label"
 
-    # Every template became a file, with no @PLACEHOLDER@ left behind.
+    # Every template became a file, with none of tube-render's palette
+    # placeholders left behind. Others (gtklock's @USERNAME@, filled in by
+    # tube-lock at lock time) are not tube-render's to fill.
     while IFS= read -r rel; do
         f=$C/$rel
         if [ ! -f "$f" ]; then fail "$rel was not written"; continue; fi
-        if grep -nE '@[A-Z][A-Z0-9_]*@' "$f" >/dev/null; then
-            fail "$rel has unfilled placeholders: $(grep -noE '@[A-Z][A-Z0-9_]*@' "$f" | head -n3 | tr '\n' ' ')"
+        if grep -nE "$palette_re" "$f" >/dev/null; then
+            fail "$rel has unfilled palette placeholders: $(grep -noE "$palette_re" "$f" | head -n3 | tr '\n' ' ')"
         fi
     done < <(cd "$REPO/desktop/templates" && find . -type f | sed 's|^\./||' | sort)
 
