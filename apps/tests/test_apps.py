@@ -85,9 +85,11 @@ def test_greys_stay_readable(mode):
 def test_vivaldi_close_button_is_visible(tmp_path):
     vivaldi_build.build(tmp_path, None)
     css = (tmp_path / "css" / "tubewm-metro.css").read_text()
-    rule = css[css.rindex(".tab.active .close {"):]
+    rule = css[css.index(".tab.active .close,"):]
     assert "color: var(--tubewm-fg)" in rule.split("}")[0]
     assert "fill: currentColor" in css
+    # no rule may fade or hide the close button on the active tab
+    assert "opacity: 0" not in css
 
 
 def test_unknown_accent_is_an_error():
@@ -175,7 +177,7 @@ def test_vscode_install_roundtrip(tmp_path):
     assert r.returncode == 0, r.stderr
     ext = tmp_path / ".vscode" / "extensions" / "tubewm.tubewm-metro-0.1.0"
     dark = json.loads((ext / "themes" / "tubewm-metro-dark.json").read_text())
-    assert dark["colors"]["statusBar.background"] == P.accent_swatches()["lime"]
+    assert dark["colors"]["focusBorder"] == P.accent_swatches()["lime"]
     s = jsonc.load(user / "settings.json")
     assert s["workbench.colorTheme"] == "tubewm Metro Dark" and s["editor.fontSize"] == 12
     hook = tmp_path / ".config" / "tubewm" / "accent.d" / "50-vscode"
@@ -197,7 +199,7 @@ def test_vscode_hook_follows_accent_file(tmp_path):
     subprocess.run([str(cfg / "accent.d" / "50-vscode")], env=env, check=True)
     ext = tmp_path / ".vscode" / "extensions" / "tubewm.tubewm-metro-0.1.0"
     dark = json.loads((ext / "themes" / "tubewm-metro-dark.json").read_text())
-    assert dark["colors"]["statusBar.background"] == "#0078D7"
+    assert dark["colors"]["focusBorder"] == "#0078D7"
 
 
 def test_vscode_install_fails_cleanly_without_editor(tmp_path):
@@ -211,7 +213,7 @@ def test_vivaldi_css_has_no_placeholders(tmp_path):
     info = vivaldi_build.build(tmp_path, "orange")
     css = (tmp_path / "css" / "tubewm-metro.css").read_text()
     assert not re.search(r"@[A-Z_]+@", css)
-    assert f"--tubewm-accent: {info['accent']};" in css
+    assert f"var(--colorHighlightBg, {info['accent']})" in css
     with zipfile.ZipFile(tmp_path / "themes" / "tubewm-metro-dark.zip") as z:
         t = json.loads(z.read("settings.json"))
     assert t["colorHighlightBg"] == info["accent"] and t["radius"] == 0

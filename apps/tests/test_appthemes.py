@@ -22,9 +22,9 @@ TEMPLATES = sorted(p for p in APPS.rglob("*.in") if "vivaldi" not in p.parts)
 LEFTOVER = re.compile(r"@[A-Z][A-Z0-9_]*(\.[a-z]+)?@")
 
 
-def all_tokens(accent, mode):
+def all_tokens(accent, mode, status="plain"):
     pal = P.load(accent=accent)
-    toks = T.tokens(pal, mode)
+    toks = T.tokens(pal, mode, status)
     for m in ("dark", "light"):
         toks.update({f"{m.upper()}_{k}": v for k, v in T.tokens(pal, m).items()})
     return toks
@@ -67,9 +67,13 @@ def test_neovim_colorscheme_runs():
     L.execute("""groups = {}
       vim = { o = {}, g = {}, fn = { exists = function() return 0 end }, cmd = function() end,
               api = { nvim_set_hl = function(_, name, spec) groups[name] = spec end } }""")
-    L.execute(T.render((APPS / "neovim" / "tubewm.lua.in").read_text(), all_tokens("teal", "dark")))
+    src = (APPS / "neovim" / "tubewm.lua.in").read_text()
+    L.execute(T.render(src, all_tokens("teal", "dark", "accent")))
     g = L.globals()
     assert g.groups["StatusLine"]["bg"] == P.accent_swatches()["teal"]
+    L.execute(T.render(src, all_tokens("teal", "dark", "plain")))
+    assert g.groups["StatusLine"]["bg"] == "#000000"
+    assert g.groups["StatusLineEmphasis"]["fg"] == P.accent_swatches()["teal"]
     assert g.groups["Normal"]["bg"] == "#000000"
     assert g.vim.g["terminal_color_15"]
     assert g.vim.g.colors_name == "tubewm"

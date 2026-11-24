@@ -551,6 +551,8 @@ def main(argv=None) -> int:
     ap.add_argument("--skip", help="comma-separated app names to leave alone")
     ap.add_argument("--accent", help="accent name from palette/accents, or #RRGGBB")
     ap.add_argument("--light", action="store_true", help="use the light polarity")
+    ap.add_argument("--status-bar", choices=T.STATUS_STYLES, default="plain",
+                    help="status bars: plain black (default) or a solid accent strip")
     ap.add_argument("--force", action="store_true", help="install even where the app wasn't found")
     ap.add_argument("-q", "--quiet", action="store_true")
     a = ap.parse_args(argv)
@@ -580,9 +582,9 @@ def main(argv=None) -> int:
         print(f"appthemes: {e}", file=sys.stderr)
         return 2
     mode = "light" if a.light else "dark"
-    toks = T.tokens(pal, mode)
+    toks = T.tokens(pal, mode, a.status_bar)
     for m in ("dark", "light"):
-        toks.update({f"{m.upper()}_{k}": v for k, v in T.tokens(pal, m).items()})
+        toks.update({f"{m.upper()}_{k}": v for k, v in T.tokens(pal, m, a.status_bar).items()})
 
     notes, failed = [], []
     for app in apps:

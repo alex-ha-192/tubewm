@@ -23,7 +23,7 @@ tab_bar_edge            top
 tab_bar_style           separator
 tab_separator           "   "
 tab_bar_margin_width    12
-tab_title_template      "{title.lower()}"
+tab_title_template      "{title}"
 active_tab_foreground   @FG@
 active_tab_background   @BG@
 active_tab_font_style   bold

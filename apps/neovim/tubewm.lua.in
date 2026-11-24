@@ -21,7 +21,7 @@ local c = {
 
 local hl = function(group, spec) vim.api.nvim_set_hl(0, group, spec) end
 
--- editor chrome: black canvas, charcoal floats, accent status line --------
+-- editor chrome: black canvas, charcoal floats ----------------------------
 hl("Normal", { fg = c.fg, bg = c.bg })
 hl("NormalNC", { fg = c.fg, bg = c.bg })
 hl("NormalFloat", { fg = c.fg, bg = c.surface })
@@ -59,8 +59,9 @@ hl("ModeMsg", { fg = c.fg, bold = true })
 hl("MsgArea", { fg = c.fg })
 hl("ErrorMsg", { fg = c.error })
 hl("WarningMsg", { fg = c.warning })
-hl("StatusLine", { fg = c.on_accent, bg = c.accent })
-hl("StatusLineNC", { fg = c.subtle, bg = c.shell })
+hl("StatusLine", { fg = "@STATUS_FG@", bg = "@STATUS_BG@" })
+hl("StatusLineEmphasis", { fg = "@STATUS_EMPHASIS@", bg = "@STATUS_BG@", bold = true })
+hl("StatusLineNC", { fg = c.dim, bg = c.bg })
 hl("WinBar", { fg = c.fg, bg = c.bg })
 hl("WinBarNC", { fg = c.subtle, bg = c.bg })
 hl("TabLine", { fg = c.subtle, bg = c.bg })

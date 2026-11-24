@@ -1,83 +1,73 @@
 /*
  * tubewm Metro: optional VSCode workbench CSS.
  *
- * Colour themes cannot change fonts, corner radii or text case, so this file
- * finishes the look: Open Sans for the UI, square corners everywhere, no
- * shadows, and tabs / panel titles drawn as lowercase pivot headers.
+ * A colour theme cannot change fonts, corner radii or spacing, so this file
+ * finishes the look: Open Sans for the interface, square corners, no drop
+ * shadows on popups, and the side bar title and panel tabs drawn as Metro
+ * headers. File names and other content keep their own case.
  *
  * It needs a CSS loader extension, for example "Custom CSS and JS Loader"
  * (be5invis.vscode-custom-css). `install.sh --ui-css` adds this file to that
  * extension's imports; then run "Enable Custom CSS and JS" from the command
- * palette. VSCode will warn that the installation is "corrupt" afterwards:
- * that is expected when the workbench is patched, and is harmless.
+ * palette. VSCode then says the installation is "corrupt": that is expected
+ * when the workbench is patched, and is harmless.
  */
 
-/* --- type ----------------------------------------------------------------*/
+/* --- type: Open Sans everywhere except code -------------------------------*/
 .monaco-workbench,
 .monaco-workbench .part,
 .monaco-workbench .monaco-list,
 .monaco-workbench .quick-input-widget,
 .monaco-workbench .monaco-menu,
-.monaco-workbench .notifications-toasts {
+.monaco-workbench .notifications-toasts,
+.monaco-workbench .monaco-hover {
     font-family: "Open Sans", "Noto Sans", "DejaVu Sans", sans-serif !important;
 }
 
-/* --- geometry: 0px corners, no shadows -----------------------------------*/
-.monaco-workbench *,
-.monaco-workbench *::before,
-.monaco-workbench *::after {
+/* --- geometry: square corners; popups are flat sheets ---------------------*/
+.monaco-workbench * {
     border-radius: 0 !important;
+}
+.monaco-workbench .quick-input-widget,
+.monaco-workbench .suggest-widget,
+.monaco-workbench .monaco-hover,
+.monaco-workbench .monaco-menu-container,
+.monaco-workbench .notification-toast,
+.monaco-workbench .find-widget,
+.monaco-workbench .context-view {
     box-shadow: none !important;
 }
 
-/* --- pivots: lowercase, light, large-ish headers ---------------------------*/
+/* --- tabs: plain text, the active one marked by the accent underline -------*/
 .monaco-workbench .part.editor > .content .editor-group-container > .title .tabs-container > .tab {
-    text-transform: lowercase;
-    font-size: 15px;
-    font-weight: 300;
-    padding-left: 14px;
-    padding-right: 6px;
+    font-size: 13px;
+    padding-left: 16px;
+    padding-right: 8px;
 }
 .monaco-workbench .part.editor > .content .editor-group-container > .title .tabs-container > .tab.active {
-    font-weight: 400;
+    font-weight: 600;
 }
-.monaco-workbench .part > .title > .title-label h2,
-.monaco-workbench .pane-composite-part > .title > .title-label h2,
-.monaco-workbench .part.panel > .title > .composite-bar-container .action-item .action-label,
-.monaco-workbench .pane-composite-part > .header-or-footer .composite-bar .action-item .action-label {
-    text-transform: lowercase !important;
-    font-size: 15px !important;
+
+/* --- headers: the side bar title as a large light Metro header ------------*/
+.monaco-workbench .part.sidebar > .title > .title-label h2 {
+    font-size: 22px !important;
     font-weight: 300 !important;
+    text-transform: lowercase;
     letter-spacing: 0 !important;
+    line-height: 35px;
 }
 .monaco-workbench .pane-header h3.title {
-    text-transform: lowercase;
     font-weight: 600;
     letter-spacing: 0;
 }
-.monaco-workbench .sidebar > .title > .title-label h2 {
-    font-size: 24px !important;
-    font-weight: 300 !important;
-    line-height: 35px;
+.monaco-workbench .part.panel .composite-bar .action-item .action-label,
+.monaco-workbench .pane-composite-part > .header-or-footer .composite-bar .action-item .action-label {
+    text-transform: lowercase !important;
+    font-size: 14px !important;
+    letter-spacing: 0 !important;
 }
 
-/* --- quick input: a flat charcoal sheet with an accent top edge ------------*/
+/* --- the command palette gets an accent top edge, like a Metro flyout -----*/
 .monaco-workbench .quick-input-widget {
     border-top: 2px solid var(--vscode-focusBorder) !important;
-}
-
-/* --- motion: a short "tilt-in" for flyouts, like the phone OS menus --------*/
-@keyframes tubewm-turnstile {
-    from { opacity: 0; transform: perspective(600px) rotateY(-14deg) translateX(-12px); }
-    to   { opacity: 1; transform: none; }
-}
-.monaco-workbench .quick-input-widget,
-.monaco-workbench .monaco-menu-container,
-.monaco-workbench .suggest-widget,
-.monaco-workbench .notification-toast {
-    transform-origin: left center;
-    animation: tubewm-turnstile 180ms cubic-bezier(0.1, 0.9, 0.2, 1);
-}
-@media (prefers-reduced-motion: reduce) {
-    .monaco-workbench * { animation: none !important; }
 }

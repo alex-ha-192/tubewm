@@ -104,8 +104,6 @@ def polarity(palette: dict, mode: str) -> dict:
             "fg_disabled": g("TUBEWM_DIM", "#4A4A4A"),
         }
         roles["border"] = mix(roles["surface_alt"], roles["fg_disabled"], 0.4)
-        # the palette's DIM (#4A4A4A) is a hairline grey; as text it needs 3:1
-        roles["fg_disabled"] = readable(roles["fg_disabled"], roles["shell"], 3.0)
     else:
         bg, fg = "#FFFFFF", g("TUBEWM_LIGHT_FG", "#111111")
         light = g("TUBEWM_LIGHT_BG", "#F3F3F3")
@@ -119,8 +117,13 @@ def polarity(palette: dict, mode: str) -> dict:
             "fg_disabled": mix(fg, bg, 0.68),
         }
         roles["border"] = mix(light, fg, 0.18)
-        roles["fg_disabled"] = readable(roles["fg_disabled"], roles["shell"], 3.0)
-        roles["fg_subtle"] = readable(roles["fg_subtle"], roles["shell"], 4.5)
+    # Readable greys. The desktop palette's greys are tuned for big shell
+    # type; app text is small, so secondary text must reach 7:1 and even
+    # "disabled" text 4.5:1 on the raised surface (menus, flyouts), which is
+    # the lowest-contrast ground text sits on.
+    ground = roles["surface"]
+    roles["fg_subtle"] = readable(roles["fg_subtle"], ground, 7.0)
+    roles["fg_disabled"] = readable(roles["fg_disabled"], ground, 4.5)
     roles["accent"] = accent
     roles["error"] = g("TUBEWM_URGENT", "#E81123")
     roles["warning"] = sw.get("amber", "#F0A30A")

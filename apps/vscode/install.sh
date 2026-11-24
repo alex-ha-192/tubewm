@@ -6,6 +6,7 @@
 #   --accent NAME|#HEX   accent colour (default: the desktop's current accent)
 #   --editor NAME        code | codium | code-oss; repeatable (default: all found)
 #   --light              make the light theme the active one
+#   --status-bar STYLE   plain (black, the default) or accent (a solid strip)
 #   --no-settings        install the theme only, leave settings.json alone
 #   --ui-css             also wire metro-ui.css into the Custom CSS loader
 #   --no-hook            don't follow accent changes made with tube-accent
@@ -26,11 +27,11 @@ LIB=$REPO/apps/lib
 CONFIG_HOME=${XDG_CONFIG_HOME:-$HOME/.config}
 EXT_ID=tubewm.tubewm-metro
 
-accent='' editors='' light=0 settings=1 uicss=0 hook=1 uninstall=0 quiet=0
+status=plain accent='' editors='' light=0 settings=1 uicss=0 hook=1 uninstall=0 quiet=0
 
 say() { [ "$quiet" = 1 ] || printf '%s\n' "$*"; }
 die() { printf 'vscode/install.sh: %s\n' "$*" >&2; exit 1; }
-usage() { sed -n '2,17p' "$0" | sed 's/^# \{0,1\}//'; }
+usage() { sed -n '2,18p' "$0" | sed 's/^# \{0,1\}//'; }
 
 while [ $# -gt 0 ]; do
     case $1 in
@@ -39,6 +40,8 @@ while [ $# -gt 0 ]; do
         --editor) [ $# -ge 2 ] || die "--editor needs a value"; editors="$editors $2"; shift ;;
         --editor=*) editors="$editors ${1#*=}" ;;
         --light) light=1 ;;
+        --status-bar) [ $# -ge 2 ] || die "--status-bar needs a value"; status=$2; shift ;;
+        --status-bar=*) status=${1#*=} ;;
         --no-settings) settings=0 ;;
         --ui-css) uicss=1 ;;
         --no-hook) hook=0 ;;
@@ -127,7 +130,7 @@ fi
 # ------------------------------------------------------------------ install
 set --
 [ -n "$accent" ] && set -- --accent "$accent"
-python3 "$HERE/build.py" "$@" --out "$TMP/extension" --vsix "$TMP/tubewm-metro.vsix" >/dev/null \
+python3 "$HERE/build.py" "$@" --status-bar "$status" --out "$TMP/extension" --vsix "$TMP/tubewm-metro.vsix" >/dev/null \
     || die "theme build failed"
 version=$(python3 -c 'import json,sys; print(json.load(open(sys.argv[1]))["version"])' "$TMP/extension/package.json")
 used_accent=$(python3 -c 'import json,sys; print(json.load(open(sys.argv[1]))["description"].rsplit(" ",1)[-1].rstrip(").") )' "$TMP/extension/package.json")
@@ -172,7 +175,7 @@ if [ "$hook" = 1 ]; then
         echo '# Installed by tubewm apps/vscode/install.sh: rebuild the theme for the new accent.'
         echo '# The accent file is the source of truth here, not a possibly stale environment.'
         echo 'unset TUBEWM_ACCENT'
-        printf 'exec "%s" --quiet --no-settings --no-hook' "$HERE/install.sh"
+        printf 'exec "%s" --quiet --no-settings --no-hook --status-bar %s' "$HERE/install.sh" "$status"
         for e in $editors; do printf ' --editor %s' "$e"; done
         echo
     } > "$hook_path"
