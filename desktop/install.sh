@@ -155,7 +155,8 @@ mkdir -p "$DEST.new"
 cp -r "$REPO/palette" "$DEST.new/palette"
 mkdir -p "$DEST.new/desktop"
 cp -r "$REPO/desktop/bin" "$REPO/desktop/shell" "$REPO/desktop/templates" \
-      "$REPO/desktop/start" "$REPO/desktop/config" "$DEST.new/desktop/"
+      "$REPO/desktop/start" "$REPO/desktop/config" "$REPO/desktop/wayfire" \
+      "$DEST.new/desktop/"
 find "$DEST.new" -name '__pycache__' -prune -exec rm -rf {} +
 rm -rf "$DEST"
 mv "$DEST.new" "$DEST"

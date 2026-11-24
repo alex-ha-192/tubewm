@@ -53,9 +53,9 @@ if command -v gtklock >/dev/null; then
         user=${user:-$(id -un)}
         initial=${user:0:1}; initial=${initial^^}
         layout_file=$RUN/tube-lock.ui
-        sed -e "s|@USERNAME@|$(printf '%s' "$user" | xml_escape | sed 's/[|&\\]/\\&/g')|" \
-            -e "s|@INITIAL@|$(printf '%s' "$initial" | xml_escape | sed 's/[|&\\]/\\&/g')|" \
-            -e "s|@KEYBOARD@|$(keyboard_name | xml_escape | sed 's/[|&\\]/\\&/g')|" \
+        sed -e "s|{{USERNAME}}|$(printf '%s' "$user" | xml_escape | sed 's/[|&\\]/\\&/g')|" \
+            -e "s|{{INITIAL}}|$(printf '%s' "$initial" | xml_escape | sed 's/[|&\\]/\\&/g')|" \
+            -e "s|{{KEYBOARD}}|$(keyboard_name | xml_escape | sed 's/[|&\\]/\\&/g')|" \
             "$CONFIG/gtklock/layout.ui" > "$layout_file"
         gtklock "${args[@]}" --layout "$layout_file" --date-format '%A %-d %B' "$@" && exit 0
     fi
