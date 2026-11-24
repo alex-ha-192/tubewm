@@ -22,8 +22,8 @@
     "custom/start": {
         "format": " ",
         "tooltip": false,
-        "on-click": "tube-start",
-        "on-click-right": "tube-charms"
+        "on-click": "~/.local/bin/tube-start",
+        "on-click-right": "~/.local/bin/tube-charms"
     },
 
     "sway/workspaces": {
@@ -77,15 +77,15 @@
         "format-linked": "no address",
         "tooltip-format": "{ifname} · {ipaddr}",
         "tooltip-format-wifi": "{essid} · {signalStrength}% · {ipaddr}",
-        "on-click": "tube-charms --settings"
+        "on-click": "~/.local/bin/tube-charms --settings"
     },
 
     "pulseaudio": {
         "format": "vol {volume}",
         "format-muted": "muted",
-        "on-click": "tube-osd volume mute",
-        "on-scroll-up": "tube-osd volume up",
-        "on-scroll-down": "tube-osd volume down",
+        "on-click": "~/.local/bin/tube-osd volume mute",
+        "on-scroll-up": "~/.local/bin/tube-osd volume up",
+        "on-scroll-down": "~/.local/bin/tube-osd volume down",
         "on-click-right": "pavucontrol"
     },
 
@@ -106,6 +106,6 @@
     "clock": {
         "format": "{:%H:%M}",
         "tooltip": false,
-        "on-click": "tube-charms"
+        "on-click": "~/.local/bin/tube-charms"
     }
 }

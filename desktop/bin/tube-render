@@ -5,6 +5,7 @@
 #   tube-render            render everything
 #   tube-render --quiet    no output
 #   tube-render --print    show the resolved palette and exit
+PATH="$(dirname "$(readlink -f "$0")"):$PATH"  # find the other tube-* commands
 set -euo pipefail
 
 TUBEWM_HOME=${TUBEWM_HOME:-${XDG_DATA_HOME:-$HOME/.local/share}/tubewm}

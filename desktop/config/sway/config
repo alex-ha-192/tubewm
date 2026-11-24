@@ -18,6 +18,10 @@ set $mod Mod4
 set $alt Mod1
 set $term foot
 
+# Where install.sh puts the tube-* commands. Spelled out because a session
+# started from a display manager may not have ~/.local/bin on its PATH.
+set $tubebin ~/.local/bin
+
 # Workspaces are pivots: lowercase names that the bar shows as big headers.
 # Rename them to suit how you work; the number prefix only sets the order.
 set $ws1  "1:home"
@@ -79,28 +83,31 @@ bar {
 
 exec mako
 exec swayidle -w \
-    timeout 300 'tube-lock' \
+    timeout 300 '$tubebin/tube-lock' \
     timeout 600 'swaymsg "output * power off"' resume 'swaymsg "output * power on"' \
-    before-sleep 'tube-lock'
+    before-sleep '$tubebin/tube-lock'
 
 # Let portals and user services see the Wayland session.
 exec dbus-update-activation-environment --systemd WAYLAND_DISPLAY XDG_CURRENT_DESKTOP=sway SWAYSOCK
 
+# Open on start, like the phone did.
+exec $tubebin/tube-start
+
 ### Keys: shell -------------------------------------------------------------
 
-bindsym $mod+s exec tube-start
-bindsym $mod+d exec tube-start --apps
-bindsym $mod+c exec tube-charms
-bindsym $mod+i exec tube-charms --settings
-bindsym $mod+q exec tube-start --search
+bindsym $mod+s exec $tubebin/tube-start
+bindsym $mod+d exec $tubebin/tube-start --apps
+bindsym $mod+c exec $tubebin/tube-charms
+bindsym $mod+i exec $tubebin/tube-charms --settings
+bindsym $mod+q exec $tubebin/tube-start --search
 bindsym $mod+Return exec $term
-bindsym $mod+l exec tube-lock
+bindsym $mod+l exec $tubebin/tube-lock
 bindsym $mod+z exec pkill -SIGUSR1 waybar
-bindsym $mod+Tab exec tube-switcher
-bindsym $mod+Shift+e exec tube-charms --power
+bindsym $mod+Tab exec $tubebin/tube-switcher
+bindsym $mod+Shift+e exec $tubebin/tube-charms --power
 
 # Uncomment to open start by tapping the Super key on its own.
-# bindsym --release Super_L exec tube-start
+# bindsym --release Super_L exec $tubebin/tube-start
 
 ### Keys: windows -----------------------------------------------------------
 
@@ -120,9 +127,9 @@ bindsym $mod+Shift+Down  move down
 # Snap: dock the focused window as a narrow column at the left or right
 # edge (320 px), the other windows fill the rest. Press again to widen to
 # 500 px. $mod+slash gives everything equal space again.
-bindsym $mod+comma  exec tube-snap left
-bindsym $mod+period exec tube-snap right
-bindsym $mod+slash  exec tube-snap fill
+bindsym $mod+comma  exec $tubebin/tube-snap left
+bindsym $mod+period exec $tubebin/tube-snap right
+bindsym $mod+slash  exec $tubebin/tube-snap fill
 
 bindsym $mod+f fullscreen toggle
 bindsym $mod+v floating toggle
@@ -178,25 +185,25 @@ bindsym $mod+Ctrl+Shift+Left  move container to workspace prev_on_output, worksp
 # Swipe between pivots with three fingers, like panning a panorama.
 bindgesture swipe:3:right workspace prev_on_output
 bindgesture swipe:3:left  workspace next_on_output
-bindgesture swipe:3:up    exec tube-start
-bindgesture swipe:3:down  exec tube-switcher
-bindgesture swipe:4:left  exec tube-charms
-bindgesture swipe:4:right exec tube-charms --close
+bindgesture swipe:3:up    exec $tubebin/tube-start
+bindgesture swipe:3:down  exec $tubebin/tube-switcher
+bindgesture swipe:4:left  exec $tubebin/tube-charms
+bindgesture swipe:4:right exec $tubebin/tube-charms --close
 
 ### Hardware keys -----------------------------------------------------------
 
-bindsym --locked XF86AudioRaiseVolume  exec tube-osd volume up
-bindsym --locked XF86AudioLowerVolume  exec tube-osd volume down
-bindsym --locked XF86AudioMute         exec tube-osd volume mute
-bindsym --locked XF86AudioMicMute      exec tube-osd mic mute
-bindsym --locked XF86MonBrightnessUp   exec tube-osd brightness up
-bindsym --locked XF86MonBrightnessDown exec tube-osd brightness down
+bindsym --locked XF86AudioRaiseVolume  exec $tubebin/tube-osd volume up
+bindsym --locked XF86AudioLowerVolume  exec $tubebin/tube-osd volume down
+bindsym --locked XF86AudioMute         exec $tubebin/tube-osd volume mute
+bindsym --locked XF86AudioMicMute      exec $tubebin/tube-osd mic mute
+bindsym --locked XF86MonBrightnessUp   exec $tubebin/tube-osd brightness up
+bindsym --locked XF86MonBrightnessDown exec $tubebin/tube-osd brightness down
 bindsym --locked XF86AudioPlay  exec playerctl play-pause
 bindsym --locked XF86AudioNext  exec playerctl next
 bindsym --locked XF86AudioPrev  exec playerctl previous
 
-bindsym Print       exec tube-share screen
-bindsym Shift+Print exec tube-share region
+bindsym Print       exec $tubebin/tube-share screen
+bindsym Shift+Print exec $tubebin/tube-share region
 
 ### Window rules ------------------------------------------------------------
 
