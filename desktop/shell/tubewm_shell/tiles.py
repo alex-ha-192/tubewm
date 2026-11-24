@@ -19,7 +19,7 @@ import threading
 import urllib.parse
 import xml.etree.ElementTree as ET
 
-from . import common, glyphs  # common pins the GTK version first
+from . import common, glyphs, wm  # common pins the GTK version first
 
 from gi.repository import GdkPixbuf, Gio, GLib, Gtk, Pango  # noqa: E402
 
@@ -224,6 +224,12 @@ class Tile(Gtk.Button):
             self.overlay.add_overlay(self.label)
             self.overlay.set_overlay_pass_through(self.label, True)
         self.badge = None
+        # Frames a tile hides (no music playing, no battery…) must stay hidden
+        # when start calls show_all(), or tiles flip to blank faces.
+        for child in self.stack.get_children():
+            if self.stack.child_get_property(child, "name") == "face":
+                child.show_all()
+            child.set_no_show_all(True)
 
     # Content -----------------------------------------------------------
     def default_label(self):
@@ -257,6 +263,7 @@ class Tile(Gtk.Button):
 
     def add_frame(self, widget, name=None):
         widget.show_all()
+        widget.set_no_show_all(True)
         self.stack.add_named(widget, name or "f%d" % len(self.stack.get_children()))
         return widget
 
@@ -267,6 +274,7 @@ class Tile(Gtk.Button):
             self.badge.set_valign(Gtk.Align.END)
             self.badge.set_margin_end(9)
             self.badge.set_margin_bottom(5)
+            self.badge.set_no_show_all(True)
             self.overlay.add_overlay(self.badge)
             self.overlay.set_overlay_pass_through(self.badge, True)
         self.badge.set_text(text or "")
@@ -749,22 +757,11 @@ class WindowsTile(Tile):
         self.frames = []
 
     def refresh(self):
-        if not self.due("poll", 4) or not os.environ.get("SWAYSOCK"):
+        if not self.due("poll", 4) or wm.name() == "none":
             return
-        try:
-            tree = json.loads(common.sh("swaymsg -r -t get_tree") or "{}")
-        except ValueError:
-            return
-        wins = []
-
-        def walk(node, ws):
-            if node.get("type") == "workspace":
-                ws = node.get("name", "")
-            if node.get("pid") and node.get("type") in ("con", "floating_con"):
-                wins.append((node.get("name") or node.get("app_id") or "", ws.split(":", 1)[-1]))
-            for child in node.get("nodes", []) + node.get("floating_nodes", []):
-                walk(child, ws)
-        walk(tree, "")
+        names = wm.desktop_names()
+        wins = [(w.label, names[w.get("workspace", 0)] if w.get("workspace", 0) < len(names) else "")
+                for w in wm.windows()]
         for f in self.frames:
             self.stack.remove(f)
         self.frames = []

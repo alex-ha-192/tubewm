@@ -2,7 +2,8 @@
 
 Your pinned tiles on the left: app shortcuts and live tiles that you add,
 drag around, resize, recolour and unpin in place. Every app on the right,
-in one alphabetical column; type anywhere to filter it.
+in one alphabetical column; type anywhere to filter it. Clicking a live tile
+opens its detail panel (an applet) over start; Esc or the back arrow closes it.
 """
 
 import argparse
@@ -10,7 +11,7 @@ import math
 import os
 import pwd
 
-from . import common, layout, tiles
+from . import applets, common, layout, tiles
 
 from gi.repository import Gdk, Gio, GLib, Gtk, Pango  # noqa: E402
 
@@ -18,7 +19,7 @@ CELL = tiles.UNIT + tiles.GUTTER
 LEFT = 120     # left margin, px
 APPS_W = 380   # width of the app list column
 DRAG_START = 10
-LONG_PRESS = 600  # ms
+APPLET_W = 620  # width of the detail panel a live tile opens
 
 
 def user_name():
@@ -86,8 +87,12 @@ class StartScreen:
         cols = max(4, min(16, (avail + tiles.GUTTER) // CELL))
         self.cols = cols - cols % 2
 
+        self.applet = None
+        stage = Gtk.Overlay()
+        self.win.add(stage)
         root = Gtk.Box(orientation=Gtk.Orientation.VERTICAL)
-        self.win.add(root)
+        stage.add(root)
+        self.build_applet_layer(stage, screen_w)
 
         head = Gtk.Box(spacing=24)
         head.set_margin_start(LEFT)
@@ -118,6 +123,93 @@ class StartScreen:
             self.entry.grab_focus() if mode == "search" else self.focus_first_app()
         elif self.tile_widgets:
             self.tile_widgets[0].grab_focus()
+
+    # ── applets: the detail panel behind a live tile ─────────────────
+    def build_applet_layer(self, stage, screen_w):
+        # A dark veil over start; clicking it closes the panel.
+        self.scrim = Gtk.EventBox()
+        self.scrim.get_style_context().add_class("applet-scrim")
+        self.scrim.set_no_show_all(True)
+        self.scrim.connect("button-press-event", lambda *_: self.close_applet() or True)
+        stage.add_overlay(self.scrim)
+
+        self.revealer = Gtk.Revealer()
+        self.revealer.set_transition_type(Gtk.RevealerTransitionType.SLIDE_LEFT)
+        self.revealer.set_transition_duration(220)
+        self.revealer.set_halign(Gtk.Align.END)
+        self.revealer.set_valign(Gtk.Align.FILL)
+        self.revealer.set_no_show_all(True)
+        stage.add_overlay(self.revealer)
+
+        panel = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=28)
+        panel.get_style_context().add_class("applet-panel")
+        panel.set_size_request(min(APPLET_W, screen_w), -1)
+        head = Gtk.Box(spacing=18)
+        back = Gtk.Button()
+        back.set_relief(Gtk.ReliefStyle.NONE)
+        back.get_style_context().add_class("applet-back")
+        back.set_tooltip_text("back to start (Esc)")
+        back.add(tiles.glyphs.Glyph("back", 18))
+        back.set_valign(Gtk.Align.CENTER)
+        back.connect("clicked", lambda *_: self.close_applet())
+        head.pack_start(back, False, False, 0)
+        self.applet_title = Gtk.Label(xalign=0)
+        self.applet_title.get_style_context().add_class("applet-title")
+        head.pack_start(self.applet_title, True, True, 0)
+        panel.pack_start(head, False, False, 0)
+        self.applet_back = back
+
+        scroll = Gtk.ScrolledWindow()
+        scroll.set_policy(Gtk.PolicyType.NEVER, Gtk.PolicyType.AUTOMATIC)
+        scroll.set_overlay_scrolling(True)
+        self.applet_holder = Gtk.Box(orientation=Gtk.Orientation.VERTICAL)
+        scroll.add(self.applet_holder)
+        panel.pack_start(scroll, True, True, 0)
+        self.revealer.add(panel)
+        panel.show_all()
+
+    def open_applet(self, tile):
+        try:
+            applet = applets.build(tile.kind, tile.spec)
+        except Exception as err:  # a broken applet shouldn't take start down
+            print("tube-start: %s applet: %s" % (tile.kind, err))
+            applet = None
+        if applet is None:
+            if not tile.activate_tile():
+                self.quit()
+            return
+        self.drop_applet()
+        applet.closes = self.quit
+        self.applet = applet
+        self.applet_tile = tile.index
+        self.applet_title.set_text(applet.title or tile.title)
+        self.applet_holder.pack_start(applet, False, False, 0)
+        applet.show()
+        self.scrim.show()
+        self.revealer.show()
+        self.revealer.set_reveal_child(True)
+        self.applet_back.grab_focus()
+
+    def close_applet(self):
+        if self.applet is None:
+            return
+        self.revealer.set_reveal_child(False)
+        self.scrim.hide()
+        GLib.timeout_add(self.revealer.get_transition_duration() + 40, self._after_close)
+        for t in self.tile_widgets:
+            if t.index == self.applet_tile:
+                t.grab_focus()
+        self.applet = None
+
+    def _after_close(self):
+        if self.applet is None:
+            self.drop_applet()
+            self.revealer.hide()
+        return False
+
+    def drop_applet(self):
+        for child in self.applet_holder.get_children():
+            child.destroy()  # stops its refresh timer
 
     # ── tile area ────────────────────────────────────────────────────
     def build_tile_area(self):
@@ -211,6 +303,9 @@ class StartScreen:
         if tile.kind == "note":
             self.edit_params(tile)
             return
+        if tile.kind in applets.BUILDERS:
+            self.open_applet(tile)
+            return
         if not tile.activate_tile():
             self.quit()
 
@@ -230,24 +325,7 @@ class StartScreen:
         if event.button == 1:
             self.drag = {"tile": tile, "x": event.x_root, "y": event.y_root,
                          "ox": event.x, "oy": event.y, "on": False}
-            # Holding still opens the tile menu, for touchscreens.
-            self.drag["hold"] = GLib.timeout_add(LONG_PRESS, self._long_press, tile)
         return False
-
-    def _long_press(self, tile):
-        d = self.drag
-        if d:
-            d["hold"] = None
-        if d and d["tile"] is tile and not d["on"]:
-            self.drag = None
-            self.just_dragged = True  # swallow the click that follows the release
-            self.tile_menu(tile, None)
-        return False
-
-    def _cancel_hold(self, d):
-        if d and d.get("hold"):
-            GLib.source_remove(d["hold"])
-            d["hold"] = None
 
     def on_motion(self, tile, event):
         d = self.drag
@@ -257,7 +335,6 @@ class StartScreen:
             if math.hypot(event.x_root - d["x"], event.y_root - d["y"]) < DRAG_START:
                 return False
             d["on"] = True
-            self._cancel_hold(d)
             self.ghost.set_size_request(tile.pw, tile.ph)
             self.ghost.show()
             tile.get_style_context().add_class("lifted")
@@ -271,7 +348,6 @@ class StartScreen:
 
     def on_release(self, tile, event):
         d, self.drag = self.drag, None
-        self._cancel_hold(d)
         if not d or not d["on"]:
             return False
         self.ghost.hide()
@@ -347,10 +423,6 @@ class StartScreen:
             item(mark + name, lambda v=value: self.set_prop(tile.index, "color", v), colours)
         if tile.params:
             item("set up…", lambda: self.edit_params(tile))
-        menu.append(Gtk.SeparatorMenuItem())
-        item("move earlier", lambda: self.move(tile.index, tile.index - 1), sensitive=tile.index > 0)
-        item("move later", lambda: self.move(tile.index, tile.index + 1),
-             sensitive=tile.index < len(self.data["tiles"]) - 1)
         menu.append(Gtk.SeparatorMenuItem())
         item("unpin from start", lambda: self.unpin(tile.index))
         menu.show_all()
@@ -634,6 +706,12 @@ class StartScreen:
     def on_key(self, _win, event):
         key = event.keyval
         mods = event.state & (Gdk.ModifierType.CONTROL_MASK | Gdk.ModifierType.MOD1_MASK)
+        if self.applet is not None:
+            if key == Gdk.KEY_Escape or (key == Gdk.KEY_BackSpace and
+                                         not isinstance(self.win.get_focus(), Gtk.Entry)):
+                self.close_applet()
+                return True
+            return False  # keys belong to the panel while it is open
         if key == Gdk.KEY_Escape:
             if self.drag and self.drag.get("on"):
                 self.ghost.hide()

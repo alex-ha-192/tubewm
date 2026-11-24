@@ -25,6 +25,11 @@ DATA = os.environ.get("XDG_DATA_HOME", os.path.join(HOME, ".local", "share"))
 TUBEWM_HOME = os.environ.get("TUBEWM_HOME", os.path.join(DATA, "tubewm"))
 RUNTIME = os.environ.get("XDG_RUNTIME_DIR", "/tmp")
 SHELL_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+# tubewm's own commands (tube-lock, tube-charms…) live beside the shell, so
+# they work even when ~/.local/bin isn't on PATH.
+BIN_DIR = os.path.normpath(os.path.join(SHELL_DIR, "..", "bin"))
+if os.path.isdir(BIN_DIR) and BIN_DIR not in os.environ.get("PATH", "").split(":"):
+    os.environ["PATH"] = BIN_DIR + ":" + os.environ.get("PATH", "/usr/bin:/bin")
 
 PALETTE_DEFAULTS = {
     "BG": "#000000",
@@ -208,6 +213,8 @@ def run_detached(cmd):
     if not cmd:
         return
     if os.environ.get("SWAYSOCK") and shutil.which("swaymsg"):
+        # sway runs it with sway's own PATH, so hand ours along.
+        cmd = "PATH=%s; %s" % (shlex.quote(os.environ.get("PATH", "")), cmd)
         subprocess.Popen(["swaymsg", "exec", "--", cmd],
                          stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
     else:

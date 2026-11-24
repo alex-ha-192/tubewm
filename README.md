@@ -176,8 +176,8 @@ tube-wallpaper off          # back to the plain backdrop
 To use your own picture, run `tube-wallpaper off` and put
 `output * bg ~/Pictures/wall.jpg fill` in a file in `~/.config/sway/config.d/`.
 
-**Edit start:** right-click a tile (or long-press) to resize, recolour, set it
-up or unpin it; drag tiles to move them; press the **+** under the tiles to add
+**Edit start:** click a live tile to see more; right-click a tile to resize,
+recolour, set it up or unpin it; drag tiles to move them; press the **+** under the tiles to add
 a live tile; right-click an app in the list to pin it. See
 [desktop/README.md](desktop/README.md#start) for the details.
 

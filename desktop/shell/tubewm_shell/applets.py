@@ -290,12 +290,19 @@ class Music(Applet):
         self.pack_start(self.artist, False, False, 0)
         self.pos = bar(0)
         self.pack_start(self.pos, False, False, 0)
-        row = Gtk.Box(spacing=8)
-        row.pack_start(button(glyph="prev", cb=lambda: self.ctl("previous"), size=22), False, False, 0)
-        self.play = button(glyph="play", cb=lambda: self.ctl("play-pause"), size=26)
-        row.pack_start(self.play, False, False, 0)
-        row.pack_start(button(glyph="next", cb=lambda: self.ctl("next"), size=22), False, False, 0)
+        row = Gtk.Box(spacing=18)
+        prev = button(glyph="prev", cb=lambda: self.ctl("previous"), tooltip="previous", size=20)
+        self.play = button(glyph="play", cb=lambda: self.ctl("play-pause"), tooltip="play / pause", size=24)
+        nxt = button(glyph="next", cb=lambda: self.ctl("next"), tooltip="next", size=20)
+        for b in (prev, self.play, nxt):
+            b.get_style_context().add_class("transport")
+            b.set_valign(Gtk.Align.CENTER)
+            row.pack_start(b, False, False, 0)
+        self.play.get_style_context().add_class("main")
+        self.controls = row
         self.pack_start(row, False, False, 0)
+        self.controls.set_no_show_all(True)
+        row.show_all()
         self._art = None
 
     def ctl(self, what):
@@ -314,7 +321,10 @@ class Music(Applet):
             self.song.set_text("nothing playing")
             self.artist.set_text("start some music and it shows up here")
             self.pos.hide()
+            self.art.hide()
+            self.controls.hide()
             return
+        self.controls.show()
         self.song.set_text(title.lower())
         self.artist.set_text(" · ".join(x for x in (artist, album) if x).lower())
         try:
@@ -795,8 +805,8 @@ class System(Applet):
         cur = tiles._cpu_times()
         pct = 0
         if cur and self._prev:
-            idle = cur[0] - self._prev[0]
-            total = cur[1] - self._prev[1]
+            total = cur[0] - self._prev[0]   # _cpu_times() is (total, idle)
+            idle = cur[1] - self._prev[1]
             pct = 100 * (1 - idle / total) if total > 0 else 0
         self._prev = cur
         self.cpu_l.set_text("processor %d%%" % pct)
