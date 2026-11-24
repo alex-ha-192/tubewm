@@ -73,7 +73,8 @@ mapfile -t progs < <(python3 "$CI_DIR/parse.py" commands "$C/sway/config" "$C/wa
 printf '%s\n' "${progs[@]}" > "$PROBE.names"
 cat > "$PROBE.sh" <<PROBE_EOF
 while IFS= read -r p; do
-    if command -v "\$p" >/dev/null 2>&1; then echo "found \$p"; else echo "missing \$p"; fi
+    case \$p in "~/"*) q="\$HOME/\${p#"~/"}" ;; *) q=\$p ;; esac
+    if command -v "\$q" >/dev/null 2>&1; then echo "found \$p"; else echo "missing \$p"; fi
 done < "$PROBE.names" > "$PROBE.tmp"
 echo "path \$PATH" >> "$PROBE.tmp"
 mv "$PROBE.tmp" "$PROBE"
@@ -106,41 +107,51 @@ try_open() {
     tail -n +"$before" "$LOG" | grep -E 'not found|Permission denied|Traceback|Error' -A30 | head -n 40 > "$LOG.why"
     return 1
 }
-for spec in "tube-start|bin/tube-start" "tube-charms|bin/tube-charms" "tube-charms --settings|bin/tube-charms"; do
-    cmd=${spec%%|*} pat=${spec#*|} bin=${cmd%% *}
+# What the key bindings actually run, straight from the installed config.
+for spec in '$mod+s|bin/tube-start' '$mod+c|bin/tube-charms' '$mod+i|bin/tube-charms'; do
+    key=${spec%%|*} pat=${spec#*|}
+    if ! cmd=$(python3 "$CI_DIR/parse.py" binding "$C/sway/config" "$key" 2>&1); then
+        fail "$key: $cmd"; continue
+    fi
+    bin=${cmd%% *}; bin=${bin##*/}
     if try_open "$cmd" "$pat"; then
-        pass "$cmd opened and stayed open"
+        pass "$key ($cmd) opened and stayed open"
     else
-        if grep -qE "$bin: (not found|command not found|Permission denied)" "$LOG.why"; then
-            fail "$cmd: sway can't find $bin (the key binding does nothing in a display-manager session)"
+        if grep -qE "$bin: (not found|command not found|Permission denied|No such file)" "$LOG.why"; then
+            fail "$key ($cmd): sway can't find $bin, so the key does nothing in a display-manager session"
             # Still check the program itself works, by its full path.
-            if try_open "$SANDBOX_HOME/.local/bin/$cmd" "$pat"; then
-                pass "$SANDBOX_HOME/.local/bin/$cmd opens when run by full path"
+            args=${cmd#"${cmd%% *}"}
+            if try_open "$SANDBOX_HOME/.local/bin/$bin$args" "$pat"; then
+                pass "$bin opens when run by full path"
             elif grep -q Traceback "$LOG.why"; then
                 fail "$bin crashed:"; sed 's/^/        /' "$LOG.why"
             else
                 warn "$bin is not running 3s after starting it by full path"
             fi
         elif grep -q Traceback "$LOG.why"; then
-            fail "$cmd crashed:"; sed 's/^/        /' "$LOG.why"
+            fail "$key ($cmd) crashed:"; sed 's/^/        /' "$LOG.why"
         else
-            warn "$cmd is not running 3s after starting it (no error logged)"
+            warn "$key ($cmd) is not running 3s after starting it (no error logged)"
         fi
     fi
     pkill -u "$SANDBOX_USER" -f "$pat" 2>/dev/null
 done
 
-# Changing the accent from inside the session (charms does this) must reach
-# every config, which means tube-accent has to find tube-render.
+# Changing the accent from inside the session must reach every config, which
+# means tube-accent has to find tube-render on the session's PATH. Run it by
+# full path, the way charms (which puts its own bin dir on PATH) reaches it.
 want=$(awk '$1 == "lime" { print toupper($2) }' "$REPO/palette/accents")
-before=$(($(wc -l < "$LOG") + 1))
-msg exec "tube-accent lime" >/dev/null
-for _ in $(seq 1 20); do grep -qi "${want#\#}" "$C/foot/foot.ini" 2>/dev/null && break; sleep 0.25; done
-if grep -qi "${want#\#}" "$C/foot/foot.ini" && grep -qi "$want" "$C/sway/tubewm-colors"; then
-    pass "tube-accent lime, run from the session, recoloured foot and sway"
+msg exec "$SANDBOX_HOME/.local/bin/tube-accent lime > $SANDBOX_HOME/accent.out 2>&1" >/dev/null
+recoloured() {
+    grep -qiE "^set \\\$tube_accent +$want\$" "$C/sway/tubewm-colors" 2>/dev/null \
+        && grep -qix "selection-background=${want#\#}" "$C/foot/foot.ini" 2>/dev/null
+}
+for _ in $(seq 1 80); do recoloured && break; sleep 0.25; done
+if recoloured; then
+    pass "tube-accent lime, run inside the session, recoloured foot and sway"
 else
-    fail "tube-accent lime, run from the session, did not recolour the configs:"
-    tail -n +"$before" "$LOG" | grep -vE '\[(DEBUG|INFO)\]' | head -n 20 | sed 's/^/        /'
+    fail "tube-accent lime, run inside the session, did not recolour the configs:"
+    sed 's/^/        /' "$SANDBOX_HOME/accent.out" 2>/dev/null
 fi
 
 if have foot; then

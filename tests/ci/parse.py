@@ -6,6 +6,7 @@
     parse.py commands SWAYCONF [WAYBARCONF...]
                                     print, one per line, every program the sway
                                     and waybar configs will try to run
+    parse.py binding SWAYCONF KEY   print the command bound to KEY (e.g. '$mod+s')
     parse.py gtk-css 3|4 FILE...    load FILE with GTK's own CSS parser; errors
                                     fail, deprecation warnings are printed
     parse.py keys-vs-help CONF HELP report config keys that HELP (a program's
@@ -138,6 +139,31 @@ def sway_commands(conf: Path) -> list[str]:
     return progs
 
 
+def cmd_binding(args):
+    """The command a sway key binding runs, with $variables expanded."""
+    conf, key = Path(args[0]), args[1]
+    lines = sway_lines(conf, set())
+    variables = {}
+    for line in lines:
+        m = re.match(r"set\s+(\$\S+)\s+(.*)$", line)
+        if m:
+            variables[m.group(1)] = m.group(2).strip()
+
+    def expand(s):
+        for k in sorted(variables, key=len, reverse=True):
+            s = s.replace(k, variables[k])
+        return s
+
+    want = expand(key).lower()
+    for line in lines:
+        m = re.match(r"bindsym\s+(?:--\S+\s+)*(\S+)\s+exec\s+(.*)$", expand(line))
+        if m and m.group(1).lower() == want:
+            print(m.group(2))
+            return 0
+    print(f"no binding for {key}", file=sys.stderr)
+    return 1
+
+
 def waybar_commands(conf: Path) -> list[str]:
     data = load_jsonc(str(conf))
     bars = data if isinstance(data, list) else [data]
@@ -233,7 +259,7 @@ def main(argv):
         print(__doc__)
         return 0
     cmd, rest = argv[0], argv[1:]
-    fn = {"jsonc": cmd_jsonc, "toml": cmd_toml, "commands": cmd_commands,
+    fn = {"jsonc": cmd_jsonc, "toml": cmd_toml, "commands": cmd_commands, "binding": cmd_binding,
           "gtk-css": cmd_gtk_css, "keys-vs-help": cmd_keys_vs_help}.get(cmd)
     if not fn:
         print(f"parse.py: unknown command {cmd}", file=sys.stderr)
