@@ -7,9 +7,13 @@ small marks, and the time; click any of them for everything else (sound,
 brightness, wi-fi, battery, notifications, power).
 
 Between them is the handle for the window you're in. Point at it and the
-window's name and "close" appear. Drag it down to a side of the screen for
-half, into a corner for a quarter, or let go in the middle to fill the
-screen; an accent outline shows where the window will go.
+window's name appears. Drag it down to a side of the screen for half, into
+a corner for a quarter, or let go in the middle to fill the screen; an
+accent outline shows where the window will go. (Each window's own title
+strip has its close button.)
+
+When an app goes full screen (F11, a video's full-screen button) the strip
+slides up out of the way, and back when it leaves.
 """
 
 import json
@@ -26,6 +30,8 @@ from gi.repository import Gdk, GdkPixbuf, Gio, GLib, Gtk  # noqa: E402
 
 HEIGHT = 40
 ICON = 18            # logical px; drawn at the screen's scale so it stays sharp
+START_ICON = 18      # px: the start mark, nine squares in the accent colour
+HIDE_MS = 220       # the slide out of the way for full screen
 STATUS_EVERY = 5     # seconds between looks at sound, network and battery
 ICON_DIR = os.path.normpath(os.path.join(common.SHELL_DIR, "..", "templates", "waybar", "icons"))
 DRAG_START = 12      # px the pointer moves before a press becomes a drag
@@ -165,6 +171,12 @@ class Strip:
         start.set_tooltip_text("start")
         start.connect("clicked", lambda *_: spawn("tube-start"))
         start.set_valign(Gtk.Align.CENTER)
+        glyph = Gtk.DrawingArea()
+        glyph.set_size_request(START_ICON, START_ICON)
+        glyph.connect("draw", self.draw_start)
+        start.add(glyph)
+        start.connect("state-flags-changed", lambda *_: glyph.queue_draw())
+        self.start = start
         row.pack_start(start, False, False, 0)
 
         self.desks = Gtk.Box()
@@ -180,12 +192,7 @@ class Strip:
         self.title = Gtk.Label(xalign=0)
         self.title.get_style_context().add_class("strip-title")
         self.title.set_ellipsize(3)  # Pango.EllipsizeMode.END
-        self.close = Gtk.Button(label="close")
-        self.close.set_relief(Gtk.ReliefStyle.NONE)
-        self.close.get_style_context().add_class("strip-word")
-        self.close.connect("clicked", self.on_close)
         inner.pack_start(self.title, True, True, 0)
-        inner.pack_end(self.close, False, False, 0)
         self.handle.add(inner)
         self.handle.connect("enter-notify-event", self.on_enter)
         self.handle.connect("leave-notify-event", self.on_leave)
@@ -233,6 +240,83 @@ class Strip:
         win.connect("notify::scale-factor", lambda *_: (self.icons.clear(), self.look()))
         self.look()
         GLib.timeout_add_seconds(STATUS_EVERY, self.look)
+        self.shown = 1.0        # 1: on screen, 0: slid up out of the way
+        self.slide_tick = None
+        if wm.WAYFIRE:
+            threading.Thread(target=self._watch_fullscreen, daemon=True).start()
+
+    # ── the start mark ───────────────────────────────────────────────
+    def draw_start(self, area, cr):
+        """Nine small squares, three by three, in the accent colour."""
+        hover = self.start.get_state_flags() & (Gtk.StateFlags.PRELIGHT | Gtk.StateFlags.ACTIVE)
+        hexcol = self.pal.get("ACCENT", "#E3008C")
+        r, g, b = (int(hexcol[i:i + 2], 16) / 255 for i in (1, 3, 5))
+        if hover:
+            r, g, b = (c + (1 - c) * 0.3 for c in (r, g, b))
+        cr.set_source_rgb(r, g, b)
+        size = min(area.get_allocated_width(), area.get_allocated_height())
+        gap = size / 9.0
+        cell = (size - 2 * gap) / 3.0
+        for i in range(3):
+            for j in range(3):
+                cr.rectangle(i * (cell + gap), j * (cell + gap), cell, cell)
+        cr.fill()
+        return False
+
+    # ── out of the way for full screen ───────────────────────────────
+    FULLSCREEN_EVENTS = ["view-fullscreen", "view-focused", "view-unmapped", "view-mapped",
+                         "wset-workspace-changed", "output-gain-focus"]
+
+    def _watch_fullscreen(self):
+        while True:
+            try:
+                GLib.idle_add(self.check_fullscreen)
+                for _ev in wm.wf_watch(self.FULLSCREEN_EVENTS):
+                    GLib.idle_add(self.check_fullscreen)
+            except (OSError, wm.WayfireError, ValueError, KeyError):
+                time.sleep(1)
+
+    def check_fullscreen(self):
+        """Hide while the window you're in fills the whole screen."""
+        try:
+            views = wm.wf_views()
+        except (OSError, wm.WayfireError):
+            return False
+        full = any(v.get("fullscreen") and v.get("activated") and v.get("mapped")
+                   and v.get("role") == "toplevel" for v in views)
+        self.slide(0.0 if full else 1.0)
+        return False
+
+    def slide(self, goal):
+        LS = common.GtkLayerShell
+        if LS is None or not LS.is_supported() or goal == self.shown and not self.slide_tick:
+            return
+        if goal > 0 and not self.win.get_visible():
+            # Off screen it was unmapped: a surface nobody can see gets no
+            # frames to draw the slide with. Map it again with one row of it
+            # on screen, so it is drawn, and slide from there.
+            LS.set_margin(self.win, LS.Edge.TOP, -(HEIGHT - 1))
+            self.shown = 1.0 / HEIGHT
+            self.win.show()
+        start, t0 = self.shown, GLib.get_monotonic_time()
+        span = HIDE_MS * abs(goal - start) or 1
+
+        def tick(*_):
+            k = min(1.0, (GLib.get_monotonic_time() - t0) / 1000.0 / span)
+            ease = 1 - (1 - k) ** 3
+            self.shown = start + (goal - start) * ease
+            LS.set_margin(self.win, LS.Edge.TOP, -int(round(HEIGHT * (1 - self.shown))))
+            if k >= 1.0:
+                self.shown = goal
+                self.slide_tick = None
+                if goal == 0:
+                    self.win.hide()
+                return False
+            return True
+
+        if self.slide_tick:
+            GLib.source_remove(self.slide_tick)
+        self.slide_tick = GLib.timeout_add(16, tick)
 
     # ── the clock ────────────────────────────────────────────────────
     def tick(self):
@@ -349,7 +433,6 @@ class Strip:
     # ── the handle ───────────────────────────────────────────────────
     def set_handle_visible(self, on):
         self.title.set_visible(on)
-        self.close.set_visible(on)
 
     def on_enter(self, *_):
         self.hovered = True
@@ -361,16 +444,11 @@ class Strip:
 
     def on_leave(self, _w, event):
         if event.detail == Gdk.NotifyType.INFERIOR:
-            return False  # into the close button, still inside
+            return False  # into the title, still inside
         self.hovered = False
         if not self.drag:
             self.set_handle_visible(False)
         return False
-
-    def on_close(self, *_):
-        if self.window:
-            wm.close(self.window["id"])
-        self.set_handle_visible(False)
 
     def on_press(self, _w, event):
         if event.button != 1:

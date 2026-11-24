@@ -123,6 +123,11 @@ def windows():
     return out
 
 
+def wf_views():
+    """Every view Wayfire knows about, as it describes them."""
+    return _wf("window-rules/list-views")
+
+
 def _wf_outputs():
     try:
         return _wf("window-rules/list-outputs")
@@ -279,13 +284,27 @@ def _centre(r):
     return (r[0] + r[2] / 2, r[1] + r[3] / 2)
 
 
+# Windows that are really dialogs, though Wayfire can't tell: the file
+# picker apps show through the desktop portal, password prompts and the like.
+# They open centred over everything and are never tiled.
+FLOATING_APPS = {"zenity", "yad", "gcr-prompter", "org.gnome.keyring.systemprompter",
+                 "blueman-sendto", "nm-openconnect-auth-dialog", "org.kde.polkit-kde-authentication-agent-1"}
+FLOATING_PARTS = ("xdg-desktop-portal", "impl.portal", "pinentry", "polkit", "policykit")
+
+
+def floating(v):
+    app = (v.get("app-id") or "").lower()
+    return app in FLOATING_APPS or any(p in app for p in FLOATING_PARTS)
+
+
 def _tileable(v):
     mn, mx = v.get("min-size") or {}, v.get("max-size") or {}
     fixed = mx.get("width") and mx.get("width") == mn.get("width") and mx.get("height") == mn.get("height")
     return (v.get("role") == "toplevel" and v.get("type", "toplevel") == "toplevel"
             and v.get("mapped") and v.get("parent", -1) == -1
             and v.get("layer") in ("workspace", None)
-            and not v.get("minimized") and not v.get("fullscreen") and not fixed)
+            and not v.get("minimized") and not v.get("fullscreen") and not fixed
+            and not floating(v))
 
 
 def arrange(view, views, out):
@@ -301,7 +320,10 @@ def arrange(view, views, out):
               and v.get("output-id") == view.get("output-id")
               and _wf_view_workspace(v, out) == here]
     if not others:
-        return [], False
+        # Alone: fill the screen.
+        if _same(_rect(view, out), zone_rect("max", area)):
+            return [], False
+        return [(view["id"], "max")], False
     rects = {v["id"]: _rect(v, out) for v in others}
     for zone in FREE_ORDER:
         z = zone_rect(zone, area)
@@ -334,27 +356,59 @@ def _same(a, b, slack=8):
     return all(abs(p - q) <= slack for p, q in zip(a, b))
 
 
-def place(view):
-    """Give a window that has just opened room of its own (Wayfire)."""
-    if not WAYFIRE or not _tileable(view):
+def _view(views, win_id):
+    return next((v for v in views if v.get("id") == win_id), None)
+
+
+def place(win_id):
+    """Give a window that has just opened room of its own (Wayfire).
+    Returns [(window id, zone)] for what was moved, to check on later."""
+    if not WAYFIRE:
         return []
     try:
         views = _wf("window-rules/list-views")
     except (OSError, WayfireError):
+        return []
+    view = _view(views, win_id)   # as it is now, not as it was when it opened
+    if not view or not _tileable(view):
         return []
     out = {o["id"]: o for o in _wf_outputs()}.get(view.get("output-id"))
     if not out:
         return []
     plan, overflow = arrange(view, views, out)
     if overflow:
-        used = {_wf_view_workspace(v, out) for v in views if _tileable(v) and v.get("id") != view.get("id")}
+        used = {_wf_view_workspace(v, out) for v in views if _tileable(v) and v.get("id") != win_id}
         free = next(i for i in range(len(used) + 1) if i not in used)
-        send_to_pivot(view["id"], free)
+        send_to_pivot(win_id, free)
         go_to_pivot(free)
-        return [view["id"]]
+        return [(win_id, "max")]
     for vid, zone in plan:
         snap(vid, zone)
-    return [vid for vid, _z in plan]
+    return plan
+
+
+def settle(plan):
+    """Some apps resize themselves just after they open, undoing their
+    place: put back anything that isn't where it was sent. Returns the ids
+    moved again."""
+    if not WAYFIRE or not plan:
+        return []
+    try:
+        views = _wf("window-rules/list-views")
+    except (OSError, WayfireError):
+        return []
+    outs = {o["id"]: o for o in _wf_outputs()}
+    again = []
+    for vid, zone in plan:
+        v = _view(views, vid)
+        if not v or not _tileable(v):
+            continue
+        out = outs.get(v.get("output-id")) or {}
+        area = out.get("workarea") or out.get("geometry")
+        if area and not _same(_rect(v, out), zone_rect(zone, area)):
+            snap(vid, zone)
+            again.append(vid)
+    return again
 
 
 # ── pivots (workspaces) ────────────────────────────────────────────────────

@@ -652,6 +652,31 @@ def sinks():
     return [(s["name"], s.get("desc", s["name"]), s["name"] == default) for s in out]
 
 
+def audio_devices(kind="output"):
+    """[(name, description, is_default)] of the sound outputs (speakers,
+    headphones) or inputs (microphones). An input's "monitor of ..." twin
+    isn't a microphone, so it is left out."""
+    if not common.have("pactl"):
+        return []
+    what = "sinks" if kind == "output" else "sources"
+    default = run(["pactl", "get-default-" + what[:-1]])
+    out, cur = [], {}
+    for line in run(["pactl", "list", what]).splitlines():
+        line = line.strip()
+        if line.startswith("Name:"):
+            cur = {"name": line.split(":", 1)[1].strip()}
+            out.append(cur)
+        elif line.startswith("Description:") and cur:
+            cur["desc"] = line.split(":", 1)[1].strip()
+    out = [d for d in out if not d["name"].endswith(".monitor")]
+    return [(d["name"], d.get("desc", d["name"]), d["name"] == default) for d in out]
+
+
+def set_audio_device(kind, name):
+    """Make `name` the default output or input; what's playing follows it."""
+    run(["pactl", "set-default-" + ("sink" if kind == "output" else "source"), name])
+
+
 class Volume(Applet):
     title = "sound"
 

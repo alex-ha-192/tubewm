@@ -337,9 +337,8 @@ window.start { background-color: @tube_bg; }
 /* ── the strip along the top ────────────────────────────────────────────── */
 window.strip { background-color: @tube_bg; }
 .strip-row { min-height: 40px; }
-.strip-start { min-width: 14px; min-height: 14px; padding: 0; margin: 0 16px 0 24px;
-               background: @tube_accent; border: none; border-radius: 0; box-shadow: none; }
-.strip-start:hover { background: @tube_accent_light; }
+.strip-start { padding: 11px 12px; margin: 0 6px 0 12px; min-height: 0; min-width: 0;
+               background: none; border: none; border-radius: 0; box-shadow: none; }
 .strip-desk, .strip-clock, .strip-word {
     font-size: 20px; font-weight: 300; padding: 0 11px; min-height: 40px;
     color: @tube_subtle; background: none; border: none; border-radius: 0; box-shadow: none;
@@ -358,6 +357,9 @@ window.strip { background-color: @tube_bg; }
 /* ── status: the panel behind the time ──────────────────────────────────── */
 .status { background-color: @tube_bg; }
 .status-box { padding: 22px 48px 32px 48px; }
+.status-devices { padding: 6px 0 0 24px; }
+.status-word.status-device { font-size: 18px; font-weight: 300; color: #B0B0B0; padding: 2px 0; min-height: 0; }
+.status-word.status-device:hover label, .status-word.status-device.current label { color: @tube_accent_light; }
 .status-time { font-size: 120px; font-weight: 300; color: @tube_fg; letter-spacing: -3px; }
 .status-date { font-size: 24px; font-weight: 300; color: #B0B0B0; margin-bottom: 40px; }
 .status-name, .status-value { font-size: 20px; font-weight: 300; color: @tube_fg; }

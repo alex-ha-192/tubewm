@@ -37,25 +37,28 @@ artwork.
 If Wayfire is installed, tubewm also runs on it, and that is the one to use
 day to day. Everything is a click away; keys are extras.
 
-* **Windows** open filling the screen, with no title bar. The strip along the
-  top is everything else: the accent square for start, your desktops, the
-  time on the right, and in between the handle for the window you're in.
-  Point at it for the window's name and `close`. Drag it down to a side of
-  the screen for half, into a corner for a quarter, or let go in the middle
-  to fill the screen; an accent outline shows where it will go. Snap one
-  window to half the screen and the one you used before it takes the other
-  half. A new window takes free space if there is some; otherwise the
-  desktop is retiled so nothing is covered (up to four; a fifth gets a
-  desktop of its own). Dragging a window to the screen's edge never sends
-  it to another desktop: use Super+Tab for that.
+* **Windows** open filling the screen, each with a thin flat title strip
+  (accent when it's the one you're in) and a close button; apps that draw
+  their own header keep it. Drag the title, or the handle in the strip along
+  the top, to a side of the screen for half, into a corner for a quarter,
+  or to the middle to fill the screen. Snap one window to half the screen
+  and the one you used before it takes the other half. A new window takes
+  free space if there is some; otherwise the desktop is retiled so nothing
+  is covered (up to four; a fifth gets a desktop of its own). File pickers
+  and password prompts open centred and are never tiled. Dragging a window
+  to the screen's edge never sends it to another desktop: use Super+Tab.
+* **Full screen** is only for when an app asks (F11, a video's full-screen
+  button, Super+F): the strip slides up out of the way and back after.
 * **Desktops** look after themselves. There is always a spare `+` at the end
   of the strip. Open something there and it becomes a desktop named after it
   (`web`, `code`, `music`, `web 2`…). Leave a desktop empty and it goes away.
   Right-click a name to rename it, keep it, move it or close it. Three
   fingers sideways on the touchpad slide between desktops.
-* **The strip is always there**, above start and the panel. Sound, network
+* **The strip is always there** (but for full screen), above start and the
+  panel; its start mark is nine squares in your accent colour. Sound, network
   and battery sit beside the time; click any of them for everything that
-  isn't an app, in one panel on the right: sound and brightness, wi-fi, battery, quiet hours, your
+  isn't an app, in one panel on the right: sound and brightness, which
+  speakers and microphone to use, wi-fi, battery, quiet hours, your
   notifications, and lock, sleep, sign out, restart and shut down.
 * **Start**: tap the Windows key on its own, or click the accent square.
   It opens on every app from a to z in columns, nothing cut off. Just type:

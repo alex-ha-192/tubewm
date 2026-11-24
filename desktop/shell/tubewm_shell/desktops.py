@@ -34,6 +34,7 @@ import os
 import re
 import subprocess
 import sys
+import threading
 import time
 
 from . import wm
@@ -338,6 +339,38 @@ EVENTS = ["view-mapped", "view-unmapped", "view-workspace-changed",
           "view-tiled"]
 
 
+PLACE_AFTER = 0.15   # seconds after a window opens before it's placed
+SETTLE_AFTER = 0.6   # and before checking it stayed there
+
+
+def _later(delay, fn, *args):
+    t = threading.Timer(delay, fn, args)
+    t.daemon = True
+    t.start()
+
+
+def _place(win_id, arranged):
+    try:
+        plan = wm.place(win_id)
+    except (OSError, wm.WayfireError, ValueError):
+        return
+    now = time.monotonic()
+    for vid, _zone in plan:
+        arranged[vid] = now
+    if plan:
+        _later(SETTLE_AFTER, _settle, plan, arranged)
+
+
+def _settle(plan, arranged):
+    try:
+        again = wm.settle(plan)
+    except (OSError, wm.WayfireError, ValueError):
+        return
+    now = time.monotonic()
+    for vid in again:
+        arranged[vid] = now
+
+
 def daemon():
     if not wm.WAYFIRE:
         sys.exit("tube-desktops: needs Wayfire (WAYFIRE_SOCKET is not set)")
@@ -357,11 +390,12 @@ def daemon():
                     if ev.get("new-edges") != ev.get("old-edges"):
                         wm.pair(dict(view, **{"tiled-edges": ev.get("new-edges")}))
                     continue
-                if kind == "view-mapped":
+                if kind == "view-mapped" and view.get("id") is not None:
                     # A new window takes free space, or the desktop is
-                    # retiled so nothing is covered.
-                    for vid in wm.place(view):
-                        arranged[vid] = now
+                    # retiled so nothing is covered. Wait a moment so the
+                    # app has settled on its first size, then check again
+                    # a little later in case it moved itself.
+                    _later(PLACE_AFTER, _place, view["id"], arranged)
                 with locked():
                     reconcile()
         except (OSError, wm.WayfireError, ValueError):
