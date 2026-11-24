@@ -1,7 +1,8 @@
 """tube-status: everything that isn't an app, in one panel on the right.
 
 Click the time on the strip to open it. A big clock and the date, sound and
-brightness as thin lines you drag, wi-fi, battery and quiet hours, your
+brightness as thin lines you drag, which speakers and microphone to use,
+wi-fi, battery and quiet hours, your
 notifications, and lock / sleep / sign out / restart / shut down as words.
 Click outside it, or press Escape, to close it.
 """
@@ -12,7 +13,7 @@ import time
 
 from . import applets, common
 
-from gi.repository import GLib, Gtk  # noqa: E402
+from gi.repository import GLib, Gtk, Pango  # noqa: E402
 
 WIDTH = 460
 DND_MODE = "do-not-disturb"
@@ -67,6 +68,10 @@ class Status:
         vol = applets.volume()
         if vol and vol[0] is not None:
             rows.pack_start(self.level_row("sound", vol[0], applets.set_volume), False, False, 0)
+        for kind in ("output", "input"):
+            devices = applets.audio_devices(kind)
+            if devices:
+                rows.pack_start(self.device_row(kind, devices), False, False, 0)
         light = applets.brightness()
         if light is not None:
             rows.pack_start(self.level_row(
@@ -133,6 +138,41 @@ class Status:
             b.value = val
             return b
         return row
+
+    def device_row(self, kind, devices):
+        """Which speakers (output) or microphone (input) to use. Click to
+        see the others as a list of words; click one to switch to it."""
+        box = Gtk.Box(orientation=Gtk.Orientation.VERTICAL)
+        current = next((d for _n, d, on in devices if on), devices[0][1])
+        choose = Gtk.Revealer()
+        choose.set_transition_type(Gtk.RevealerTransitionType.SLIDE_DOWN)
+        choose.set_transition_duration(180)
+        row = self.pair(kind, current.lower(),
+                        (lambda: choose.set_reveal_child(not choose.get_reveal_child()))
+                        if len(devices) > 1 else None)
+        row.value.set_ellipsize(Pango.EllipsizeMode.END)
+        row.value.set_max_width_chars(26)
+        box.pack_start(row, False, False, 0)
+        listing = Gtk.Box(orientation=Gtk.Orientation.VERTICAL)
+        listing.get_style_context().add_class("status-devices")
+        for name, desc, on in devices:
+            b = word_button(desc.lower(), lambda n=name, d=desc: pick(n, d), "status-device")
+            if on:
+                b.get_style_context().add_class("current")
+            b.get_child().set_xalign(0.0)
+            b.get_child().set_ellipsize(Pango.EllipsizeMode.END)
+            listing.pack_start(b, False, False, 0)
+        choose.add(listing)
+        box.pack_start(choose, False, False, 0)
+
+        def pick(name, desc):
+            applets.set_audio_device(kind, name)
+            row.value.set_text(desc.lower())
+            for b in listing.get_children():
+                ctx = b.get_style_context()
+                (ctx.add_class if b.get_label() == desc.lower() else ctx.remove_class)("current")
+            choose.set_reveal_child(False)
+        return box
 
     def level_row(self, name, value, on_change):
         box = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=4)

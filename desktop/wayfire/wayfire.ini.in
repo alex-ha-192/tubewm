@@ -9,7 +9,7 @@
 
 [core]
 plugins = \
-  alpha animate autostart command expo fast-switcher foreign-toplevel \
+  alpha animate autostart command decoration expo fast-switcher foreign-toplevel \
   grid gtk-shell idle ipc ipc-rules move place resize session-lock \
   shortcuts-inhibit vswipe vswitch wayfire-shell window-rules wm-actions \
   xdg-activation
@@ -17,8 +17,8 @@ plugins = \
 vwidth = @COLUMNS@
 vheight = 1
 background_color = @SHELL_RGBA@
-# No title bars: an app that would draw its own is asked not to, and nothing
-# draws one for it. Windows are moved and closed from the strip at the top.
+# A thin title strip on every window that doesn't draw its own: the name
+# and a close button, flat, in the accent colour when the window is active.
 preferred_decoration_mode = server
 close_top_view = <super> KEY_W | <alt> KEY_F4
 xwayland = true
@@ -44,6 +44,15 @@ cursor_theme = default
 cursor_size = 24
 
 # ── windows ────────────────────────────────────────────────────────────────
+
+[decoration]
+font = Open Sans
+font_color = @FG_RGBA@
+title_height = 32
+border_size = 0
+button_order = close
+active_color = @ACCENT_RGBA@
+inactive_color = @SURFACE_RGBA@
 
 [move]
 # Drag a window by the strip at the top of the screen (or Super + drag
@@ -82,8 +91,10 @@ slot_t = none
 slot_b = none
 
 [place]
-# Every app opens filling the screen. Snap it to a side to share.
-mode = maximize
+# Windows open centred; tube-desktops then fills the screen with the first
+# window on a desktop, or makes room beside the others. Dialogs (a file
+# picker, a password prompt) stay centred over everything.
+mode = center
 
 [wm-actions]
 toggle_fullscreen = <super> KEY_F
