@@ -58,7 +58,9 @@ join_views = false
 preview_base_color = @ACCENT_A40@
 preview_base_border = @ACCENT_RGBA@
 preview_border_width = 2
-workspace_switch_after = 600
+# Never carry a window to the next desktop just because it was dragged to
+# the edge: that's where you drop it to snap. Use Super+Tab to move it.
+workspace_switch_after = -1
 
 [resize]
 activate = <super> BTN_RIGHT
@@ -128,6 +130,10 @@ enable_horizontal = true
 enable_vertical = false
 enable_smooth_transition = true
 fingers = 3
+# A deliberate swipe: a short or slow brush stays on this desktop.
+threshold = 0.5
+delta_threshold = 48
+speed_factor = 400
 duration = 260ms circle
 background = @SHELL_RGBA@
 gap = 0

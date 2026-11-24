@@ -1,8 +1,9 @@
 """tube-strip: the thin strip along the top of the screen.
 
-On the left, the start square and the desktops in light type: the one
-you're on in white. Click one to go there, right-click it for its menu, +
-for a new one. On the right, the time; click it for everything else (sound,
+It is always there. On the left, the start square and the desktops in light
+type: the one you're on in white. Click one to go there, right-click it for
+its menu, + for a new one. On the right, sound, network and battery as
+small marks, and the time; click any of them for everything else (sound,
 brightness, wi-fi, battery, notifications, power).
 
 Between them is the handle for the window you're in. Point at it and the
@@ -13,15 +14,20 @@ screen; an accent outline shows where the window will go.
 
 import json
 import os
+import re
 import subprocess
 import sys
+import threading
 import time
 
-from . import common, desktops, wm
+from . import applets, common, desktops, wm
 
-from gi.repository import Gdk, Gio, GLib, Gtk  # noqa: E402
+from gi.repository import Gdk, GdkPixbuf, Gio, GLib, Gtk  # noqa: E402
 
 HEIGHT = 40
+ICON = 18            # logical px; drawn at the screen's scale so it stays sharp
+STATUS_EVERY = 5     # seconds between looks at sound, network and battery
+ICON_DIR = os.path.normpath(os.path.join(common.SHELL_DIR, "..", "templates", "waybar", "icons"))
 DRAG_START = 12      # px the pointer moves before a press becomes a drag
 EDGE = 0.2           # the outer fifth of the screen on each side snaps there
 
@@ -60,6 +66,21 @@ def zone_rect(zone, w, h, top):
         "top-left": (0, top, hw, hh), "top-right": (hw, top, w - hw, hh),
         "bottom-left": (0, top + hh, hw, h2 - hh), "bottom-right": (hw, top + hh, w - hw, h2 - hh),
     }[zone]
+
+
+def icon_surface(name, pal, scale, widget):
+    """One of tubewm's line icons, in the palette's colours, drawn for this
+    screen's scale."""
+    try:
+        with open(os.path.join(ICON_DIR, name + ".svg")) as fh:
+            svg = re.sub(r"@([A-Z_]+)@", lambda m: pal.get(m.group(1), pal.get("FG", "#FFFFFF")), fh.read())
+        loader = GdkPixbuf.PixbufLoader.new_with_type("svg")
+        loader.set_size(ICON * scale, ICON * scale)
+        loader.write(svg.encode())
+        loader.close()
+        return Gdk.cairo_surface_create_from_pixbuf(loader.get_pixbuf(), scale, widget.get_window())
+    except (OSError, GLib.Error):
+        return None
 
 
 class Preview:
@@ -125,7 +146,8 @@ class Strip:
         if LS is not None and LS.is_supported():
             LS.init_for_window(win)
             LS.set_namespace(win, "tube-strip")
-            LS.set_layer(win, LS.Layer.TOP)
+            # Above everything but the lock screen, so it is always there.
+            LS.set_layer(win, LS.Layer.OVERLAY)
             for edge in (LS.Edge.TOP, LS.Edge.LEFT, LS.Edge.RIGHT):
                 LS.set_anchor(win, edge, True)
             LS.set_exclusive_zone(win, HEIGHT)
@@ -172,11 +194,30 @@ class Strip:
         self.handle.connect("button-release-event", self.on_release)
         row.pack_start(self.handle, True, True, 0)
 
-        self.clock = Gtk.Button()
-        self.clock.set_relief(Gtk.ReliefStyle.NONE)
+        # Sound, network, battery and the time: one thing to click.
+        right = Gtk.Button()
+        right.set_relief(Gtk.ReliefStyle.NONE)
+        right.get_style_context().add_class("strip-status")
+        right.connect("clicked", lambda *_: spawn("tube-status"))
+        marks = Gtk.Box(spacing=16)
+        self.sound, self.net, self.batt = Gtk.Image(), Gtk.Image(), Gtk.Image()
+        self.batt_pct = Gtk.Label()
+        self.batt_pct.get_style_context().add_class("strip-pct")
+        for w in (self.sound, self.net):
+            marks.pack_start(w, False, False, 0)
+        batt = Gtk.Box(spacing=6)
+        batt.pack_start(self.batt, False, False, 0)
+        batt.pack_start(self.batt_pct, False, False, 0)
+        marks.pack_start(batt, False, False, 0)
+        self.batt_box = batt
+        self.clock = Gtk.Label()
         self.clock.get_style_context().add_class("strip-clock")
-        self.clock.connect("clicked", lambda *_: spawn("tube-status"))
-        row.pack_end(self.clock, False, False, 0)
+        marks.pack_start(self.clock, False, False, 0)
+        right.add(marks)
+        self.status_button = right
+        row.pack_end(right, False, False, 0)
+        self.pal = common.load_palette()
+        self.icons = {}
 
         self.window = None   # the focused window while the handle is in use
         self.drag = None
@@ -185,14 +226,67 @@ class Strip:
 
         win.show_all()
         self.set_handle_visible(False)
+        self.batt_box.hide()
         self.tick()
         GLib.timeout_add_seconds(1, self.tick)
         self.watch_desktops()
+        win.connect("notify::scale-factor", lambda *_: (self.icons.clear(), self.look()))
+        self.look()
+        GLib.timeout_add_seconds(STATUS_EVERY, self.look)
 
     # ── the clock ────────────────────────────────────────────────────
     def tick(self):
-        self.clock.set_label(time.strftime("%H:%M"))
+        self.clock.set_text(time.strftime("%H:%M"))
         return True
+
+    # ── sound, network, battery ──────────────────────────────────────
+    def look(self):
+        """Ask how things are, off the main loop (the tools can be slow)."""
+        threading.Thread(target=self._gather, daemon=True).start()
+        return True
+
+    def _gather(self):
+        try:
+            vol = applets.volume()
+        except Exception:  # noqa: BLE001 - no sound server is not an error here
+            vol = (None, False)
+        try:
+            name, _addr = applets.tiles._network()
+        except Exception:  # noqa: BLE001
+            name = ""
+        try:
+            pct, state, left = applets.battery_info()
+        except Exception:  # noqa: BLE001
+            pct, state, left = None, "", ""
+        GLib.idle_add(self._show, vol, name, (pct, state, left))
+
+    def _icon(self, image, name):
+        scale = self.win.get_scale_factor()
+        key = (name, scale)
+        if key not in self.icons:
+            self.icons[key] = icon_surface(name, self.pal, scale, self.win)
+        if self.icons[key] is not None:
+            image.set_from_surface(self.icons[key])
+
+    def _show(self, vol, net, batt):
+        level, muted = vol if vol else (None, False)
+        self.sound.set_visible(level is not None)
+        if level is not None:
+            self._icon(self.sound, "volume-muted" if muted or level == 0 else "volume")
+            self.sound.set_tooltip_text("sound off" if muted else "sound %d" % level)
+        self._icon(self.net, "wired" if net == "wired" else "wifi" if net else "offline")
+        self.net.set_tooltip_text(("wi-fi: " + net) if net and net != "wired" else net or "not connected")
+        pct, state, left = batt
+        self.batt_box.set_visible(pct is not None)
+        if pct is not None:
+            charging = "charg" in state and "dis" not in state
+            self._icon(self.batt, "battery-charging" if charging else "battery-low" if pct < 20 else "battery")
+            self.batt_pct.set_text("%d%%" % pct)
+            tip = "battery %d%%" % pct + (", charging" if charging else "")
+            if left and not charging:
+                tip += ", " + left.replace(" until empty", " left")
+            self.batt_box.set_tooltip_text(tip)
+        return False
 
     # ── desktops ─────────────────────────────────────────────────────
     def watch_desktops(self):

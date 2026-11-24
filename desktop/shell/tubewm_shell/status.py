@@ -39,6 +39,7 @@ class Status:
     def __init__(self):
         common.apply_css()
         win = common.make_layer_window("status", transparent=True, layer="overlay")
+        common.below_strip(win)
         common.main_quit_on_escape(win)
         catcher = Gtk.EventBox()
         catcher.connect("button-press-event", lambda *_: Gtk.main_quit())

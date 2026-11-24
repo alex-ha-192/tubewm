@@ -185,6 +185,16 @@ def make_layer_window(name, transparent=False, layer="overlay"):
     return win
 
 
+STRIP_HEIGHT = 40
+
+
+def below_strip(win):
+    """Keep a full-screen layer window clear of the strip along the top, so
+    the strip is always there to click."""
+    if GtkLayerShell is not None and GtkLayerShell.is_supported():
+        GtkLayerShell.set_margin(win, GtkLayerShell.Edge.TOP, STRIP_HEIGHT)
+
+
 def monitor_size(win=None):
     display = Gdk.Display.get_default()
     mon = display.get_primary_monitor() or display.get_monitor(0)

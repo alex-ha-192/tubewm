@@ -299,27 +299,40 @@ button.applet-button.icon-button.transport.main:hover { background: alpha(#FFFFF
 .tube-flyout { min-width: 360px; padding: 22px 26px 24px; border-top: 3px solid @tube_accent; }
 .tube-flyout-title { font-size: 28px; font-weight: 300; color: @tube_fg; margin-bottom: 14px; }
 
-/* ── start: a panorama of words ─────────────────────────────────────────── */
-window.pano { background-color: @tube_bg; }
-.pano-title { font-size: 200px; font-weight: 300; color: @tube_fg; letter-spacing: -6px; }
-
-
-.pano-header { font-size: 42px; font-weight: 300; color: @tube_fg; margin-bottom: 14px; }
-.pano-first .pano-header { color: @tube_accent_light; }
-.pano-link { padding: 0; margin: 0; min-height: 0; border: none; background: none; box-shadow: none; }
-.pano-link:hover label { color: @tube_accent_light; }
-.pano-big { font-size: 38px; font-weight: 300; color: @tube_fg; min-height: 58px; }
-.pano-medium { font-size: 24px; font-weight: 300; color: @tube_fg; }
-.pano-item { font-size: 20px; font-weight: 300; color: @tube_fg; min-height: 34px; }
-.pano-item.pinned { color: @tube_accent_light; }
-.pano-letter { font-size: 30px; font-weight: 300; color: @tube_accent_light; min-height: 44px; }
-.pano-dim { font-size: 14px; color: @tube_subtle; }
-.pano-subtle { font-size: 16px; color: #B0B0B0; }
-.pano-playing { margin-top: 34px; }
-.pano-apps flowboxchild { padding: 0; }
-.pano-search { font-size: 38px; font-weight: 300; color: @tube_fg; background: none; border: none;
-               border-bottom: 2px solid @tube_accent; box-shadow: none; border-radius: 0;
-               padding: 4px 0; margin-bottom: 18px; min-width: 600px; }
+/* ── start: every app at once, and type to find one ─────────────────────── */
+window.start { background-color: @tube_bg; }
+.start-hint { font-size: 18px; font-weight: 300; color: #9A9A9A; }
+.start-search { font-size: 30px; font-weight: 300; color: @tube_fg; background: none; border: none;
+                border-bottom: 1px solid #333333; box-shadow: none; border-radius: 0; padding: 0 0 6px 0;
+                margin-bottom: 20px; caret-color: @tube_accent; letter-spacing: 0; }
+.start-search:focus { box-shadow: none; }
+.start-search placeholder, .start-search text placeholder { color: #7A7A7A; }
+.start-link { padding: 0; margin: 0; min-height: 0; border: none; background: none; box-shadow: none; }
+.start-link:hover label:first-child, .start-link:hover .start-item { color: @tube_accent_light; }
+.start-group { margin-bottom: 16px; }
+.start-letter { font-size: 38px; font-weight: 300; color: @tube_accent_light; }
+.start-item { font-size: 22px; font-weight: 300; color: @tube_fg; min-height: 33px; }
+.start-dim { font-size: 18px; color: #9A9A9A; margin-bottom: 6px; }
+.start-also { margin-top: 36px; margin-bottom: 10px; }
+.start-best { font-size: 64px; font-weight: 300; color: @tube_accent_light; }
+.start-result { font-size: 32px; font-weight: 300; color: @tube_fg; }
+.start-kind { font-size: 18px; font-weight: 300; color: #9A9A9A; }
+.start-none { font-size: 32px; font-weight: 300; color: #9A9A9A; }
+.start-divider { min-width: 1px; background-color: #2A2A2A; margin: 24px 0 8px 0; }
+.start-open-head { margin-top: 28px; }
+.start-open { font-size: 28px; font-weight: 300; color: @tube_fg; }
+.start-foot { font-size: 20px; font-weight: 300; color: #9A9A9A; }
+.start-link:hover .start-foot { color: @tube_fg; }
+.glance-tile { padding: 20px 24px; border: none; border-radius: 0; box-shadow: none;
+               background-color: #262626; background-image: none; }
+.glance-tile:hover { background-color: #303030; }
+.glance-tile.glance-accent { background-color: @tube_accent; }
+.glance-tile.glance-accent:hover { background-color: @tube_accent_light; }
+.glance-label { font-size: 16px; font-weight: 600; color: #BDBDBD; }
+.glance-big { font-size: 48px; font-weight: 300; color: @tube_fg; margin-top: 10px; }
+.glance-sub { font-size: 18px; font-weight: 400; color: #BDBDBD; }
+.glance-accent .glance-label, .glance-accent .glance-sub { color: #FFFFFF; }
+.glance-accent .glance-big { font-size: 40px; color: #FFFFFF; margin-top: 18px; }
 
 /* ── the strip along the top ────────────────────────────────────────────── */
 window.strip { background-color: @tube_bg; }
@@ -333,7 +346,11 @@ window.strip { background-color: @tube_bg; }
 }
 .strip-desk:hover, .strip-word:hover { color: @tube_fg; }
 .strip-desk.current { color: @tube_fg; }
-.strip-clock { color: @tube_fg; padding: 0 24px 0 12px; }
+.strip-clock { color: @tube_fg; padding: 0 0 0 10px; }
+.strip-status { padding: 0 24px 0 16px; min-height: 40px; background: none; border: none;
+                border-radius: 0; box-shadow: none; }
+.strip-status:hover { background-color: alpha(@tube_fg, 0.08); }
+.strip-pct { font-size: 15px; font-weight: 400; color: @tube_fg; }
 .strip-word { font-size: 15px; font-weight: 400; color: @tube_fg; }
 .strip-handle { padding-left: 28px; }
 .strip-title { font-size: 15px; color: #B0B0B0; }
