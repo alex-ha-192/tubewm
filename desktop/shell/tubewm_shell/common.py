@@ -273,3 +273,31 @@ def main_quit_on_escape(win, handler=None):
 def die(msg):
     print(msg, file=sys.stderr)
     sys.exit(1)
+
+
+def popup_window(name, side="left", margin=0):
+    """A panel that drops down from the bar, as a layer over the screen below
+    it: a click anywhere outside the panel, or Escape, closes it.
+
+    side is "left" or "right" (which edge the panel hangs from) and margin its
+    distance from that edge. Returns (window, box); pack the content into box.
+    """
+    win = make_layer_window(name, transparent=True, layer="top")
+    if GtkLayerShell is not None and GtkLayerShell.is_supported():
+        GtkLayerShell.set_exclusive_zone(win, 0)  # sit below the bar, not over it
+    catcher = Gtk.EventBox()
+    catcher.connect("button-press-event", lambda *_: Gtk.main_quit())
+    win.add(catcher)
+    shield = Gtk.EventBox(halign=Gtk.Align.START if side == "left" else Gtk.Align.END,
+                          valign=Gtk.Align.START)
+    shield.connect("button-press-event", lambda *_: True)  # clicks inside stay inside
+    box = Gtk.Box(orientation=Gtk.Orientation.VERTICAL)
+    if side == "left":
+        box.set_margin_start(margin)
+    else:
+        box.set_margin_end(margin)
+    box.get_style_context().add_class("tube-popup")
+    shield.add(box)
+    catcher.add(shield)
+    main_quit_on_escape(win)
+    return win, box

@@ -352,30 +352,14 @@ def daemon():
 
 def menu(i):
     from . import common  # GTK, only when a menu is shown
-    from gi.repository import Gdk, Gtk
+    from gi.repository import Gtk
 
     state = load()
     if not (0 <= i < len(state)):
         return
     d = state[i]
     common.apply_css()
-    # A clear layer over the whole screen below the bar, so a click anywhere
-    # outside the menu closes it; the menu itself sits under the name.
-    win = common.make_layer_window("desktop-menu", transparent=True, layer="top")
-    if common.GtkLayerShell is not None and common.GtkLayerShell.is_supported():
-        common.GtkLayerShell.set_exclusive_zone(win, 0)
-    catcher = Gtk.EventBox()
-    catcher.connect("button-press-event", lambda *_: Gtk.main_quit())
-    win.add(catcher)
-    box = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, halign=Gtk.Align.START,
-                  valign=Gtk.Align.START, margin_start=_label_x(state, i))
-    box.get_style_context().add_class("tube-popup")
-    shield = Gtk.EventBox()  # clicks inside the menu don't reach the catcher
-    shield.connect("button-press-event", lambda *_: True)
-    shield.add(box)
-    shield.set_halign(Gtk.Align.START)
-    shield.set_valign(Gtk.Align.START)
-    catcher.add(shield)
+    win, box = common.popup_window("desktop-menu", "left", _label_x(state, i))
 
     entry = Gtk.Entry(text=d.get("name") or "")
     entry.set_placeholder_text("name this desktop")
@@ -420,7 +404,6 @@ def menu(i):
         hint.get_style_context().add_class("tube-popup-hint")
         box.pack_start(hint, False, False, 0)
 
-    win.connect("key-press-event", lambda _w, ev: done() if ev.keyval == Gdk.KEY_Escape else False)
     win.show_all()
     entry.grab_focus()
     entry.select_region(0, -1)
