@@ -373,6 +373,119 @@ def _pin(cr):
     cr.line_to(12, 21)
 
 
+def _back(cr):
+    cr.move_to(20, 12)
+    cr.line_to(4, 12)
+    cr.move_to(10, 6)
+    cr.line_to(4, 12)
+    cr.line_to(10, 18)
+
+
+def _prev(cr):
+    cr.move_to(6, 5)
+    cr.line_to(6, 19)
+    cr.move_to(18, 5)
+    cr.line_to(9, 12)
+    cr.line_to(18, 19)
+    cr.close_path()
+
+
+def _next(cr):
+    cr.move_to(18, 5)
+    cr.line_to(18, 19)
+    cr.move_to(6, 5)
+    cr.line_to(15, 12)
+    cr.line_to(6, 19)
+    cr.close_path()
+
+
+def _play(cr):
+    cr.move_to(7, 4)
+    cr.line_to(19, 12)
+    cr.line_to(7, 20)
+    cr.close_path()
+
+
+def _pause(cr):
+    cr.move_to(8, 5)
+    cr.line_to(8, 19)
+    cr.move_to(16, 5)
+    cr.line_to(16, 19)
+
+
+def _close(cr):
+    cr.move_to(6, 6)
+    cr.line_to(18, 18)
+    cr.move_to(18, 6)
+    cr.line_to(6, 18)
+
+
+def _minimize(cr):
+    cr.move_to(5, 17)
+    cr.line_to(19, 17)
+
+
+def _maximize(cr):
+    cr.rectangle(5, 5, 14, 14)
+
+
+def _snap_left(cr):
+    cr.rectangle(4, 5, 16, 14)
+    cr.move_to(12, 5)
+    cr.line_to(12, 19)
+    cr.rectangle(5.5, 6.5, 5, 11)
+
+
+def _snap_right(cr):
+    cr.rectangle(4, 5, 16, 14)
+    cr.move_to(12, 5)
+    cr.line_to(12, 19)
+    cr.rectangle(13.5, 6.5, 5, 11)
+
+
+def _up(cr):
+    cr.move_to(6, 15)
+    cr.line_to(12, 9)
+    cr.line_to(18, 15)
+
+
+def _down(cr):
+    cr.move_to(6, 9)
+    cr.line_to(12, 15)
+    cr.line_to(18, 9)
+
+
+def _left(cr):
+    cr.move_to(15, 6)
+    cr.line_to(9, 12)
+    cr.line_to(15, 18)
+
+
+def _right(cr):
+    cr.move_to(9, 6)
+    cr.line_to(15, 12)
+    cr.line_to(9, 18)
+
+
+def _brightness(cr):
+    _circle(cr, 12, 12, 4)
+    for dx, dy in ((0, -8), (0, 8), (-8, 0), (8, 0), (5.7, 5.7), (-5.7, -5.7), (5.7, -5.7), (-5.7, 5.7)):
+        cr.move_to(12 + dx * 0.75, 12 + dy * 0.75)
+        cr.line_to(12 + dx, 12 + dy)
+
+
+def _mic(cr):
+    cr.move_to(9, 5)
+    cr.line_to(9, 12)
+    cr.arc_negative(12, 12, 3, 3.14159, 0)
+    cr.line_to(15, 5)
+    cr.arc_negative(12, 5, 3, 0, 3.14159)
+    cr.move_to(6, 11)
+    cr.arc_negative(12, 11, 6, 3.14159, 0)
+    cr.move_to(12, 17)
+    cr.line_to(12, 21)
+
+
 GLYPHS = {
     "search": _search, "share": _share, "start": _start, "devices": _devices,
     "settings": _settings, "lock": _lock, "power": _power, "sleep": _sleep,
@@ -382,7 +495,10 @@ GLYPHS = {
     "game": _game, "calendar": _calendar, "clock": _clock, "battery": _battery,
     "system": _system, "bluetooth": _bluetooth, "sound": _sound, "weather": _weather,
     "disk": _disk, "network": _network, "note": _note, "bell": _bell, "windows": _windows,
-    "recent": _recent, "plus": _plus, "pin": _pin,
+    "recent": _recent, "plus": _plus, "pin": _pin, "back": _back, "prev": _prev,
+    "next": _next, "play": _play, "pause": _pause, "close": _close, "minimize": _minimize,
+    "maximize": _maximize, "snap-left": _snap_left, "snap-right": _snap_right, "up": _up,
+    "down": _down, "left": _left, "right": _right, "brightness": _brightness, "mic": _mic,
 }
 
 

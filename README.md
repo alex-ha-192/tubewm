@@ -79,11 +79,13 @@ desktop/install.sh --no-gsettings     # leave GTK / GNOME settings alone
 desktop/install.sh --help
 ```
 
-### 4. Make sure `~/.local/bin` is on your PATH
+### 4. Put `~/.local/bin` on your PATH (for typing commands)
 
-Sway runs the `tube-*` commands from `~/.local/bin`. The installer warns if it
-isn't on your `PATH`. Most distros add it already; if yours doesn't, add this
-to `~/.profile` and log out and back in:
+The desktop itself finds its `tube-*` commands without this, but you'll want
+them on your PATH to type `tube-accent` or `tube-wallpaper` in a terminal.
+Most distros add `~/.local/bin` already; Arch and its derivatives (CachyOS,
+EndeavourOS, Manjaro) don't. If yours doesn't, add this to `~/.profile` (or
+`fish_add_path ~/.local/bin` if you use fish):
 
 ```sh
 export PATH="$HOME/.local/bin:$PATH"
@@ -96,7 +98,7 @@ export PATH="$HOME/.local/bin:$PATH"
 * **From a text console:** log in on a TTY and run `sway`.
 * **Already inside Sway:** run `swaymsg reload`.
 
-Press `Super+S` for start, `Super+C` for charms and `Super+I` for settings.
+Start opens when you log in. Press `Super+S` to bring it back, `Super+C` for charms and `Super+I` for settings.
 The full key list is in [desktop/docs/keys.html](desktop/docs/keys.html) ([view it rendered](https://htmlpreview.github.io/?https://github.com/alex-ha-192/tubewm/blob/main/desktop/docs/keys.html)) and [desktop/README.md](desktop/README.md#keys).
 
 ### 6. Theme your apps (optional)
@@ -209,8 +211,12 @@ packages installed with `--deps` are left installed.
 
 ## Troubleshooting
 
-* **`Super+S` does nothing:** `~/.local/bin` probably isn't on Sway's `PATH`
-  (step 4). Run `tube-start` from a terminal to see any error.
+* **`Super+S` does nothing:** run `~/.local/bin/tube-start` from a terminal
+  (`Super+Return`) to see the error. A missing GtkLayerShell or Open Sans is
+  the usual cause.
+* **Stuck with no way out:** `Super+Return` opens a terminal and
+  `Super+Shift+E` has sign out. From any text console (`Ctrl+Alt+F3`),
+  `desktop/install.sh --uninstall` puts your old configs back.
 * **"GtkLayerShell not found" or start won't open:** install gtk-layer-shell's
   GObject bindings (`gir1.2-gtklayershell-0.1` on Debian/Ubuntu,
   `gtk-layer-shell` elsewhere).

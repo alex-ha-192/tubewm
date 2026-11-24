@@ -65,8 +65,8 @@ tooltip label { color: @FG@; padding: 4px 6px; }
     margin: 14px 0 14px 12px;
 }
 
-#mpris, #tray, #idle_inhibitor, #network, #pulseaudio, #battery, #clock {
-    color: @SUBTLE@;
+#mpris, #tray, #idle_inhibitor, #network, #backlight, #pulseaudio, #battery, #clock {
+    color: #D0D0D0;
     font-weight: 300;
     padding: 0 12px;
 }
@@ -76,9 +76,26 @@ tooltip label { color: @FG@; padding: 4px 6px; }
 
 #idle_inhibitor { padding: 0 6px; }
 #idle_inhibitor.activated { color: @ACCENT_LIGHT@; padding: 0 12px; }
-#network.disconnected, #pulseaudio.muted { color: @DIM@; }
+#network.disconnected, #pulseaudio.muted { color: @SUBTLE@; }
 
-#battery.charging, #battery.plugged { color: @FG@; }
+/* Status icons: tubewm's own line glyphs, drawn beside the number. */
+#network, #backlight, #pulseaudio, #battery {
+    background-repeat: no-repeat;
+    background-position: 12px center;
+    background-size: 18px 18px;
+    padding-left: 38px;
+}
+#network.wifi            { background-image: url("icons/wifi.svg"); }
+#network.ethernet        { background-image: url("icons/wired.svg"); }
+#network.disconnected,
+#network.linked          { background-image: url("icons/offline.svg"); }
+#backlight               { background-image: url("icons/brightness.svg"); }
+#pulseaudio              { background-image: url("icons/volume.svg"); }
+#pulseaudio.muted        { background-image: url("icons/volume-muted.svg"); }
+#battery                 { background-image: url("icons/battery.svg"); }
+#battery.low, #battery.critical { background-image: url("icons/battery-low.svg"); }
+#battery.charging, #battery.plugged { background-image: url("icons/battery-charging.svg"); }
+
 #battery.low:not(.charging) { color: @ACCENT_LIGHT@; }
 #battery.critical:not(.charging) {
     background: @URGENT@;

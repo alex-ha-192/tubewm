@@ -280,8 +280,10 @@ class StartScreen:
         GLib.timeout_add(150, self._clear_drag_flag)
         col = int(round(d["gx"] / CELL))
         row = int(round(d["gy"] / CELL))
-        self.move_to_cell(tile.index, col, row)
-        return True
+        # Let the button see its release too (or it stays pressed and dark),
+        # and rebuild the grid once this event is over.
+        GLib.idle_add(lambda: self.move_to_cell(tile.index, col, row) and False)
+        return False
 
     def _clear_drag_flag(self):
         self.just_dragged = False
@@ -494,6 +496,8 @@ class StartScreen:
         self.listbox.set_activate_on_single_click(True)
         self.listbox.set_filter_func(self.filter_row)
         self.listbox.connect("row-activated", self.on_app_row)
+        self.listbox.add_events(Gdk.EventMask.BUTTON_PRESS_MASK)
+        self.listbox.connect("button-press-event", self.on_app_press)
         scroll.add(self.listbox)
         col.pack_start(scroll, True, True, 0)
 
@@ -539,8 +543,6 @@ class StartScreen:
         row.app_id = (app.get_id() or "").removesuffix(".desktop")
         row.pin_mark = pin
         row.set_tooltip_text(app.get_description() or app.get_display_name())
-        row.add_events(Gdk.EventMask.BUTTON_PRESS_MASK)
-        row.connect("button-press-event", self.on_app_press)
         row.connect("popup-menu", lambda r: self.app_menu(r, None) or True)
         return row
 
@@ -555,11 +557,15 @@ class StartScreen:
             if getattr(row, "app", None) is not None:
                 row.pin_mark.set_visible(row.app_id in pinned)
 
-    def on_app_press(self, row, event):
-        if event.button == 3:
-            self.app_menu(row, event)
-            return True
-        return False
+    def on_app_press(self, listbox, event):
+        # Rows have no window of their own, so clicks arrive at the list.
+        if event.button != 3:
+            return False
+        row = listbox.get_row_at_y(int(event.y))
+        if row is None or getattr(row, "app", None) is None:
+            return False
+        self.app_menu(row, event)
+        return True
 
     def app_menu(self, row, event):
         menu = Gtk.Menu()

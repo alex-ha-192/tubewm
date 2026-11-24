@@ -13,6 +13,7 @@
         "tray",
         "idle_inhibitor",
         "network",
+        "backlight",
         "pulseaudio",
         "battery",
         "clock#date",
@@ -22,8 +23,8 @@
     "custom/start": {
         "format": " ",
         "tooltip": false,
-        "on-click": "tube-start",
-        "on-click-right": "tube-charms"
+        "on-click": "~/.local/bin/tube-start",
+        "on-click-right": "~/.local/bin/tube-charms"
     },
 
     "sway/workspaces": {
@@ -77,26 +78,35 @@
         "format-linked": "no address",
         "tooltip-format": "{ifname} · {ipaddr}",
         "tooltip-format-wifi": "{essid} · {signalStrength}% · {ipaddr}",
-        "on-click": "tube-charms --settings"
+        "on-click": "~/.local/bin/tube-charms --settings"
     },
 
     "pulseaudio": {
-        "format": "vol {volume}",
+        "format": "{volume}",
         "format-muted": "muted",
-        "on-click": "tube-osd volume mute",
-        "on-scroll-up": "TUBE_OSD_STEP=2 tube-osd volume up",
-        "on-scroll-down": "TUBE_OSD_STEP=2 tube-osd volume down",
+        "tooltip-format": "volume {volume}% · {desc}",
+        "on-click": "~/.local/bin/tube-osd volume mute",
+        "on-scroll-up": "TUBE_OSD_STEP=2 ~/.local/bin/tube-osd volume up",
+        "on-scroll-down": "TUBE_OSD_STEP=2 ~/.local/bin/tube-osd volume down",
         // Touchpads send a stream of tiny scrolls; only act on a deliberate one.
         "smooth-scrolling-threshold": 6,
         "on-click-right": "pavucontrol"
     },
 
+    "backlight": {
+        "format": "{percent}",
+        "tooltip-format": "brightness {percent}%",
+        "on-scroll-up": "TUBE_OSD_STEP=2 ~/.local/bin/tube-osd brightness up",
+        "on-scroll-down": "TUBE_OSD_STEP=2 ~/.local/bin/tube-osd brightness down",
+        "smooth-scrolling-threshold": 6
+    },
+
     "battery": {
         "states": { "low": 20, "critical": 10 },
         "format": "{capacity}%",
-        "format-charging": "{capacity}% +",
-        "format-plugged": "{capacity}% =",
-        "tooltip-format": "{timeTo}"
+        "format-charging": "{capacity}%",
+        "format-plugged": "{capacity}%",
+        "tooltip-format": "battery {capacity}% · {timeTo}"
     },
 
     "clock#date": {
@@ -108,6 +118,6 @@
     "clock": {
         "format": "{:%H:%M}",
         "tooltip": false,
-        "on-click": "tube-charms"
+        "on-click": "~/.local/bin/tube-charms"
     }
 }
