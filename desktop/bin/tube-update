@@ -1,0 +1,87 @@
+#!/usr/bin/env bash
+# tube-update: get the newest tubewm without touching git yourself.
+#
+#   tube-update               show what's new and update (opens a terminal if needed)
+#   tube-update --check       look for updates; prints how many, exits 1 if none
+#   tube-update --notify      at most once a day: look, and if there are updates,
+#                             show a notification with an "update" button
+#
+# It updates the tubewm folder you installed from (keeping your own edits
+# safe), or its own copy in ~/.local/share/tubewm-source if that folder is
+# gone, then runs the installer in update mode: your colour, tiles and
+# settings stay as they are.
+set -u
+CONFIG=${XDG_CONFIG_HOME:-$HOME/.config}
+DATA=${XDG_DATA_HOME:-$HOME/.local/share}
+CACHE=${XDG_CACHE_HOME:-$HOME/.cache}/tubewm
+UPSTREAM=https://github.com/alex-ha-192/tubewm
+BRANCH=main
+SELF=$(readlink -f "$0")
+
+is_clone() { [ -n "${1:-}" ] && [ -f "$1/install.sh" ] && [ -d "$1/.git" ]; }
+
+# Where tubewm was installed from: the installer records it; older installs
+# can be found through the app-theme hook, which points into the folder.
+find_source() {
+    local src
+    src=$(sed -n 's/^source=//p' "$CONFIG/tubewm/installed" 2>/dev/null | tail -n1)
+    is_clone "$src" && { echo "$src"; return; }
+    src=$(sed -n 's|.*python3 "\(.*\)/apps/lib/appthemes.py".*|\1|p' "$CONFIG/tubewm/accent.d/40-apps" 2>/dev/null)
+    is_clone "$src" && { echo "$src"; return; }
+    for src in "$HOME/tubewm" "$HOME/src/tubewm" "$HOME/git/tubewm" "$HOME/Projects/tubewm" \
+               "$HOME/projects/tubewm" "$HOME/code/tubewm" "$DATA/tubewm-source"; do
+        is_clone "$src" && { echo "$src"; return; }
+    done
+    # Nothing to update from: fetch a copy of our own.
+    src=$DATA/tubewm-source
+    git clone --quiet --branch "$BRANCH" "$UPSTREAM" "$src" >&2 && echo "$src"
+}
+
+count_updates() { # prints the number of new changes on main
+    local src=$1
+    timeout 60 git -C "$src" fetch --quiet origin "+refs/heads/$BRANCH:refs/remotes/origin/$BRANCH" 2>/dev/null || return 1
+    git -C "$src" rev-list --no-merges --count "HEAD..refs/remotes/origin/$BRANCH" 2>/dev/null
+}
+
+remember() { mkdir -p "$CACHE"; echo "$1" > "$CACHE/updates"; }
+
+case ${1:-} in
+    -h|--help)
+        sed -n '2,14p' "$0" | sed 's/^# \{0,1\}//'; exit 0 ;;
+    --check)
+        src=$(find_source) || { echo "tube-update: couldn't find or fetch tubewm" >&2; exit 2; }
+        n=$(count_updates "$src") || { echo "tube-update: couldn't reach GitHub" >&2; exit 2; }
+        remember "$n"
+        echo "$n"
+        [ "$n" -gt 0 ]; exit ;;
+    --notify)
+        [ "${2:-}" = "--delay" ] && sleep "${3:-60}"
+        stamp=$CACHE/update-checked
+        if [ -f "$stamp" ] && [ -n "$(find "$stamp" -mmin -1200 2>/dev/null)" ]; then exit 0; fi
+        src=$(find_source 2>/dev/null) || exit 0
+        n=$(count_updates "$src") || exit 0
+        mkdir -p "$CACHE"; touch "$stamp"; remember "$n"
+        [ "$n" -gt 0 ] || exit 0
+        text="$n new change$([ "$n" = 1 ] || echo s) to your desktop."
+        if notify-send --help 2>&1 | grep -q -- '--action'; then
+            choice=$(notify-send -a tubewm -A update="update" "tubewm update" "$text" 2>/dev/null)
+            [ "$choice" = update ] && exec "$SELF"
+        else
+            notify-send -a tubewm "tubewm update" "$text Open \"update tubewm\" in start." 2>/dev/null
+        fi
+        exit 0 ;;
+    "") ;;
+    *) echo "tube-update: unknown option $1 (try --help)" >&2; exit 2 ;;
+esac
+
+# Interactive: needs a terminal to draw in.
+if [ ! -t 0 ] || [ ! -t 1 ]; then
+    term=${TERMINAL:-foot}
+    command -v "$term" >/dev/null || term=foot
+    exec "$term" -e "$SELF"
+fi
+src=$(find_source) || { echo "tube-update: couldn't find or fetch tubewm (is git installed?)"; read -r -p "Press enter to close" _; exit 1; }
+"$src/install.sh" --update
+status=$?
+[ $status -eq 0 ] || [ $status -eq 1 ] || { echo; read -r -p "Press enter to close" _; }
+exit $status

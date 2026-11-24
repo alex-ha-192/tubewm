@@ -171,6 +171,8 @@ inactive_alpha = 0.5
 # Tap Super on its own for start.
 binding_start = <super>
 command_start = ~/.local/bin/tube-start
+# A quiet notification, at most once a day, when there's a new tubewm.
+updates = ~/.local/bin/tube-update --notify --delay 90
 binding_start_key = <super> KEY_S
 command_start_key = ~/.local/bin/tube-start
 binding_apps = <super> KEY_A

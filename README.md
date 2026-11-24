@@ -159,14 +159,19 @@ a live tile; right-click an app in the list to pin it. See
 
 ## Updating
 
-```sh
-cd tubewm
-git pull
-./install.sh                # close Vivaldi first if you use its theme
-```
+Open **update tubewm** in start, or run `tube-update`. It shows what's new,
+asks once, then updates and reinstalls in place; sign out and back in to see
+it all. You never need to touch git: it updates the folder you installed from
+(or its own copy if that folder is gone), and your colour, tiles and settings
+stay as they are.
 
-Your start layout, accent, wallpaper choice and any config files you've edited
-(`~/.config/sway/config`, `~/.config/waybar/`) are kept. Then `swaymsg reload`.
+Once a day, a quiet notification tells you when there's something new, and
+the status panel shows a **tubewm** row with the number of updates.
+
+If you've edited files in the tubewm folder yourself, they're set aside with
+`git stash` first and the update tells you so. If you've made commits of your
+own there, it stops and leaves the folder alone. `tube-update --check` just
+prints how many updates are waiting.
 
 ## Uninstalling
 

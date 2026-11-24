@@ -36,6 +36,17 @@ def word_button(text, cb, *classes):
     return b
 
 
+def pending_updates():
+    """How many tubewm changes are waiting, as last seen by tube-update."""
+    path = os.path.join(os.environ.get("XDG_CACHE_HOME", os.path.join(common.HOME, ".cache")),
+                        "tubewm", "updates")
+    try:
+        with open(path) as fh:
+            return int(fh.read().strip() or 0)
+    except (OSError, ValueError):
+        return 0
+
+
 class Status:
     def __init__(self):
         common.apply_css()
@@ -92,6 +103,12 @@ class Status:
             rows.pack_start(self.pair("battery", detail), False, False, 0)
         self.quiet = self.pair("quiet hours", "on" if self.dnd() else "off", self.toggle_dnd)
         rows.pack_start(self.quiet, False, False, 0)
+        updates = pending_updates()
+        if updates:
+            rows.pack_start(self.pair(
+                "tubewm", "%d update%s" % (updates, "" if updates == 1 else "s"),
+                lambda: self.run_and_close(os.path.join(common.HOME, ".local", "bin", "tube-update"))),
+                False, False, 0)
 
         notes = applets.notification_history()[:4]
         if notes:

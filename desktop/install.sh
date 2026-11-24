@@ -65,6 +65,7 @@ if [ "$uninstall" = 1 ]; then
         [ -L "$l" ] && case $(readlink "$l") in "$DEST"/*) rm -f "$l" ;; esac
     done
     rm -rf "$DEST"
+    rm -f "$DATA/applications/tubewm-update.desktop"
     for rel in "${MANAGED[@]}" sway/config.d/10-tubewm-keyboard.conf sway/config.d/50-tubewm-wallpaper.conf; do
         rm -f "$CONFIG/$rel"
     done
@@ -197,6 +198,20 @@ for rel in "${MANAGED[@]}"; do
     cp "$REPO/desktop/config/$rel" "$CONFIG/$rel"
 done
 mkdir -p "$CONFIG/sway/config.d" "$CONFIG/tubewm/accent.d"
+
+# "update tubewm" in start: opens tube-update in a terminal.
+APPS=$DATA/applications
+mkdir -p "$APPS"
+cat > "$APPS/tubewm-update.desktop" <<DESKTOP
+[Desktop Entry]
+Type=Application
+Name=update tubewm
+Comment=Get the newest version of your desktop
+Exec=$BIN/tube-update
+Terminal=true
+Icon=system-software-update
+Categories=System;Settings;
+DESKTOP
 
 if [ -n "$accent" ]; then
     TUBEWM_HOME=$DEST "$DEST/desktop/bin/tube-accent" "$accent" >/dev/null

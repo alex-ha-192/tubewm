@@ -7,6 +7,7 @@ Run it through ./install.sh at the top of the repository:
     ./install.sh --yes         same, without questions (uses the detected keyboard)
     ./install.sh --home-only   only touch your home folder: no password needed
     ./install.sh --uninstall   remove tubewm and put your old settings back
+    ./install.sh --update      fetch the newest tubewm and install it (what tube-update runs)
     ./install.sh --plain       plain text instead of the full-screen UI
 
 Only the standard library is used, because this runs before anything else is
@@ -70,6 +71,18 @@ PACKAGES = {
         "",
     ),
 }
+
+
+# What it takes to build the Wayfire plugins in desktop/wayfire/plugins.
+BUILD_DEPS = {
+    "arch": "meson ninja gcc pkgconf",
+    "debian": "meson ninja-build g++ pkg-config wayfire-dev",
+    "fedora": "meson ninja-build gcc-c++ pkgconf-pkg-config wayfire-devel",
+    "suse": "meson ninja gcc-c++ pkgconf wayfire-devel",
+}
+PLUGIN_BUILD = os.path.join(REPO, "desktop", "wayfire", "plugins", "build.sh")
+UPSTREAM = "https://github.com/alex-ha-192/tubewm"
+BRANCH = "main"
 
 
 class Failed(Exception):
@@ -384,10 +397,16 @@ def wants_wayfire(pkgs_to_install):
         shutil.which("wayfire") is not None or "wayfire" in pkgs_to_install)
 
 
+def builds_plugins(pkgs_to_install=()):
+    return os.path.exists(PLUGIN_BUILD) and (
+        shutil.which("wayfire") is not None or "wayfire" in pkgs_to_install)
+
+
 class Plan:
-    def __init__(self, system, home_only=False):
+    def __init__(self, system, home_only=False, update=False):
         self.sys = system
         self.home_only = home_only
+        self.update = update
         self.layout = keyboard.guess()
         self.packages = []
         self.apps = []
@@ -402,6 +421,9 @@ class Plan:
                 opt = [p for p in opt if p != "wayfire"]
             missing_opt = s.available(s.missing(opt))
             self.packages = missing_req + missing_opt
+            if builds_plugins(self.packages):
+                self.packages += [p for p in s.missing(BUILD_DEPS.get(s.family, "").split())
+                                  if p not in self.packages]
         self.apps = themable_apps()
 
     def build(self):
@@ -417,12 +439,17 @@ class Plan:
         steps.append(Step("desktop", "Set up the desktop",
                           "Start screen, charms, bar and configs. Old configs are backed up.",
                           self.do_desktop, toggle=False))
+        apps_on = bool(self.apps) and not (self.update and read_record().get("apps") == "off")
         steps.append(Step("apps", "Theme your apps",
                           (", ".join(self.apps) if self.apps else "None found yet; they'll be themed when you rerun this")
                           + ". Same colour as the desktop.",
-                          self.do_apps, on=bool(self.apps), soft=True))
+                          self.do_apps, on=apps_on, soft=True))
+        if builds_plugins(self.packages):
+            steps.append(Step("plugins", "Build the window title bars",
+                              "The square close button, for the Wayfire session.",
+                              self.do_plugins, toggle=False, soft=True))
         sysk = keyboard.system()
-        if sysk != tuple(self.layout) or not sysk:
+        if not self.update and (sysk != tuple(self.layout) or not sysk):
             steps.append(Step("keyboard", "Use %s on the sign-in screen" % keyboard.describe(*self.layout),
                               "And on text consoles." + (" It is %s now." % keyboard.describe(*sysk)
                                                          if sysk else ""),
@@ -464,14 +491,25 @@ class Plan:
         prev = read_record().get("packages", "").split()
         write_record(packages=" ".join(sorted(set(prev) | set(self.packages))))
 
+    def remember(self):
+        """What the person chose, so updates keep to it."""
+        for st in self.steps:
+            if st.key == "apps":
+                write_record(apps="on" if st.on else "off")
+
     def do_desktop(self, run):
-        keyboard.save(*self.layout)
+        if not (self.update and keyboard.load()):
+            keyboard.save(*self.layout)
         run.line("keyboard: %s" % keyboard.describe(*self.layout))
+        write_record(source=REPO)
         run.run(["bash", os.path.join(REPO, "desktop", "install.sh")],
                 env={"TUBEWM_FROM_INSTALLER": "1"})
 
     def do_apps(self, run):
         run.run(["sh", os.path.join(REPO, "apps", "install.sh")], check=False)
+
+    def do_plugins(self, run):
+        run.run(["bash", PLUGIN_BUILD])
 
     def do_keyboard_system(self, run):
         run.run(keyboard.system_command(*self.layout), sudo=True)
@@ -557,6 +595,92 @@ def run_steps(steps, runner, on_change=lambda: None):
     return None, None
 
 
+# ── updates ──────────────────────────────────────────────────────────────
+
+class Source:
+    """The tubewm checkout this was installed from, as a git clone."""
+
+    def __init__(self, path=REPO):
+        self.path = path
+        self.remote = "refs/remotes/origin/" + BRANCH
+        self.notes = []
+
+    def git(self, *args, timeout=120):
+        r = quiet(["git", "-C", self.path] + list(args), timeout=timeout)
+        if r is None:
+            raise Failed("git isn't working.", "Install git, then try again.")
+        return r
+
+    def ok(self, *args, timeout=120):
+        r = self.git(*args, timeout=timeout)
+        return r.returncode == 0, r.stdout.strip(), r.stderr.strip()
+
+    def fetch(self):
+        if not os.path.isdir(os.path.join(self.path, ".git")):
+            raise Failed("%s isn't a git clone, so it can't update itself." % _tilde(self.path),
+                         "Run  tube-update  instead: it fetches its own copy.")
+        good, _, err = self.ok("fetch", "--quiet", "origin",
+                               "+refs/heads/%s:%s" % (BRANCH, self.remote))
+        if not good:
+            raise Failed("Couldn't reach GitHub to look for updates.",
+                         "Check your internet connection and try again.\n" + err.splitlines()[-1]
+                         if err else "Check your internet connection and try again.")
+
+    def head(self):
+        return self.ok("rev-parse", "HEAD")[1]
+
+    def news(self, since="HEAD"):
+        """Subjects of the changes in main that aren't in `since`, newest first."""
+        good, out, _ = self.ok("log", "--no-merges", "--format=%s", "%s..%s" % (since, self.remote))
+        return [l for l in out.splitlines() if l.strip()] if good else []
+
+    def pull(self):
+        """Bring the checkout to the newest main without losing anything of yours:
+        your edits are stashed, and commits of your own stop the update."""
+        good, branch, _ = self.ok("rev-parse", "--abbrev-ref", "HEAD")
+        good, dirty, _ = self.ok("status", "--porcelain", "--untracked-files=no")
+        if dirty:
+            stamp = time.strftime("%Y-%m-%d %H:%M")
+            self.ok("stash", "push", "--quiet", "-m", "tubewm update %s" % stamp)
+            self.notes.append("Your own edits in %s were set aside before updating. "
+                              "\"git stash list\" there shows them." % _tilde(self.path))
+        if branch != BRANCH:
+            # Usually a pull request that was tried out and has since been merged.
+            has_main = self.ok("rev-parse", "--verify", "--quiet", "refs/heads/" + BRANCH)[0]
+            good, _, err = (self.ok("checkout", "--quiet", BRANCH) if has_main else
+                            self.ok("checkout", "--quiet", "-b", BRANCH, "--track", "origin/" + BRANCH))
+            if not good:
+                raise Failed("Couldn't switch the tubewm folder back to %s." % BRANCH, err)
+            self.notes.append("The tubewm folder was on \"%s\"; it's back on %s now."
+                              % (branch, BRANCH))
+        good, ahead, _ = self.ok("rev-list", "--count", "%s..HEAD" % self.remote)
+        if good and ahead.isdigit() and int(ahead) > 0:
+            raise Failed("You have commits of your own in %s, so it won't update by itself."
+                         % _tilde(self.path),
+                         "Update it with git there (git pull --rebase), then run tube-update.")
+        good, _, err = self.ok("merge", "--quiet", "--ff-only", self.remote)
+        if not good:
+            raise Failed("The update couldn't be applied.", err)
+
+
+def relaunch_after_pull(args, old_head):
+    """Run the installer that just arrived, so new steps and packages count."""
+    argv = [sys.executable, os.path.join(REPO, "installer", "install.py"), "--update",
+            "--pulled", old_head]
+    for flag in ("yes", "plain", "home_only"):
+        if getattr(args, flag):
+            argv.append("--" + flag.replace("_", "-"))
+    os.execv(sys.executable, argv)
+
+
+def update_lines(source, old_head):
+    new = source.news(old_head) if old_head else []
+    if new:
+        return "%d change%s, including: %s" % (len(new), "" if len(new) == 1 else "s",
+                                               "; ".join(new[:3]).rstrip(".") + ".")
+    return ""
+
+
 # ── the full-screen UI ───────────────────────────────────────────────────
 
 # A thin three-line display face for the headings, so they read like the
@@ -599,12 +723,14 @@ class UI:
 
     STAGES_INSTALL = ("keyboard", "ready", "installing", "done")
     STAGES_REMOVE = ("ready", "removing", "done")
+    STAGES_UPDATE = ("what's new", "updating", "done")
 
-    def __init__(self, scr, system, removing=False, home_only=False):
+    def __init__(self, scr, system, removing=False, home_only=False, updating=False):
         self.scr = scr
         self.sys = system
         self.removing = removing
-        self.stages = self.STAGES_REMOVE if removing else self.STAGES_INSTALL
+        self.stages = (self.STAGES_REMOVE if removing else
+                       self.STAGES_UPDATE if updating else self.STAGES_INSTALL)
         self.home_only = home_only
         self.log = []
         self.lock = threading.Lock()
@@ -816,6 +942,38 @@ class UI:
                     continue
                 st.on = not st.on
 
+    def whats_new(self, news):
+        top = 0
+        while True:
+            y = self.frame("what's new", "what's new",
+                           "%d change%s since you last updated. Your colour, tiles and settings "
+                           "stay as they are." % (len(news), "" if len(news) == 1 else "s"))
+            h, w = self.scr.getmaxyx()
+            cw = min(76, w - 2 * self.mx)
+            rows = max(3, h - y - 6)
+            for i, subject in enumerate(news[top:top + rows]):
+                self.put(y + i, self.mx, "■", self.ACCENT)
+                self.put(y + i, self.mx + 2, subject, self.TEXT, width=cw - 2)
+            shown = min(rows, len(news) - top)
+            if top + rows < len(news):
+                self.put(y + shown, self.mx + 2, "↓ %d more" % (len(news) - top - rows), self.DIM)
+            self.button(y + shown + 2, self.mx, "update")
+            self.footer(["enter update", "↑↓ scroll", "esc not now"])
+            self.scr.refresh()
+            k = self.scr.get_wch()
+            if k in ("\n", "\r", curses.KEY_ENTER):
+                return True
+            if k in ("\x1b", "q"):
+                return False
+            if k == curses.KEY_DOWN and top + rows < len(news):
+                top += 1
+            elif k == curses.KEY_UP and top > 0:
+                top -= 1
+
+    def message(self, stage, title, subtitle=""):
+        self.frame(stage, title, subtitle)
+        self.scr.refresh()
+
     def password(self):
         message, tries = "", 0
         typed = ""
@@ -923,11 +1081,11 @@ class UI:
             if k in ("\n", "\r", "\x1b", "q", curses.KEY_ENTER):
                 return False
 
-    def done(self, title, lines, offer_logout):
+    def done(self, title, lines, offer_logout, stage="done"):
         options = (["log out now", "close"] if offer_logout else ["close"])
         choice = len(options) - 1  # "close": logging out is a deliberate choice
         while True:
-            y = self.frame("done", title)
+            y = self.frame(stage, title)
             h, w = self.scr.getmaxyx()
             cw = min(72, w - 2 * self.mx)
             for text, attr in lines:
@@ -978,8 +1136,114 @@ def logout():
         subprocess.call(["loginctl", "terminate-session", sid])
 
 
+def tui_update(ui, args, system):
+    source = Source()
+    if args.pulled is None:
+        ui.message("what's new", "one moment", "Looking for updates…")
+        try:
+            source.fetch()
+        except Failed as e:
+            ui.done("can't check", [(str(e), ui.ERR), (e.hint, ui.TEXT)], False, "what's new")
+            return 1
+        news = source.news()
+        if not news:
+            ui.done("up to date", [("You have the newest tubewm.", ui.TEXT)], False, "what's new")
+            return 0
+        if not ui.whats_new(news):
+            return 1
+        ui.message("updating", "one moment", "Fetching the new version…")
+        old = source.head()
+        try:
+            source.pull()
+        except Failed as e:
+            ui.done("that didn't work", [(str(e), ui.ERR), (e.hint, ui.TEXT),
+                                         ("Nothing was changed.", ui.SUBTLE)], False, "updating")
+            return 1
+        if source.notes:
+            _save_notes(source.notes)
+        curses.endwin()
+        relaunch_after_pull(args, old)
+
+    plan = Plan(system, home_only=args.home_only, update=True)
+    ui.message("updating", "one moment", "Looking at what's changed…")
+    plan.survey()
+    steps = plan.build()
+    password = None
+    if plan.needs_password() and not sudo_without_password():
+        while True:
+            if not ui.review(steps, "almost there", "These need your password this time. "
+                             "Space turns one off.", "update"):
+                for st in steps:
+                    if st.system:
+                        st.on = False
+                break
+            if not plan.needs_password():
+                break
+            password = ui.password()
+            if password is not None:
+                break
+    runner = Runner(password, system.root)
+    while True:
+        for st in steps:
+            if st.status != "done":
+                st.status = "pending"
+        failed = ui.progress([s for s in steps if s.status != "done"], runner, "updating", "updating")
+        if failed[0] is None:
+            break
+        if not ui.failure(steps, failed):
+            return 1
+    plan.remember()
+    lines = []
+    summary = update_lines(Source(), args.pulled)
+    if summary:
+        lines.append((summary, ui.TEXT))
+    lines.append(("Sign out and back in to see everything new.", ui.TEXT))
+    for note in _take_notes():
+        lines.append((note, ui.SUBTLE))
+    for st in steps:
+        if st.status == "warned":
+            lines.append(("\"%s\" didn't work; the rest is fine. Details are in %s."
+                          % (st.title, _tilde(LOG)), ui.ERR))
+    _write_update_count(0)
+    if ui.done("updated", lines, bool(os.environ.get("XDG_SESSION_ID"))) == "log out now":
+        logout()
+    return 0
+
+
+NOTES = os.path.join(STATE_DIR, "update-notes")
+UPDATE_COUNT = os.path.join(os.environ.get("XDG_CACHE_HOME", os.path.join(HOME, ".cache")),
+                            "tubewm", "updates")
+
+
+def _save_notes(notes):
+    os.makedirs(STATE_DIR, exist_ok=True)
+    with open(NOTES, "w") as fh:
+        fh.write("\n".join(notes) + "\n")
+
+
+def _take_notes():
+    try:
+        with open(NOTES) as fh:
+            notes = [l.strip() for l in fh if l.strip()]
+        os.remove(NOTES)
+        return notes
+    except OSError:
+        return []
+
+
+def _write_update_count(n):
+    try:
+        os.makedirs(os.path.dirname(UPDATE_COUNT), exist_ok=True)
+        with open(UPDATE_COUNT, "w") as fh:
+            fh.write("%d\n" % n)
+    except OSError:
+        pass
+
+
 def tui_main(scr, args, system):
-    ui = UI(scr, system, removing=args.uninstall, home_only=args.home_only)
+    ui = UI(scr, system, removing=args.uninstall, home_only=args.home_only, updating=args.update)
+    if args.update:
+        return tui_update(ui, args, system)
     if args.uninstall:
         rem = Removal(system)
         steps = rem.build()
@@ -1047,6 +1311,7 @@ def tui_main(scr, args, system):
                 if not ui.failure(steps, failed):
                     return 1
             break
+    plan.remember()
     how, then = finish_lines(system)
     warned = [s for s in steps if s.status == "warned"]
     already = os.environ.get("XDG_CURRENT_DESKTOP", "").lower() == "sway" and os.environ.get("SWAYSOCK")
@@ -1070,6 +1335,29 @@ def plain_main(args, system):
     def say(s):
         print("\033[1m%s\033[0m" % s if sys.stdout.isatty() else s, flush=True)
 
+    if args.update and args.pulled is None:
+        source = Source()
+        try:
+            source.fetch()
+            news = source.news()
+            if not news:
+                say("tubewm is up to date.")
+                return 0
+            say("%d change%s:" % (len(news), "" if len(news) == 1 else "s"))
+            for subject in news[:15]:
+                print("  ■ " + subject)
+            if not args.yes and sys.stdin.isatty():
+                if input("Update now? [Y/n] ").strip().lower() not in ("", "y", "yes"):
+                    return 1
+            old = source.head()
+            source.pull()
+        except Failed as e:
+            print("tubewm: %s\n%s" % (e, e.hint), file=sys.stderr)
+            return 1
+        for note in source.notes:
+            print("  " + note)
+        relaunch_after_pull(args, old)
+
     if args.uninstall:
         work = Removal(system)
         steps = work.build()
@@ -1077,7 +1365,7 @@ def plain_main(args, system):
             for st in steps:
                 st.on = True
     else:
-        work = Plan(system, home_only=args.home_only)
+        work = Plan(system, home_only=args.home_only, update=args.update)
         say("tubewm · %s" % system.name)
         print("  looking at what's installed…", flush=True)
         work.survey()
@@ -1110,6 +1398,12 @@ def plain_main(args, system):
     if st is not None:
         print("\ntubewm: %s\n%s\nFull log: %s" % (err, err.hint, LOG), file=sys.stderr)
         return 1
+    if not args.uninstall:
+        work.remember()
+    if args.update:
+        _write_update_count(0)
+        say("Updated. Sign out and back in to see everything new.")
+        return 0
     if args.uninstall:
         say("Removed. Log out to finish.")
     else:
@@ -1129,6 +1423,9 @@ def main(argv=None):
                    help="with --uninstall --yes: also delete settings and packages")
     p.add_argument("--keyboard", metavar="LAYOUT[:VARIANT]", help="e.g. gb or us:intl")
     p.add_argument("--plain", action="store_true", help="plain text instead of the full-screen UI")
+    p.add_argument("--update", action="store_true",
+                   help="fetch the newest tubewm from GitHub and install it")
+    p.add_argument("--pulled", metavar="COMMIT", help=argparse.SUPPRESS)
     p.add_argument("--packages-only", action="store_true", help=argparse.SUPPRESS)
     args = p.parse_args(argv)
 
