@@ -1,0 +1,121 @@
+# tubewm start screen: the layout new users start with.
+#
+# You don't need to edit this. Arrange your own start screen in place:
+# pin apps from the list on the right (right-click > pin to start), drag
+# tiles to move them, right-click a tile to resize, recolour, set it up or
+# unpin it, and use the + tile to add live tiles. Your layout is saved to
+# ~/.config/tubewm/start.json.
+#
+# App tiles for apps that aren't installed are skipped, so alternatives
+# are listed side by side.
+
+[start]
+title = "start"
+
+[[tile]]
+type = "clock"
+size = "wide"
+
+[[tile]]
+type = "weather"
+size = "medium"
+
+[[tile]]
+type = "calendar"
+size = "small"
+
+[[tile]]
+type = "battery"
+size = "small"
+color = "dark"
+
+[[tile]]
+type = "action"
+action = "lock"
+size = "small"
+color = "dark"
+
+[[tile]]
+type = "action"
+action = "settings"
+size = "small"
+color = "dark"
+
+[[tile]]
+app = "foot"
+label = "terminal"
+icon = "terminal"
+
+[[tile]]
+type = "music"
+size = "medium"
+
+[[tile]]
+app = "vivaldi-stable"
+label = "vivaldi"
+size = "wide"
+icon = "web"
+
+[[tile]]
+app = "firefox"
+label = "firefox"
+size = "wide"
+icon = "web"
+
+[[tile]]
+type = "messages"
+size = "medium"
+
+[[tile]]
+app = "code"
+label = "code"
+icon = "code"
+
+[[tile]]
+app = "codium"
+label = "codium"
+icon = "code"
+
+[[tile]]
+type = "photos"
+size = "wide"
+
+[[tile]]
+app = "org.gnome.Nautilus"
+label = "files"
+icon = "folder"
+
+[[tile]]
+app = "thunar"
+label = "files"
+icon = "folder"
+
+[[tile]]
+type = "system"
+size = "medium"
+color = "dark"
+
+[[tile]]
+type = "recent"
+size = "wide"
+color = "dark"
+
+[[tile]]
+app = "thunderbird"
+label = "mail"
+icon = "mail"
+
+[[tile]]
+app = "spotify"
+label = "spotify"
+icon = "music"
+
+[[tile]]
+type = "windows"
+size = "small"
+color = "dark"
+
+[[tile]]
+type = "disk"
+size = "small"
+color = "dark"

@@ -1,0 +1,21 @@
+#!/usr/bin/env bash
+# tube-lock: lock the session with the tubewm curtain.
+# Prefers gtklock (big clock, styled by ~/.config/gtklock/style.css), then
+# swaylock-effects (clock in the ring), then plain swaylock. If a fancier
+# locker fails to start, the next one is tried, so the screen always locks.
+set -u
+CONFIG=${XDG_CONFIG_HOME:-$HOME/.config}
+
+# Already locked? Do nothing (swayidle can fire twice around suspend).
+if pgrep -x gtklock >/dev/null || pgrep -x swaylock >/dev/null; then exit 0; fi
+
+if command -v gtklock >/dev/null; then
+    gtklock --daemonize --style "$CONFIG/gtklock/style.css" "$@" && exit 0
+fi
+
+if swaylock --help 2>&1 | grep -q -- '--clock'; then
+    swaylock --daemonize --clock --indicator --timestr '%H:%M' \
+        --datestr '%A %-d %B' "$@" && exit 0
+fi
+
+exec swaylock --daemonize "$@"

@@ -1,0 +1,180 @@
+/* tubewm shell (start screen + charms).
+ * The @tube_* colours are defined from the palette at load time.
+ * Your own overrides: ~/.config/tubewm/user.css */
+
+.tube, .tube * {
+    font-family: "Open Sans", "Noto Sans", sans-serif;
+    border-radius: 0;
+    box-shadow: none;
+    text-shadow: none;
+    -gtk-icon-shadow: none;
+    outline: none;
+}
+
+.tube button { background-image: none; }
+
+window.tube { background-color: @tube_shell; color: @tube_fg; }
+window.tube.tube-transparent { background-color: transparent; }
+
+/* ── type scale ─────────────────────────────────────────── */
+.panorama-header { font-size: 56px; font-weight: 300; color: @tube_fg; }
+.page-header     { font-size: 37px; font-weight: 300; color: @tube_fg; }
+.group-title     { font-size: 24px; font-weight: 300; color: @tube_fg; }
+.group-title.dim { color: @tube_subtle; }
+.body            { font-size: 15px; font-weight: 400; }
+.caption         { font-size: 13px; font-weight: 600; }
+.subtle          { color: @tube_subtle; }
+.user-label      { font-size: 24px; font-weight: 300; color: @tube_fg; }
+
+/* ── tiles ──────────────────────────────────────────────── */
+.tile {
+    background-color: @tube_accent;
+    background-image: none;
+    color: #FFFFFF;
+    border: none;
+    padding: 0;
+    margin: 0;
+    transition: opacity 260ms ease-out, background-color 120ms ease-out;
+}
+.tile:hover  { box-shadow: inset 0 0 0 2px alpha(#FFFFFF, 0.35); }
+.tile:focus  { box-shadow: inset 0 0 0 3px #FFFFFF; }
+.tile:active { background-color: @tube_accent_dark; }
+.tile.surface { background-color: @tube_surface_hi; }
+.tile.surface:active { background-color: @tube_surface; }
+.tile.entering { opacity: 0; }
+
+.tile-label  { font-size: 13px; font-weight: 600; color: #FFFFFF; }
+.tile-badge  { font-size: 18px; font-weight: 400; color: #FFFFFF; }
+.tile-hero   { font-size: 52px; font-weight: 300; color: #FFFFFF; }
+.tile-hero.small { font-size: 30px; }
+.tile-title  { font-size: 20px; font-weight: 300; color: #FFFFFF; }
+.tile-text   { font-size: 14px; font-weight: 400; color: alpha(#FFFFFF, 0.85); }
+.tile-letter { font-size: 44px; font-weight: 300; color: #FFFFFF; }
+.tile-hero.huge { font-size: 76px; }
+.tile-mono   { font-family: monospace; font-size: 12.5px; color: #FFFFFF; }
+.tile-note-big { font-size: 26px; font-weight: 300; color: #FFFFFF; }
+
+/* dragging: the tile stays dim in place, a ghost follows the pointer */
+.tile.lifted { opacity: 0.25; }
+.tile.ghost  { background-color: alpha(@tube_accent_light, 0.85); }
+
+/* the + tile at the end of the grid */
+.tile.add-tile { background-color: transparent; color: @tube_dim; box-shadow: inset 0 0 0 2px @tube_surface_hi; }
+.tile.add-tile:hover, .tile.add-tile:focus { color: @tube_fg; box-shadow: inset 0 0 0 2px @tube_subtle; }
+
+
+/* ── app list (right column) ─────────────────────────── */
+.apps, .apps row { background: transparent; }
+.apps row { padding: 0; border: none; }
+.apps row:hover .app-row { background: @tube_surface; }
+.apps row:focus .app-row { background: @tube_surface_hi; }
+.app-row { padding: 5px 10px 5px 0; }
+.app-icon { background-color: @tube_accent; min-width: 40px; min-height: 40px; color: #FFFFFF; }
+.app-name { font-size: 19px; font-weight: 300; color: @tube_fg; }
+.app-letter { font-size: 30px; font-weight: 300; color: @tube_accent_light; padding: 14px 0 4px 2px; }
+.pin-mark { color: @tube_subtle; }
+
+/* ── menus and popovers ─────────────────────────────────── */
+menu.tube-menu, .tube-menu menu {
+    background: @tube_surface;
+    color: @tube_fg;
+    border: 2px solid @tube_surface_hi;
+    border-radius: 0;
+    box-shadow: none;
+    padding: 6px 0;
+    font-family: "Open Sans", sans-serif;
+}
+.tube-menu menuitem, .tube-menu menu menuitem {
+    padding: 7px 22px;
+    font-size: 14px;
+    color: @tube_fg;
+    border-radius: 0;
+}
+.tube-menu menuitem:hover, .tube-menu menu menuitem:hover { background: @tube_accent; color: #FFFFFF; }
+.tube-menu menuitem:disabled { color: @tube_dim; }
+.tube-menu separator { background: @tube_surface_hi; min-height: 1px; margin: 4px 0; }
+.tube-menu arrow { color: @tube_subtle; }
+
+popover.tube-popover {
+    background: @tube_surface;
+    color: @tube_fg;
+    border: 2px solid @tube_accent;
+    border-radius: 0;
+    box-shadow: none;
+    font-family: "Open Sans", sans-serif;
+}
+button.accent-button { background: @tube_accent; color: #FFFFFF; border: none; padding: 6px 22px; }
+button.accent-button:hover { background: @tube_accent_light; }
+
+entry.search {
+    background: @tube_surface;
+    color: @tube_fg;
+    caret-color: @tube_accent_light;
+    border: 2px solid @tube_surface;
+    font-size: 17px;
+    font-weight: 300;
+    padding: 4px 12px;
+    min-height: 34px;
+    min-width: 300px;
+}
+entry.search:focus { border-color: @tube_accent; }
+
+/* ── charms ─────────────────────────────────────────────── */
+.charms-bar { background-color: @tube_surface; }
+.charm {
+    background: transparent;
+    color: @tube_fg;
+    border: none;
+    padding: 14px 0;
+}
+.charm:hover, .charm:focus { background-color: @tube_surface_hi; }
+.charm:active { background-color: @tube_accent; }
+.charm label { font-size: 13px; font-weight: 400; color: @tube_subtle; }
+.charm:hover label, .charm:focus label { color: @tube_fg; }
+
+.clock-card { background-color: @tube_surface; padding: 24px 34px 26px 30px; }
+.clock-time { font-size: 96px; font-weight: 300; color: @tube_fg; }
+.clock-date { font-size: 26px; font-weight: 300; color: @tube_fg; }
+.clock-status { font-size: 15px; font-weight: 300; color: @tube_subtle; }
+
+.flyout { background-color: @tube_surface; color: @tube_fg; padding: 36px 30px; }
+.flyout-section { font-size: 15px; font-weight: 600; color: @tube_fg; margin-top: 22px; }
+.flyout-text { font-size: 14px; color: @tube_subtle; }
+.flyout button {
+    background: transparent;
+    color: @tube_fg;
+    border: 2px solid @tube_subtle;
+    padding: 6px 14px;
+    font-weight: 400;
+}
+.flyout button:hover { border-color: @tube_fg; background: @tube_surface_hi; }
+.flyout button:active { background: @tube_accent; border-color: @tube_accent; }
+.flyout button.armed { background: @tube_urgent; border-color: @tube_urgent; }
+.flyout button.link { border: none; padding: 6px 0; color: @tube_accent_light; }
+.flyout button.toggle-on { background: @tube_accent; border-color: @tube_accent; }
+
+.flyout button.swatch { border: none; padding: 0; min-width: 44px; min-height: 44px; }
+.flyout button.swatch:hover { box-shadow: inset 0 0 0 2px alpha(#FFFFFF, 0.5); }
+.flyout button.swatch.current { box-shadow: inset 0 0 0 3px #FFFFFF; }
+
+scale trough { background: @tube_surface_hi; min-height: 6px; border: none; }
+scale highlight { background: @tube_accent; border: none; }
+scale slider { background: @tube_fg; min-width: 12px; min-height: 22px; border: none; margin: -8px 0; }
+
+.flyout button.wall { border: none; padding: 0; min-width: 90px; min-height: 51px; }
+.flyout button.wall:hover { box-shadow: inset 0 0 0 2px alpha(#FFFFFF, 0.5); }
+.flyout button.wall.current, .flyout button.wall-off.current { box-shadow: inset 0 0 0 3px #FFFFFF; }
+.flyout button.wall-off { border: 2px solid @tube_surface_hi; padding: 0; min-height: 51px; color: @tube_subtle; }
+.flyout button.link.armed-link { color: @tube_urgent; }
+
+popover.tube-popover entry.field, popover.tube-popover combobox.field button {
+    background: @tube_surface_hi;
+    color: @tube_fg;
+    border: 2px solid @tube_surface_hi;
+    border-radius: 0;
+    box-shadow: none;
+    padding: 4px 8px;
+    min-height: 30px;
+}
+popover.tube-popover entry.field:focus { border-color: @tube_accent; }
+popover.tube-popover .caption { color: @tube_subtle; margin-top: 6px; }

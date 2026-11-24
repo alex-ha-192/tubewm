@@ -1,0 +1,39 @@
+#!/usr/bin/env bash
+# tube-osd: volume / brightness keys with a flat on-screen indicator.
+#   tube-osd volume up|down|mute
+#   tube-osd mic mute
+#   tube-osd brightness up|down
+set -u
+step=${TUBE_OSD_STEP:-5}
+idfile=${XDG_RUNTIME_DIR:-/tmp}/tube-osd.id
+
+show() { # title value(0-100) text
+    local args=(-a tube-osd -h "int:value:$2" -h string:x-canonical-private-synchronous:tube-osd -p)
+    local old; old=$(cat "$idfile" 2>/dev/null || true)
+    [ -n "$old" ] && args+=(-r "$old")
+    notify-send "${args[@]}" "$1" "$3" > "$idfile" 2>/dev/null || true
+}
+
+vol_get() { wpctl get-volume @DEFAULT_AUDIO_SINK@ 2>/dev/null; }
+
+case "${1:-} ${2:-}" in
+    "volume up")   wpctl set-mute @DEFAULT_AUDIO_SINK@ 0; wpctl set-volume -l 1.0 @DEFAULT_AUDIO_SINK@ "${step}%+" ;;
+    "volume down") wpctl set-volume @DEFAULT_AUDIO_SINK@ "${step}%-" ;;
+    "volume mute") wpctl set-mute @DEFAULT_AUDIO_SINK@ toggle ;;
+    "mic mute")    wpctl set-mute @DEFAULT_AUDIO_SOURCE@ toggle
+                   if wpctl get-volume @DEFAULT_AUDIO_SOURCE@ | grep -q MUTED; then show "microphone" 0 "off"; else show "microphone" 100 "on"; fi
+                   exit 0 ;;
+    "brightness up")   brightnessctl -q set "${step}%+" ;;
+    "brightness down") brightnessctl -q set "${step}%-" ;;
+    *) sed -n '2,5p' "$0" | sed 's/^# \{0,1\}//'; exit 2 ;;
+esac
+
+case $1 in
+    volume)
+        out=$(vol_get)
+        pct=$(awk '{printf "%d", $2 * 100 + 0.5}' <<<"$out")
+        if grep -q MUTED <<<"$out"; then show "volume" "$pct" "muted"; else show "volume" "$pct" "$pct"; fi ;;
+    brightness)
+        pct=$(( $(brightnessctl get) * 100 / $(brightnessctl max) ))
+        show "brightness" "$pct" "$pct" ;;
+esac

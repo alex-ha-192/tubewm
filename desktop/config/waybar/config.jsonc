@@ -1,0 +1,111 @@
+// tubewm · waybar
+// Left: an accent start square and the workspace pivots, set as big
+// lowercase headers. Right: status in small light type, then the clock.
+{
+    "layer": "top",
+    "position": "top",
+    "height": 56,
+    "spacing": 0,
+    "modules-left": ["custom/start", "sway/workspaces", "sway/mode"],
+    "modules-center": [],
+    "modules-right": [
+        "mpris",
+        "tray",
+        "idle_inhibitor",
+        "network",
+        "pulseaudio",
+        "battery",
+        "clock#date",
+        "clock"
+    ],
+
+    "custom/start": {
+        "format": " ",
+        "tooltip": false,
+        "on-click": "tube-start",
+        "on-click-right": "tube-charms"
+    },
+
+    "sway/workspaces": {
+        "disable-scroll": false,
+        "all-outputs": false,
+        "format": "{icon}",
+        "format-icons": {
+            "1:home": "home",
+            "2:web": "web",
+            "3:code": "code",
+            "4:chat": "chat",
+            "5:music": "music",
+            "6:video": "video",
+            "7:files": "files",
+            "8:play": "play",
+            "9:misc": "misc",
+            "10:extra": "extra"
+        },
+        "persistent-workspaces": {
+            "1:home": [],
+            "2:web": [],
+            "3:code": []
+        }
+    },
+
+    "sway/mode": { "format": "{}" },
+
+    "mpris": {
+        "format": "{status_icon}  {artist} · {title}",
+        "format-paused": "{status_icon}  {artist} · {title}",
+        "status-icons": { "playing": "▶", "paused": "❚❚", "stopped": "■" },
+        "max-length": 48,
+        "on-click": "playerctl play-pause",
+        "on-scroll-up": "playerctl next",
+        "on-scroll-down": "playerctl previous"
+    },
+
+    "tray": { "icon-size": 16, "spacing": 14 },
+
+    "idle_inhibitor": {
+        "format": "{icon}",
+        "format-icons": { "activated": "awake", "deactivated": "" },
+        "tooltip-format-activated": "the screen will not lock",
+        "tooltip-format-deactivated": ""
+    },
+
+    "network": {
+        "format-wifi": "{essid}",
+        "format-ethernet": "wired",
+        "format-disconnected": "offline",
+        "format-linked": "no address",
+        "tooltip-format": "{ifname} · {ipaddr}",
+        "tooltip-format-wifi": "{essid} · {signalStrength}% · {ipaddr}",
+        "on-click": "tube-charms --settings"
+    },
+
+    "pulseaudio": {
+        "format": "vol {volume}",
+        "format-muted": "muted",
+        "on-click": "tube-osd volume mute",
+        "on-scroll-up": "tube-osd volume up",
+        "on-scroll-down": "tube-osd volume down",
+        "on-click-right": "pavucontrol"
+    },
+
+    "battery": {
+        "states": { "low": 20, "critical": 10 },
+        "format": "{capacity}%",
+        "format-charging": "{capacity}% +",
+        "format-plugged": "{capacity}% =",
+        "tooltip-format": "{timeTo}"
+    },
+
+    "clock#date": {
+        "format": "{:%A %d}",
+        "tooltip-format": "<tt>{calendar}</tt>",
+        "calendar": { "mode": "month", "format": { "today": "<b><u>{}</u></b>" } }
+    },
+
+    "clock": {
+        "format": "{:%H:%M}",
+        "tooltip": false,
+        "on-click": "tube-charms"
+    }
+}
