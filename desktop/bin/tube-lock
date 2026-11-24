@@ -3,6 +3,7 @@
 # Prefers gtklock (big clock, styled by ~/.config/gtklock/style.css), then
 # swaylock-effects (clock in the ring), then plain swaylock. If a fancier
 # locker fails to start, the next one is tried, so the screen always locks.
+PATH="$(dirname "$(readlink -f "$0")"):$PATH"  # find the other tube-* commands
 set -u
 CONFIG=${XDG_CONFIG_HOME:-$HOME/.config}
 
