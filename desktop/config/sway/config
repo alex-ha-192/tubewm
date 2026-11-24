@@ -42,11 +42,9 @@ titlebar_border_thickness 0
 titlebar_padding 1
 hide_edge_borders --i3 smart
 
-# 10 px gutters, the same as the gap between tiles on the start screen.
-# A window on its own fills the screen edge to edge.
-gaps inner 10
+# Windows meet edge to edge, with no gaps between them.
+gaps inner 0
 gaps outer 0
-smart_gaps on
 
 # Obsidian backdrop. Put `output * bg /path/to/image fill` in config.d to
 # use a picture instead.
