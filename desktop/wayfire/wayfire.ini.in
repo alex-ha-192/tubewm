@@ -10,7 +10,7 @@
 [core]
 plugins = \
   alpha animate autostart command decoration expo fast-switcher foreign-toplevel \
-  grid gtk-shell idle ipc ipc-rules move place resize scale session-lock \
+  grid gtk-shell idle ipc ipc-rules move place resize session-lock \
   shortcuts-inhibit vswipe vswitch wayfire-shell window-rules wm-actions \
   xdg-activation
 # One pivot per column; tube-pivots adds and removes columns.
@@ -77,12 +77,12 @@ slot_l = <super> KEY_LEFT
 slot_r = <super> KEY_RIGHT
 slot_c = <super> KEY_UP
 restore = <super> KEY_DOWN
-slot_tl = <super> <shift> KEY_LEFT | <super> KEY_KP7
-slot_tr = <super> <shift> KEY_UP | <super> KEY_KP9
-slot_bl = <super> <shift> KEY_DOWN | <super> KEY_KP1
-slot_br = <super> <shift> KEY_RIGHT | <super> KEY_KP3
-slot_t = <super> KEY_KP8
-slot_b = <super> KEY_KP2
+slot_tl = none
+slot_tr = none
+slot_bl = none
+slot_br = none
+slot_t = none
+slot_b = none
 
 [place]
 mode = center
@@ -92,7 +92,7 @@ toggle_fullscreen = <super> KEY_F
 toggle_maximize = <super> KEY_M
 minimize = <super> KEY_H
 toggle_always_on_top = <super> KEY_T
-toggle_showdesktop = <super> KEY_D | hotspot bottom-right 2x2 400
+toggle_showdesktop = <super> KEY_D
 
 # ── motion ─────────────────────────────────────────────────────────────────
 
@@ -143,30 +143,12 @@ gap = 0
 
 # Every pivot side by side; drag windows between them with the mouse.
 [expo]
-toggle = <super> KEY_TAB | hotspot top-left 2x2 300
+toggle = <super> KEY_TAB
 background = @SHELL_RGBA@
 duration = 300ms circle
 offset = 16
 inactive_brightness = 0.6
 keyboard_interaction = true
-
-# Every window on this pivot, spread out; click one to go to it.
-[scale]
-toggle = <super> KEY_O
-toggle_all = <super> <shift> KEY_O
-duration = 260ms circle
-allow_zoom = false
-middle_click_close = true
-include_minimized = true
-spacing = 40
-outer_margin = 40
-inactive_alpha = 0.8
-minimized_alpha = 0.45
-title_overlay = all
-title_position = bottom
-title_font_size = 14
-bg_color = @SHELL_A90@
-text_color = @FG_RGBA@
 
 [fast-switcher]
 activate = <alt> KEY_TAB
@@ -185,7 +167,7 @@ binding_apps = <super> KEY_A
 command_apps = ~/.local/bin/tube-start --apps
 binding_search = <super> KEY_Q
 command_search = ~/.local/bin/tube-start --search
-binding_charms = <super> KEY_C | hotspot right 1x200 300
+binding_charms = <super> KEY_C
 command_charms = ~/.local/bin/tube-charms
 binding_settings = <super> KEY_I
 command_settings = ~/.local/bin/tube-charms --settings
