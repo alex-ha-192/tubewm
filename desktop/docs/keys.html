@@ -1,0 +1,250 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>tubewm keys</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Open+Sans:wght@300;400;600&family=JetBrains+Mono:wght@400;500&display=swap">
+<style>
+/* Layout: a Metro pivot page. Huge lowercase header, pivot row that jumps to sections,
+   then flat sections of key / action rows in two columns on wide screens. */
+:root {
+  --bg: #FFFFFF;
+  --surface: #F2F2F2;
+  --fg: #111111;
+  --subtle: #6B6B6B;
+  --dim: #C8C8C8;
+  --accent: #C2007A;
+  --on-accent: #FFFFFF;
+  --font-ui: "Open Sans", "Segoe UI", system-ui, sans-serif;
+  --font-key: "JetBrains Mono", ui-monospace, "DejaVu Sans Mono", monospace;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #111111; --surface: #1D1D1D; --fg: #FFFFFF; --subtle: #8A8A8A; --dim: #3A3A3A;
+    --accent: #E3008C; --on-accent: #FFFFFF; color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --bg: #111111; --surface: #1D1D1D; --fg: #FFFFFF; --subtle: #8A8A8A; --dim: #3A3A3A;
+  --accent: #E3008C; --on-accent: #FFFFFF; color-scheme: dark;
+}
+* { box-sizing: border-box; }
+body {
+  margin: 0;
+  background: var(--bg); color: var(--fg);
+  font-family: var(--font-ui); font-size: 15px; line-height: 1.5;
+}
+.wrap {
+  max-width: 1180px; margin: 0 auto;
+  padding-left: max(16px, env(safe-area-inset-left, 0px));
+  padding-right: max(16px, env(safe-area-inset-right, 0px));
+  padding-block: 40px 72px;
+}
+header { display: flex; flex-direction: column; gap: 6px; }
+.brand { display: flex; align-items: center; gap: 12px; color: var(--subtle); font-size: 13px; letter-spacing: .06em; }
+.brand i { width: 18px; height: 18px; background: var(--accent); display: block; }
+h1 {
+  font-weight: 300; font-size: clamp(56px, 11vw, 112px); line-height: .95;
+  letter-spacing: -0.02em; margin: 0; text-transform: lowercase;
+}
+.lede { color: var(--subtle); max-width: 62ch; margin: 10px 0 0; }
+.lede kbd { font-size: 12px; }
+
+nav {
+  position: sticky; top: env(safe-area-inset-top, 0px); z-index: 5;
+  background: var(--bg); margin-top: 28px; padding-block: 10px 12px;
+  overflow-x: auto; white-space: nowrap; scrollbar-width: none;
+}
+body::before { content: ""; position: fixed; inset: 0 0 auto; height: env(safe-area-inset-top, 0px); z-index: 10; background: var(--bg); }
+nav::-webkit-scrollbar { display: none; }
+nav a {
+  font-weight: 300; font-size: 28px; color: var(--dim); text-decoration: none;
+  margin-right: 22px; transition: color .15s;
+}
+nav a:hover, nav a:focus-visible { color: var(--fg); outline: none; }
+nav a.on { color: var(--fg); }
+
+.stuck {
+  margin-top: 20px; background: var(--accent); color: var(--on-accent);
+  padding: 18px 20px; display: grid; gap: 4px;
+}
+.stuck strong { font-weight: 600; font-size: 13px; letter-spacing: .06em; text-transform: lowercase; }
+.stuck p { margin: 0; max-width: 80ch; }
+.stuck kbd { background: rgba(255,255,255,.18); border-color: rgba(255,255,255,.45); color: var(--on-accent); }
+
+.grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px 56px; margin-top: 8px; }
+@media (max-width: 820px) { .grid { grid-template-columns: minmax(0, 1fr); } }
+section { padding-top: 34px; scroll-margin-top: 70px; min-width: 0; }
+h2 {
+  font-weight: 300; font-size: 38px; margin: 0 0 4px; line-height: 1.1;
+  text-transform: lowercase; text-wrap: balance;
+}
+.note { color: var(--subtle); font-size: 13px; margin: 0 0 10px; }
+dl { margin: 0; display: grid; grid-template-columns: minmax(0, auto) minmax(0, 1fr); column-gap: 20px; }
+dt, dd { margin: 0; padding: 9px 0; border-top: 1px solid var(--dim); }
+dt { display: flex; flex-wrap: wrap; gap: 4px; align-items: center; align-content: center; }
+dd { color: var(--fg); }
+dd small { color: var(--subtle); font-size: 13px; }
+.plus { color: var(--subtle); font-size: 12px; }
+kbd {
+  font-family: var(--font-key); font-size: 12.5px; font-weight: 500;
+  padding: 2px 7px; border: 1px solid var(--dim); background: var(--surface);
+  color: var(--fg); white-space: nowrap; border-radius: 0;
+}
+kbd.super { background: var(--accent); border-color: var(--accent); color: var(--on-accent); }
+.gesture { font-family: var(--font-key); font-size: 12.5px; color: var(--accent); white-space: nowrap; }
+
+footer { margin-top: 56px; color: var(--subtle); font-size: 13px; display: grid; gap: 6px; }
+footer code { font-family: var(--font-key); font-size: 12px; }
+@media (prefers-reduced-motion: reduce) { * { transition: none !important; scroll-behavior: auto !important; } }
+html { scroll-behavior: smooth; }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <div class="brand"><i></i>tubewm</div>
+    <h1>keys</h1>
+    <p class="lede">Every shortcut the tubewm Sway desktop sets up. <kbd class="super">Super</kbd> is the Windows or logo key. You can change any of them in <code>~/.config/sway/config</code>.</p>
+  </header>
+
+  <nav aria-label="Sections">
+    <a href="#shell" class="on">shell</a><a href="#windows">windows</a><a href="#snap">snap</a><a href="#pivots">pivots</a><a href="#start">start</a><a href="#gestures">gestures</a><a href="#media">media</a><a href="#bar">bar</a>
+  </nav>
+
+  <div class="stuck">
+    <strong>stuck?</strong>
+    <p><kbd>Super</kbd> <span class="plus">+</span> <kbd>Return</kbd> opens a terminal, <kbd>Super</kbd> <span class="plus">+</span> <kbd>Shift</kbd> <span class="plus">+</span> <kbd>E</kbd> shows sign out and power, and <kbd>Super</kbd> <span class="plus">+</span> <kbd>Shift</kbd> <span class="plus">+</span> <kbd>C</kbd> reloads the config. From a text console (<kbd>Ctrl</kbd> <span class="plus">+</span> <kbd>Alt</kbd> <span class="plus">+</span> <kbd>F3</kbd>), <code>pkill -x sway</code> ends the session.</p>
+  </div>
+
+  <div class="grid">
+    <section id="shell">
+      <h2>shell</h2>
+      <dl>
+        <dt><kbd class="super">Super</kbd><span class="plus">+</span><kbd>S</kbd></dt><dd>start <small>(press again to close)</small></dd>
+        <dt><kbd class="super">Super</kbd><span class="plus">+</span><kbd>D</kbd></dt><dd>start, with the app list focused</dd>
+        <dt><kbd class="super">Super</kbd><span class="plus">+</span><kbd>Q</kbd></dt><dd>search apps</dd>
+        <dt><kbd class="super">Super</kbd><span class="plus">+</span><kbd>C</kbd></dt><dd>charms</dd>
+        <dt><kbd class="super">Super</kbd><span class="plus">+</span><kbd>I</kbd></dt><dd>settings <small>(accent, wallpaper, volume, wi-fi, power)</small></dd>
+        <dt><kbd class="super">Super</kbd><span class="plus">+</span><kbd>Tab</kbd></dt><dd>switch to any window</dd>
+        <dt><kbd class="super">Super</kbd><span class="plus">+</span><kbd>Return</kbd></dt><dd>terminal</dd>
+        <dt><kbd class="super">Super</kbd><span class="plus">+</span><kbd>L</kbd></dt><dd>lock</dd>
+        <dt><kbd class="super">Super</kbd><span class="plus">+</span><kbd>Z</kbd></dt><dd>hide or show the bar</dd>
+        <dt><kbd class="super">Super</kbd><span class="plus">+</span><kbd>Shift</kbd><span class="plus">+</span><kbd>E</kbd></dt><dd>sign out, restart, shut down</dd>
+        <dt><kbd class="super">Super</kbd><span class="plus">+</span><kbd>Shift</kbd><span class="plus">+</span><kbd>C</kbd></dt><dd>reload the Sway config</dd>
+      </dl>
+    </section>
+
+    <section id="windows">
+      <h2>windows</h2>
+      <dl>
+        <dt><kbd>Alt</kbd><span class="plus">+</span><kbd>F4</kbd><span class="plus">or</span><kbd class="super">Super</kbd><span class="plus">+</span><kbd>W</kbd></dt><dd>close</dd>
+        <dt><kbd class="super">Super</kbd><span class="plus">+</span><kbd>←↑↓→</kbd></dt><dd>move focus</dd>
+        <dt><kbd class="super">Super</kbd><span class="plus">+</span><kbd>Shift</kbd><span class="plus">+</span><kbd>←↑↓→</kbd></dt><dd>move the window</dd>
+        <dt><kbd class="super">Super</kbd><span class="plus">+</span><kbd>F</kbd></dt><dd>full screen</dd>
+        <dt><kbd class="super">Super</kbd><span class="plus">+</span><kbd>V</kbd></dt><dd>float or tile</dd>
+        <dt><kbd class="super">Super</kbd><span class="plus">+</span><kbd>Shift</kbd><span class="plus">+</span><kbd>Space</kbd></dt><dd>focus between floating and tiled</dd>
+        <dt><kbd class="super">Super</kbd><span class="plus">+</span><kbd>T</kbd></dt><dd>tabbed or split</dd>
+        <dt><kbd class="super">Super</kbd><span class="plus">+</span><kbd>B</kbd> / <kbd>N</kbd></dt><dd>next window opens beside / below</dd>
+        <dt><kbd class="super">Super</kbd><span class="plus">+</span><kbd>R</kbd></dt><dd>resize mode: arrows resize, <kbd>Esc</kbd> or <kbd>Return</kbd> to leave</dd>
+        <dt><kbd class="super">Super</kbd><span class="plus">+</span><span class="gesture">drag</span></dt><dd>move a window with the mouse <small>(right button resizes)</small></dd>
+      </dl>
+    </section>
+
+    <section id="snap">
+      <h2>snap</h2>
+      <p class="note">Dock a window as a narrow column, the way the phone's snapped apps worked.</p>
+      <dl>
+        <dt><kbd class="super">Super</kbd><span class="plus">+</span><kbd>,</kbd></dt><dd>snap left <small>(again: 320 → 500 px → half)</small></dd>
+        <dt><kbd class="super">Super</kbd><span class="plus">+</span><kbd>.</kbd></dt><dd>snap right <small>(again: wider)</small></dd>
+        <dt><kbd class="super">Super</kbd><span class="plus">+</span><kbd>/</kbd></dt><dd>equal widths again</dd>
+      </dl>
+    </section>
+
+    <section id="pivots">
+      <h2>pivots</h2>
+      <p class="note">Workspaces: home, web, code, chat, music, video, files, play, misc, extra.</p>
+      <dl>
+        <dt><kbd class="super">Super</kbd><span class="plus">+</span><kbd>1</kbd>…<kbd>0</kbd></dt><dd>go to a pivot</dd>
+        <dt><kbd class="super">Super</kbd><span class="plus">+</span><kbd>Shift</kbd><span class="plus">+</span><kbd>1</kbd>…<kbd>0</kbd></dt><dd>send the window there</dd>
+        <dt><kbd class="super">Super</kbd><span class="plus">+</span><kbd>Ctrl</kbd><span class="plus">+</span><kbd>←</kbd> / <kbd>→</kbd></dt><dd>previous / next pivot</dd>
+        <dt><kbd class="super">Super</kbd><span class="plus">+</span><kbd>Ctrl</kbd><span class="plus">+</span><kbd>Shift</kbd><span class="plus">+</span><kbd>←</kbd> / <kbd>→</kbd></dt><dd>take the window along</dd>
+        <dt><kbd class="super">Super</kbd><span class="plus">+</span><kbd>`</kbd></dt><dd>back to the last pivot</dd>
+      </dl>
+    </section>
+
+    <section id="start">
+      <h2>inside start</h2>
+      <dl>
+        <dt><span class="gesture">type</span></dt><dd>search the app list</dd>
+        <dt><kbd>Esc</kbd></dt><dd>clear the search, then close</dd>
+        <dt><span class="gesture">right-click</span><span class="plus">or</span><span class="gesture">hold</span></dt><dd>tile menu: size, colour, set up, move, unpin</dd>
+        <dt><kbd>Menu</kbd><span class="plus">or</span><kbd>Shift</kbd><span class="plus">+</span><kbd>F10</kbd></dt><dd>the focused tile's menu</dd>
+        <dt><span class="gesture">drag</span></dt><dd>move a tile</dd>
+        <dt><kbd>Alt</kbd><span class="plus">+</span><kbd>←↑↓→</kbd></dt><dd>move the focused tile</dd>
+        <dt><kbd>Ctrl</kbd><span class="plus">+</span><kbd>P</kbd></dt><dd>pin or unpin the focused app</dd>
+        <dt><span class="gesture">+</span></dt><dd>under the tiles: add a live tile</dd>
+      </dl>
+    </section>
+
+    <section id="gestures">
+      <h2>gestures</h2>
+      <p class="note">Touchpad swipes.</p>
+      <dl>
+        <dt><span class="gesture">3 fingers ← / →</span></dt><dd>next / previous pivot</dd>
+        <dt><span class="gesture">3 fingers ↑</span></dt><dd>start</dd>
+        <dt><span class="gesture">3 fingers ↓</span></dt><dd>switcher</dd>
+        <dt><span class="gesture">4 fingers ←</span></dt><dd>open charms</dd>
+        <dt><span class="gesture">4 fingers →</span></dt><dd>close charms</dd>
+      </dl>
+    </section>
+
+    <section id="media">
+      <h2>media</h2>
+      <p class="note">These work on the lock screen too.</p>
+      <dl>
+        <dt><kbd>Vol +</kbd> <kbd>Vol −</kbd> <kbd>Mute</kbd></dt><dd>volume, with an indicator top left</dd>
+        <dt><kbd>Mic mute</kbd></dt><dd>microphone on / off</dd>
+        <dt><kbd>Bright +</kbd> <kbd>Bright −</kbd></dt><dd>screen brightness</dd>
+        <dt><kbd>Play</kbd> <kbd>Next</kbd> <kbd>Prev</kbd></dt><dd>whatever is playing</dd>
+        <dt><kbd>Print</kbd></dt><dd>screenshot the screen <small>(copied and saved to ~/Pictures/Screenshots)</small></dd>
+        <dt><kbd>Shift</kbd><span class="plus">+</span><kbd>Print</kbd></dt><dd>screenshot a region</dd>
+      </dl>
+    </section>
+
+    <section id="bar">
+      <h2>bar</h2>
+      <dl>
+        <dt><span class="gesture">click ■</span></dt><dd>start <small>(right-click: charms)</small></dd>
+        <dt><span class="gesture">click a pivot</span></dt><dd>go there <small>(scroll to pan)</small></dd>
+        <dt><span class="gesture">click wi-fi</span></dt><dd>settings</dd>
+        <dt><span class="gesture">click vol</span></dt><dd>mute <small>(scroll: volume, right-click: mixer)</small></dd>
+        <dt><span class="gesture">click the time</span></dt><dd>charms</dd>
+      </dl>
+    </section>
+  </div>
+
+  <footer>
+    <span>From <code>desktop/config/sway/config</code> and <code>desktop/config/waybar/config.jsonc</code> in tubewm.</span>
+  </footer>
+</div>
+
+<script>
+(() => {
+  const links = [...document.querySelectorAll('nav a')];
+  const secs = links.map(a => document.querySelector(a.getAttribute('href')));
+  const mark = () => {
+    let cur = 0;
+    secs.forEach((s, i) => { if (s && s.getBoundingClientRect().top < 140) cur = i; });
+    links.forEach((a, i) => a.classList.toggle('on', i === cur));
+  };
+  addEventListener('scroll', mark, { passive: true });
+  mark();
+})();
+</script>
+</body>
+</html>

@@ -58,6 +58,8 @@ python3-gobject and pycairo with GTK 3 and gtk-layer-shell, Open Sans. Optional:
 
 ## Keys
 
+There is also a [one-page key reference](docs/keys.html) ([view it rendered](https://htmlpreview.github.io/?https://github.com/alex-ha-192/tubewm/blob/main/desktop/docs/keys.html)).
+
 `Super` is the Windows / logo key.
 
 | Keys | Action |
