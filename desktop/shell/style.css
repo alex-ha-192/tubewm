@@ -1,0 +1,137 @@
+/* tubewm shell (start screen + charms).
+ * The @tube_* colours are defined from the palette at load time.
+ * Your own overrides: ~/.config/tubewm/user.css */
+
+.tube, .tube * {
+    font-family: "Open Sans", "Noto Sans", sans-serif;
+    border-radius: 0;
+    box-shadow: none;
+    text-shadow: none;
+    -gtk-icon-shadow: none;
+    outline: none;
+}
+
+.tube button { background-image: none; }
+
+window.tube { background-color: @tube_shell; color: @tube_fg; }
+window.tube.tube-transparent { background-color: transparent; }
+
+/* ── type scale ─────────────────────────────────────────── */
+.panorama-header { font-size: 56px; font-weight: 300; color: @tube_fg; }
+.page-header     { font-size: 37px; font-weight: 300; color: @tube_fg; }
+.group-title     { font-size: 24px; font-weight: 300; color: @tube_fg; }
+.group-title.dim { color: @tube_subtle; }
+.body            { font-size: 15px; font-weight: 400; }
+.caption         { font-size: 13px; font-weight: 600; }
+.subtle          { color: @tube_subtle; }
+.user-label      { font-size: 24px; font-weight: 300; color: @tube_fg; }
+
+/* ── tiles ──────────────────────────────────────────────── */
+.tile {
+    background-color: @tube_accent;
+    background-image: none;
+    color: #FFFFFF;
+    border: none;
+    padding: 0;
+    margin: 0;
+    transition: opacity 260ms ease-out, background-color 120ms ease-out;
+}
+.tile:hover  { box-shadow: inset 0 0 0 2px alpha(#FFFFFF, 0.35); }
+.tile:focus  { box-shadow: inset 0 0 0 3px #FFFFFF; }
+.tile:active { background-color: @tube_accent_dark; }
+.tile.surface { background-color: @tube_surface_hi; }
+.tile.surface:active { background-color: @tube_surface; }
+.tile.entering { opacity: 0; }
+
+.tile-label  { font-size: 13px; font-weight: 600; color: #FFFFFF; }
+.tile-badge  { font-size: 18px; font-weight: 400; color: #FFFFFF; }
+.tile-hero   { font-size: 52px; font-weight: 300; color: #FFFFFF; }
+.tile-hero.small { font-size: 30px; }
+.tile-title  { font-size: 20px; font-weight: 300; color: #FFFFFF; }
+.tile-text   { font-size: 14px; font-weight: 400; color: alpha(#FFFFFF, 0.85); }
+.tile-letter { font-size: 44px; font-weight: 300; color: #FFFFFF; }
+
+.apps-link {
+    background: transparent;
+    border: none;
+    padding: 4px 0;
+    color: @tube_subtle;
+    font-size: 17px;
+    font-weight: 300;
+}
+.apps-link label { font-size: 17px; font-weight: 300; color: @tube_subtle; }
+.apps-link:hover label, .apps-link:focus label { color: @tube_fg; }
+
+/* ── apps list ──────────────────────────────────────────── */
+.apps flowboxchild { padding: 0; margin: 0; background: transparent; }
+.apps flowboxchild:focus, .apps flowboxchild:selected { background: @tube_surface_hi; }
+.app-row { padding: 4px 14px 4px 4px; }
+.app-row:hover { background: @tube_surface; }
+.app-icon { background-color: @tube_accent; min-width: 40px; min-height: 40px; color: #FFFFFF; }
+.app-name { font-size: 16px; font-weight: 400; color: @tube_fg; }
+.app-letter { font-size: 30px; font-weight: 300; color: @tube_accent_light; padding: 6px 0 0 6px; }
+
+entry.search {
+    background: @tube_surface;
+    color: @tube_fg;
+    caret-color: @tube_accent_light;
+    border: 2px solid @tube_surface;
+    font-size: 17px;
+    font-weight: 300;
+    padding: 4px 12px;
+    min-height: 34px;
+    min-width: 300px;
+}
+entry.search:focus { border-color: @tube_accent; }
+
+/* ── semantic zoom ──────────────────────────────────────── */
+.zoom-group {
+    background-color: @tube_surface;
+    color: @tube_fg;
+    border: none;
+    padding: 0 24px 18px 24px;
+}
+.zoom-group:hover, .zoom-group:focus { background-color: @tube_accent; }
+.zoom-group label { font-size: 56px; font-weight: 300; }
+
+/* ── charms ─────────────────────────────────────────────── */
+.charms-bar { background-color: @tube_surface; }
+.charm {
+    background: transparent;
+    color: @tube_fg;
+    border: none;
+    padding: 14px 0;
+}
+.charm:hover, .charm:focus { background-color: @tube_surface_hi; }
+.charm:active { background-color: @tube_accent; }
+.charm label { font-size: 13px; font-weight: 400; color: @tube_subtle; }
+.charm:hover label, .charm:focus label { color: @tube_fg; }
+
+.clock-card { background-color: @tube_surface; padding: 24px 34px 26px 30px; }
+.clock-time { font-size: 96px; font-weight: 300; color: @tube_fg; }
+.clock-date { font-size: 26px; font-weight: 300; color: @tube_fg; }
+.clock-status { font-size: 15px; font-weight: 300; color: @tube_subtle; }
+
+.flyout { background-color: @tube_surface; color: @tube_fg; padding: 36px 30px; }
+.flyout-section { font-size: 15px; font-weight: 600; color: @tube_fg; margin-top: 22px; }
+.flyout-text { font-size: 14px; color: @tube_subtle; }
+.flyout button {
+    background: transparent;
+    color: @tube_fg;
+    border: 2px solid @tube_subtle;
+    padding: 6px 14px;
+    font-weight: 400;
+}
+.flyout button:hover { border-color: @tube_fg; background: @tube_surface_hi; }
+.flyout button:active { background: @tube_accent; border-color: @tube_accent; }
+.flyout button.armed { background: @tube_urgent; border-color: @tube_urgent; }
+.flyout button.link { border: none; padding: 6px 0; color: @tube_accent_light; }
+.flyout button.toggle-on { background: @tube_accent; border-color: @tube_accent; }
+
+.flyout button.swatch { border: none; padding: 0; min-width: 44px; min-height: 44px; }
+.flyout button.swatch:hover { box-shadow: inset 0 0 0 2px alpha(#FFFFFF, 0.5); }
+.flyout button.swatch.current { box-shadow: inset 0 0 0 3px #FFFFFF; }
+
+scale trough { background: @tube_surface_hi; min-height: 6px; border: none; }
+scale highlight { background: @tube_accent; border: none; }
+scale slider { background: @tube_fg; min-width: 12px; min-height: 22px; border: none; margin: -8px 0; }

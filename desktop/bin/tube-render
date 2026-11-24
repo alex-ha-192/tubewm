@@ -1,0 +1,76 @@
+#!/usr/bin/env bash
+# tube-render: fill the tubewm templates with the current palette and write
+# them into ~/.config. Safe to run any time; tube-accent calls it.
+#
+#   tube-render            render everything
+#   tube-render --quiet    no output
+#   tube-render --print    show the resolved palette and exit
+set -euo pipefail
+
+TUBEWM_HOME=${TUBEWM_HOME:-${XDG_DATA_HOME:-$HOME/.local/share}/tubewm}
+CONFIG=${XDG_CONFIG_HOME:-$HOME/.config}
+quiet=0
+print=0
+for arg in "$@"; do
+    case $arg in
+        --quiet|-q) quiet=1 ;;
+        --print) print=1 ;;
+        -h|--help) sed -n '2,8p' "$0" | sed 's/^# \{0,1\}//'; exit 0 ;;
+        *) echo "tube-render: unknown option $arg" >&2; exit 2 ;;
+    esac
+done
+
+palette=$TUBEWM_HOME/palette/tubewm-colors.sh
+templates=$TUBEWM_HOME/desktop/templates
+[ -r "$palette" ] || { echo "tube-render: no palette at $palette (run install.sh)" >&2; exit 1; }
+
+# shellcheck source=../../palette/tubewm-colors.sh
+. "$palette"
+
+valid_hex() { [[ $1 =~ ^#[0-9A-Fa-f]{6}$ ]]; }
+valid_hex "$TUBEWM_ACCENT" || { echo "tube-render: bad accent '$TUBEWM_ACCENT', using default" >&2; TUBEWM_ACCENT=$TUBEWM_ACCENT_DEFAULT; }
+
+# mix <#rrggbb> <#rrggbb> <percent of second>
+mix() {
+    local a=${1#\#} b=${2#\#} p=$3 out="#" i ca cb
+    for i in 0 2 4; do
+        ca=$((16#${a:i:2})); cb=$((16#${b:i:2}))
+        out+=$(printf '%02X' $(( (ca * (100 - p) + cb * p) / 100 )))
+    done
+    printf '%s' "$out"
+}
+
+TUBEWM_ACCENT=$(printf '%s' "$TUBEWM_ACCENT" | tr '[:lower:]' '[:upper:]')
+TUBEWM_ACCENT_DARK=$(mix "$TUBEWM_ACCENT" "#000000" 30)
+TUBEWM_ACCENT_LIGHT=$(mix "$TUBEWM_ACCENT" "#FFFFFF" 30)
+
+names=(BG SHELL SURFACE SURFACE_HI FG SUBTLE DIM LIGHT_BG LIGHT_FG URGENT ACCENT ACCENT_DARK ACCENT_LIGHT)
+
+if [ "$print" = 1 ]; then
+    for n in "${names[@]}"; do v=TUBEWM_$n; printf '%-14s %s\n' "$n" "${!v}"; done
+    exit 0
+fi
+
+sed_args=()
+for n in "${names[@]}"; do
+    v=TUBEWM_$n; hex=${!v}
+    sed_args+=(-e "s/@${n}_RAW@/${hex#\#}/g" -e "s/@${n}@/${hex}/g")
+done
+
+count=0
+while IFS= read -r -d '' src; do
+    rel=${src#"$templates"/}
+    dest=$CONFIG/$rel
+    mkdir -p "$(dirname "$dest")"
+    tmp=$(mktemp "$dest.XXXXXX")
+    sed "${sed_args[@]}" "$src" > "$tmp"
+    mv -f "$tmp" "$dest"
+    count=$((count + 1))
+done < <(find "$templates" -type f -print0)
+
+# Files the generated CSS imports; create them empty so the import resolves.
+for f in gtk-3.0/user.css gtk-4.0/user.css tubewm/user.css foot/local.ini; do
+    [ -e "$CONFIG/$f" ] || { mkdir -p "$(dirname "$CONFIG/$f")"; : > "$CONFIG/$f"; }
+done
+
+[ "$quiet" = 1 ] || echo "tube-render: wrote $count files with accent $TUBEWM_ACCENT"

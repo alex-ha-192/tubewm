@@ -1,0 +1,67 @@
+#!/usr/bin/env bash
+# tube-accent: change the one accent colour used across the whole desktop.
+#
+#   tube-accent              show the current accent
+#   tube-accent list         list the named accents
+#   tube-accent magenta      use a named accent
+#   tube-accent '#1BA1E2'    use any colour
+#   tube-accent random       pick a named accent at random
+#
+# Writes ~/.config/tubewm/accent, re-renders the configs, reloads sway,
+# waybar and mako, then runs every executable in ~/.config/tubewm/accent.d/
+# with the new colour as $1 (app themes hook in there).
+set -euo pipefail
+
+TUBEWM_HOME=${TUBEWM_HOME:-${XDG_DATA_HOME:-$HOME/.local/share}/tubewm}
+CONFIG=${XDG_CONFIG_HOME:-$HOME/.config}
+accents=$TUBEWM_HOME/palette/accents
+accent_file=$CONFIG/tubewm/accent
+
+named() { grep -v '^\s*#' "$accents" | awk 'NF>=2 {print $1, $2}'; }
+
+current() {
+    ( unset TUBEWM_ACCENT; . "$TUBEWM_HOME/palette/tubewm-colors.sh"; printf '%s\n' "$TUBEWM_ACCENT" )
+}
+
+arg=${1:-}
+case $arg in
+    "")
+        hex=$(current)
+        name=$(named | awk -v h="$hex" 'toupper($2)==toupper(h) {print $1}')
+        echo "${name:-custom} $hex"; exit 0 ;;
+    -h|--help) sed -n '2,13p' "$0" | sed 's/^# \{0,1\}//'; exit 0 ;;
+    list) named; exit 0 ;;
+    random) hex=$(named | shuf -n1 | awk '{print $2}') ;;
+    \#*) hex=$arg ;;
+    [0-9A-Fa-f][0-9A-Fa-f][0-9A-Fa-f][0-9A-Fa-f][0-9A-Fa-f][0-9A-Fa-f]) hex="#$arg" ;;
+    *) hex=$(named | awk -v n="$arg" 'tolower($1)==tolower(n) {print $2}')
+       [ -n "$hex" ] || { echo "tube-accent: no accent called '$arg' (try: tube-accent list)" >&2; exit 1; } ;;
+esac
+
+[[ $hex =~ ^#[0-9A-Fa-f]{6}$ ]] || { echo "tube-accent: '$hex' is not a #RRGGBB colour" >&2; exit 1; }
+hex=$(printf '%s' "$hex" | tr '[:lower:]' '[:upper:]')
+
+mkdir -p "$(dirname "$accent_file")"
+printf 'TUBEWM_ACCENT=%s\n' "$hex" > "$accent_file"
+
+tube-render --quiet
+
+# Reload whatever is running. Each step is best effort.
+# A sway reload also restarts waybar (it is sway's bar command), so only
+# signal waybar directly when sway isn't there to do it.
+if [ -n "${SWAYSOCK:-}" ] && command -v swaymsg >/dev/null; then
+    swaymsg -q reload || true
+else
+    pkill -SIGUSR2 -x waybar 2>/dev/null || true
+fi
+command -v makoctl >/dev/null && makoctl reload 2>/dev/null || true
+
+hooks=$CONFIG/tubewm/accent.d
+if [ -d "$hooks" ]; then
+    for hook in "$hooks"/*; do
+        [ -x "$hook" ] && [ -f "$hook" ] || continue
+        TUBEWM_ACCENT=$hex "$hook" "$hex" || echo "tube-accent: hook $(basename "$hook") failed" >&2
+    done
+fi
+
+echo "accent is now $hex"

@@ -1,0 +1,5 @@
+/* tubewm · waybar style
+ * The look lives in tubewm.css, which tube-accent regenerates.
+ * Add your own rules below the import; they win. */
+
+@import url("tubewm.css");

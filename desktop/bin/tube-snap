@@ -1,0 +1,72 @@
+#!/usr/bin/env bash
+# tube-snap: Metro-style snapping on top of sway's tiling.
+#
+#   tube-snap left|right   dock the focused window as a narrow column at that
+#                          edge of the workspace. Press again to cycle its
+#                          width: 320 px -> 500 px -> half.
+#   tube-snap fill         give every column equal width again.
+#
+# Snap widths can be overridden with TUBE_SNAP_WIDTHS="320 500".
+set -euo pipefail
+
+side=${1:-}
+read -ra widths <<<"${TUBE_SNAP_WIDTHS:-320 500}"
+
+tree=$(swaymsg -t get_tree)
+focused=$(jq -c '.. | objects | select(.focused? == true)' <<<"$tree" | head -n1)
+[ -n "$focused" ] || exit 0
+con_id=$(jq -r '.id' <<<"$focused")
+
+ws=$(swaymsg -t get_workspaces | jq -c '.[] | select(.focused)')
+ws_name=$(jq -r '.name' <<<"$ws")
+ws_x=$(jq -r '.rect.x' <<<"$ws");  ws_w=$(jq -r '.rect.width' <<<"$ws")
+
+# Number of tiled windows on this workspace.
+tiled=$(jq --arg n "$ws_name" '[.. | objects | select(.type? == "workspace" and .name == $n)
+          | .nodes[]? | .. | objects | select((.type? == "con") and ((.nodes | length) == 0))] | length' <<<"$tree")
+
+case $side in
+    fill)
+        # Give each top-level column of this workspace the same width.
+        mapfile -t cols < <(jq --arg n "$ws_name" '.. | objects | select(.type? == "workspace" and .name == $n) | .nodes[].id' <<<"$tree")
+        n=${#cols[@]}
+        [ "$n" -gt 1 ] || exit 0
+        for id in "${cols[@]}"; do swaymsg -q "[con_id=$id] resize set width $((100 / n)) ppt" || true; done
+        exit 0 ;;
+    left|right) ;;
+    *) sed -n '2,10p' "$0" | sed 's/^# \{0,1\}//'; exit 2 ;;
+esac
+
+if [ "$tiled" -lt 2 ]; then
+    notify-send -a tube-osd "snap" "open another app to snap beside" 2>/dev/null || true
+    exit 0
+fi
+
+# Make sure the workspace splits horizontally, then walk the window to the edge.
+swaymsg -q "[con_id=$con_id] focus"
+x_of() { swaymsg -t get_tree | jq --argjson id "$con_id" '.. | objects | select(.id? == $id) | .rect.x'; }
+w_of() { swaymsg -t get_tree | jq --argjson id "$con_id" '.. | objects | select(.id? == $id) | .rect.width'; }
+for _ in $(seq 1 12); do
+    x=$(x_of); w=$(w_of)
+    if [ "$side" = left ]; then
+        [ "$x" -le $((ws_x + 12)) ] && break
+    else
+        [ $((x + w)) -ge $((ws_x + ws_w - 12)) ] && break
+    fi
+    swaymsg -q "[con_id=$con_id] move $side" || break
+done
+
+# Cycle width: first snap width, next one, then half the workspace.
+w=$(w_of)
+next=${widths[0]}
+for i in "${!widths[@]}"; do
+    cur=${widths[$i]}
+    if [ "$w" -ge $((cur - 15)) ] && [ "$w" -le $((cur + 15)) ]; then
+        next=${widths[$((i + 1))]:-half}
+    fi
+done
+if [ "$next" = half ]; then
+    swaymsg -q "[con_id=$con_id] resize set width 50 ppt"
+else
+    swaymsg -q "[con_id=$con_id] resize set width ${next} px"
+fi

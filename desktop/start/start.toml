@@ -1,0 +1,69 @@
+# tubewm start screen
+#
+# Copied to ~/.config/tubewm/start.toml on install; edit that copy.
+# Changes show up the next time start opens.
+#
+# Groups scroll horizontally. Inside a group, tiles are packed into columns
+# in the order listed. Sizes: small (70x70), medium (150x150),
+# wide (310x150), large (310x310).
+#
+# Tile fields
+#   app     desktop file id, e.g. "firefox" or "org.gnome.Nautilus".
+#           A tile whose app isn't installed is hidden, unless it has `exec`.
+#   exec    shell command to run instead of (or as well as) `app`
+#   type    app (default) | clock | battery | music | system | command | action
+#   action  for type = "action": apps | search | charms | settings | lock | accent
+#   label   text in the bottom-left corner
+#   size    small | medium | wide | large
+#   color   "accent" (default), "surface", or "#RRGGBB"
+#   icon    a tubewm glyph (search share start devices settings lock power
+#           music video apps terminal folder web code chat mail photo game
+#           calendar clock battery system bluetooth sound), an icon name,
+#           or an absolute path to an image
+#   command, interval   for type = "command": the command's output lines
+#           become the tile's frames (use a tab to split title and text)
+
+[start]
+title = "start"
+# rows = 6           # tile rows per group; default fits the screen
+
+[[group]]
+name = "today"
+tiles = [
+  { type = "clock", size = "wide", label = "clock" },
+  { app = "foot", label = "terminal", size = "medium", icon = "terminal" },
+  { type = "music", size = "medium", label = "music", exec = "playerctl play-pause", icon = "music" },
+  { type = "battery", size = "small", color = "surface" },
+  { type = "action", action = "lock", size = "small", icon = "lock", color = "surface" },
+  { type = "action", action = "settings", size = "small", icon = "settings", color = "surface" },
+  { type = "action", action = "apps", size = "small", icon = "apps", color = "surface" },
+]
+
+[[group]]
+name = "web"
+tiles = [
+  { app = "vivaldi-stable", label = "vivaldi", size = "wide", icon = "web" },
+  { app = "firefox", label = "firefox", size = "medium", icon = "web" },
+  { app = "chromium", label = "chromium", size = "medium", icon = "web" },
+  { app = "thunderbird", label = "mail", size = "medium", icon = "mail" },
+]
+
+[[group]]
+name = "make"
+tiles = [
+  { app = "code", label = "code", size = "wide", icon = "code" },
+  { app = "codium", label = "codium", size = "wide", icon = "code" },
+  { app = "org.gnome.Nautilus", label = "files", size = "medium", icon = "folder" },
+  { app = "thunar", label = "files", size = "medium", icon = "folder" },
+  { app = "pcmanfm", label = "files", size = "medium", icon = "folder" },
+  { type = "system", size = "medium", color = "surface", label = "system" },
+]
+
+[[group]]
+name = "play"
+tiles = [
+  { app = "spotify", label = "spotify", size = "medium", icon = "music" },
+  { app = "mpv", label = "video", size = "medium", icon = "video" },
+  { app = "steam", label = "games", size = "wide", icon = "game" },
+  { app = "org.gnome.Loupe", label = "photos", size = "medium", icon = "photo" },
+]

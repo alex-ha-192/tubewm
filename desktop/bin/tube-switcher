@@ -1,0 +1,17 @@
+#!/usr/bin/env bash
+# tube-switcher: pick any open window (all workspaces) and jump to it.
+set -euo pipefail
+
+list=$(swaymsg -t get_tree | jq -r '
+  .nodes[] | .nodes[] | select(.type == "workspace") as $w
+  | [$w | .. | objects | select(.pid? != null and (.type == "con" or .type == "floating_con"))]
+  | .[] | "\(.id)\t\((.app_id // .window_properties.class // "app") | ascii_downcase)\t\(.name // "")\t\($w.name | sub("^[0-9]+:"; ""))"')
+
+[ -n "$list" ] || exit 0
+
+choice=$(printf '%s\n' "$list" \
+    | awk -F'\t' '{ t = ($3 != "") ? $3 : $2; printf "%s   ·  %s\n", t, $4 }' \
+    | fuzzel --dmenu --prompt "switch  " --index 2>/dev/null) || exit 0
+
+id=$(printf '%s\n' "$list" | sed -n "$((choice + 1))p" | cut -f1)
+[ -n "$id" ] && swaymsg -q "[con_id=$id] focus"
