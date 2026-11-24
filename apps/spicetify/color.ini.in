@@ -1,0 +1,42 @@
+; tubewm Metro for Spotify via spicetify (generated, accent @DARK_ACCENT@).
+; Do not edit: re-run apps/install.sh.
+
+[dark]
+text               = @DARK_FG.bare@
+subtext            = @DARK_FG_SUBTLE.bare@
+main               = @DARK_BG.bare@
+main-elevated      = @DARK_SURFACE.bare@
+highlight          = @DARK_SURFACE_ALT.bare@
+highlight-elevated = @DARK_SURFACE_ALT.bare@
+sidebar            = @DARK_SHELL.bare@
+player             = @DARK_SHELL.bare@
+card               = @DARK_SURFACE.bare@
+shadow             = @DARK_BG.bare@
+selected-row       = @DARK_FG.bare@
+button             = @DARK_ACCENT.bare@
+button-active      = @DARK_ACCENT_HOVER.bare@
+button-disabled    = @DARK_FG_DISABLED.bare@
+tab-active         = @DARK_SURFACE_ALT.bare@
+notification       = @DARK_ACCENT.bare@
+notification-error = @DARK_ERROR.bare@
+misc               = @DARK_FG_DISABLED.bare@
+
+[light]
+text               = @LIGHT_FG.bare@
+subtext            = @LIGHT_FG_SUBTLE.bare@
+main               = @LIGHT_BG.bare@
+main-elevated      = @LIGHT_SURFACE.bare@
+highlight          = @LIGHT_SURFACE_ALT.bare@
+highlight-elevated = @LIGHT_SURFACE_ALT.bare@
+sidebar            = @LIGHT_SHELL.bare@
+player             = @LIGHT_SHELL.bare@
+card               = @LIGHT_SURFACE.bare@
+shadow             = @LIGHT_BG.bare@
+selected-row       = @LIGHT_FG.bare@
+button             = @LIGHT_ACCENT.bare@
+button-active      = @LIGHT_ACCENT_HOVER.bare@
+button-disabled    = @LIGHT_FG_DISABLED.bare@
+tab-active         = @LIGHT_SURFACE_ALT.bare@
+notification       = @LIGHT_ACCENT.bare@
+notification-error = @LIGHT_ERROR.bare@
+misc               = @LIGHT_FG_DISABLED.bare@

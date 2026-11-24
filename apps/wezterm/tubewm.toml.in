@@ -1,0 +1,46 @@
+# tubewm Metro colour scheme for WezTerm (generated, accent @ACCENT@).
+# Select it in wezterm.lua with:  config.color_scheme = "tubewm Metro"
+
+[metadata]
+name = "tubewm Metro"
+origin_url = "https://github.com/alex-ha-192/tubewm"
+
+[colors]
+foreground = "@FG@"
+background = "@BG@"
+cursor_bg = "@ACCENT@"
+cursor_fg = "@ON_ACCENT@"
+cursor_border = "@ACCENT@"
+selection_fg = "@ON_ACCENT@"
+selection_bg = "@ACCENT@"
+scrollbar_thumb = "@SURFACE_ALT@"
+split = "@SHELL@"
+visual_bell = "@SURFACE@"
+compose_cursor = "@WARNING@"
+ansi = ["@ANSI0@", "@ANSI1@", "@ANSI2@", "@ANSI3@", "@ANSI4@", "@ANSI5@", "@ANSI6@", "@ANSI7@"]
+brights = ["@ANSI8@", "@ANSI9@", "@ANSI10@", "@ANSI11@", "@ANSI12@", "@ANSI13@", "@ANSI14@", "@ANSI15@"]
+
+[colors.tab_bar]
+background = "@BG@"
+inactive_tab_edge = "@BG@"
+
+[colors.tab_bar.active_tab]
+bg_color = "@BG@"
+fg_color = "@FG@"
+intensity = "Bold"
+
+[colors.tab_bar.inactive_tab]
+bg_color = "@BG@"
+fg_color = "@FG_DISABLED@"
+
+[colors.tab_bar.inactive_tab_hover]
+bg_color = "@BG@"
+fg_color = "@FG_SUBTLE@"
+
+[colors.tab_bar.new_tab]
+bg_color = "@BG@"
+fg_color = "@FG_DISABLED@"
+
+[colors.tab_bar.new_tab_hover]
+bg_color = "@ACCENT@"
+fg_color = "@ON_ACCENT@"

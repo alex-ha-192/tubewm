@@ -1,0 +1,114 @@
+# tubewm Metro for Helix (generated, accent @ACCENT@). Do not edit: re-run apps/install.sh.
+# Selected with  theme = "tubewm"  in ~/.config/helix/config.toml
+
+"ui.background" = { bg = "bg" }
+"ui.text" = "fg"
+"ui.text.focus" = { fg = "fg", modifiers = ["bold"] }
+"ui.text.inactive" = "dim"
+"ui.text.directory" = { fg = "fg", modifiers = ["bold"] }
+"ui.cursor" = { fg = "on_accent", bg = "subtle" }
+"ui.cursor.primary" = { fg = "on_accent", bg = "accent" }
+"ui.cursor.match" = { fg = "accent_text", modifiers = ["bold", "underlined"] }
+"ui.cursorline.primary" = { bg = "line" }
+"ui.selection" = { bg = "sel_soft" }
+"ui.selection.primary" = { bg = "sel" }
+"ui.linenr" = "dim"
+"ui.linenr.selected" = { fg = "fg", modifiers = ["bold"] }
+"ui.gutter" = { bg = "bg" }
+"ui.statusline" = { fg = "on_accent", bg = "accent" }
+"ui.statusline.inactive" = { fg = "subtle", bg = "shell" }
+"ui.statusline.normal" = { fg = "on_accent", bg = "accent", modifiers = ["bold"] }
+"ui.statusline.insert" = { fg = "bg", bg = "fg", modifiers = ["bold"] }
+"ui.statusline.select" = { fg = "bg", bg = "type", modifiers = ["bold"] }
+"ui.bufferline" = { fg = "dim", bg = "bg" }
+"ui.bufferline.active" = { fg = "fg", bg = "bg", modifiers = ["bold"] }
+"ui.bufferline.background" = { bg = "bg" }
+"ui.popup" = { fg = "fg", bg = "surface" }
+"ui.popup.info" = { fg = "fg", bg = "surface" }
+"ui.window" = { fg = "shell" }
+"ui.help" = { fg = "fg", bg = "surface" }
+"ui.menu" = { fg = "fg", bg = "surface" }
+"ui.menu.selected" = { fg = "on_accent", bg = "accent" }
+"ui.menu.scroll" = { fg = "surface_alt", bg = "surface" }
+"ui.picker.header" = { fg = "fg", modifiers = ["bold"] }
+"ui.virtual.whitespace" = "surface_alt"
+"ui.virtual.ruler" = { bg = "line" }
+"ui.virtual.indent-guide" = "surface_alt"
+"ui.virtual.inlay-hint" = { fg = "dim", modifiers = ["italic"] }
+"ui.virtual.jump-label" = { fg = "on_accent", bg = "accent", modifiers = ["bold"] }
+"ui.highlight" = { bg = "line" }
+
+"comment" = { fg = "comment", modifiers = ["italic"] }
+"keyword" = "kw"
+"keyword.directive" = "escape"
+"operator" = "punct"
+"punctuation" = "punct"
+"string" = "str"
+"string.regexp" = "escape"
+"constant" = "num"
+"constant.numeric" = "num"
+"constant.character.escape" = "escape"
+"function" = { fg = "func", modifiers = ["bold"] }
+"function.macro" = "escape"
+"type" = "type"
+"constructor" = "type"
+"namespace" = "type"
+"variable" = "fg"
+"variable.builtin" = "kw"
+"variable.parameter" = "fg"
+"variable.other.member" = "prop"
+"attribute" = "escape"
+"label" = "kw"
+"tag" = "kw"
+"special" = "escape"
+
+"markup.heading" = { fg = "fg", modifiers = ["bold"] }
+"markup.heading.marker" = "accent_text"
+"markup.bold" = { modifiers = ["bold"] }
+"markup.italic" = { modifiers = ["italic"] }
+"markup.link.url" = { fg = "accent_text", modifiers = ["underlined"] }
+"markup.link.text" = "accent_text"
+"markup.quote" = { fg = "comment", modifiers = ["italic"] }
+"markup.raw" = "str"
+"markup.list" = "accent_text"
+
+"diff.plus" = "success"
+"diff.minus" = "error"
+"diff.delta" = "info"
+
+"error" = "error"
+"warning" = "warning"
+"info" = "info"
+"hint" = "subtle"
+"diagnostic.error" = { underline = { color = "error", style = "curl" } }
+"diagnostic.warning" = { underline = { color = "warning", style = "curl" } }
+"diagnostic.info" = { underline = { color = "info", style = "curl" } }
+"diagnostic.hint" = { underline = { color = "subtle", style = "curl" } }
+
+[palette]
+bg = "@BG@"
+shell = "@SHELL@"
+surface = "@SURFACE@"
+surface_alt = "@SURFACE_ALT@"
+fg = "@FG@"
+subtle = "@FG_SUBTLE@"
+dim = "@FG_DISABLED@"
+accent = "@ACCENT@"
+on_accent = "@ON_ACCENT@"
+accent_text = "@ACCENT_TEXT@"
+sel = "@SELECTION@"
+sel_soft = "@SELECTION_SOFT@"
+line = "@LINE_HIGHLIGHT@"
+error = "@SYN_ERROR@"
+warning = "@WARNING@"
+success = "@SUCCESS@"
+info = "@INFO@"
+kw = "@SYN_KEYWORD@"
+str = "@SYN_STRING@"
+num = "@SYN_NUMBER@"
+type = "@SYN_TYPE@"
+func = "@SYN_FUNC@"
+prop = "@SYN_PROP@"
+punct = "@SYN_PUNCT@"
+comment = "@SYN_COMMENT@"
+escape = "@SYN_ESCAPE@"

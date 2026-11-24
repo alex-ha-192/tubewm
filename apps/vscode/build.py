@@ -20,6 +20,7 @@ from pathlib import Path
 HERE = Path(__file__).resolve().parent
 sys.path.insert(0, str(HERE.parent / "lib"))
 import palette as P  # noqa: E402
+import tokens as T  # noqa: E402
 
 VERSION = "0.1.0"
 EXT_ID = "tubewm-metro"
@@ -318,43 +319,19 @@ def workbench(c: dict, mode: str) -> dict:
 
 
 def terminal_ansi(c: dict, mode: str) -> dict:
-    sw = {"red": c["error"], "green": c["success"], "yellow": c["warning"], "blue": c["info"],
-          "magenta": "#E3008C", "cyan": "#00A8A8"}
+    cols = T.ansi(c, mode)
     out = {}
-    bg = c["bg"]
-    for name, hex_ in sw.items():
-        base = P.readable(hex_, bg, 3.5)
+    for i, name in enumerate(T.ANSI_NAMES):
         cap = name.capitalize()
-        out[f"terminal.ansi{cap}"] = base
-        out[f"terminal.ansiBright{cap}"] = P.mix(base, "#FFFFFF" if mode == "dark" else "#000000", 0.25)
-    if mode == "dark":
-        out.update({"terminal.ansiBlack": "#000000", "terminal.ansiBrightBlack": c["fg_disabled"],
-                    "terminal.ansiWhite": "#D0D0D0", "terminal.ansiBrightWhite": "#FFFFFF"})
-    else:
-        out.update({"terminal.ansiBlack": "#111111", "terminal.ansiBrightBlack": c["fg_subtle"],
-                    "terminal.ansiWhite": "#C8C8C8", "terminal.ansiBrightWhite": "#E8E8E8"})
+        out[f"terminal.ansi{cap}"] = cols[i]
+        out[f"terminal.ansiBright{cap}"] = cols[i + 8]
     return out
 
 
 def syntax(c: dict, mode: str) -> tuple[list, dict]:
-    """Mostly monochrome code with the accent for keywords, Metro-style.
-
-    Every hue is pulled toward enough contrast with the canvas, so a dark
-    accent (cobalt, brown) still reads on black.
-    """
-    bg = c["bg"]
-    r = lambda h, t=4.5: P.readable(h, bg, t)
-    sw = {
-        "accent": r(c["accent"]),
-        "string": r("#8CBF26" if mode == "dark" else "#10893E"),
-        "number": r("#F0A30A" if mode == "dark" else "#B85C00"),
-        "type": r("#00A8A8" if mode == "dark" else "#00797A"),
-        "func": c["fg"],
-        "prop": r(P.mix(c["fg"], c["fg_subtle"], 0.35)),
-        "punct": r(c["fg_subtle"]),
-        "comment": r(c["fg_subtle"], 3.0),
-        "escape": r("#F26B1D" if mode == "dark" else "#B5430A"),
-    }
+    """TextMate and semantic token rules built from the shared syntax colours."""
+    s = T.syntax(c, mode)
+    sw = dict(s, accent=s["keyword"])
     def rule(name, scope, color, style=None):
         s = {"foreground": color}
         if style is not None:
@@ -395,9 +372,9 @@ def syntax(c: dict, mode: str) -> tuple[list, dict]:
         rule("Markup links", ["markup.underline.link", "string.other.link"], sw["accent"]),
         rule("Markup quote", ["markup.quote"], sw["comment"], "italic"),
         rule("Diff inserted", ["markup.inserted"], sw["string"]),
-        rule("Diff deleted", ["markup.deleted"], r(c["error"])),
+        rule("Diff deleted", ["markup.deleted"], sw["error"]),
         rule("Diff changed", ["markup.changed"], sw["number"]),
-        rule("Invalid", ["invalid", "invalid.illegal"], r(c["error"])),
+        rule("Invalid", ["invalid", "invalid.illegal"], sw["error"]),
     ]
     semantic = {
         "keyword": sw["accent"],

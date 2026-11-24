@@ -1,9 +1,48 @@
 # tubewm app themes
 
-Metro / Zune styling for **VSCode** (and VSCodium, Code - OSS) and **Vivaldi**:
-black canvas, white type, one accent colour, square corners, lowercase pivot
-headers. Both themes are generated from the shared palette in `palette/`, so
-they use the same accent as the Sway desktop and follow it when it changes.
+Metro / Zune styling for the apps you live in: black canvas, white type, one
+accent colour, square corners, lowercase pivot headers. Every theme is
+generated from the shared palette in `palette/`, so it uses the same accent as
+the Sway desktop and follows it when you change it with `tube-accent`.
+
+The desktop itself (Sway, Waybar, foot, fuzzel, mako, GTK, the lock screen)
+is themed by `desktop/`. This folder covers the applications.
+
+## Everything at once
+
+```sh
+apps/install.sh                      # theme every supported app that is installed
+apps/install.sh --list               # what is supported, found and themed
+apps/install.sh --accent cobalt      # any name from palette/accents, or '#RRGGBB'
+apps/install.sh --light              # light polarity
+apps/install.sh --only kitty,neovim  # just these
+apps/install.sh --skip firefox       # everything found but these
+apps/install.sh --uninstall          # undo all of it
+```
+
+| App | What changes | Notes |
+| --- | --- | --- |
+| [VSCode / VSCodium](#vscode) | colour themes, settings, optional workbench CSS | `apps/vscode` |
+| [Vivaldi](#vivaldi) | themes, UI CSS mods, tile-style speed dials | `apps/vivaldi` |
+| [Firefox](firefox/README.md) | pivot tabs, flat accent-focus URL bar, square menus, new-tab tiles | restart Firefox |
+| [kitty](kitty/README.md) | colours, padding, accent focus border, lowercase tabs | reloads live |
+| [Alacritty](alacritty/README.md) | colours, no decorations, padding | one import line if you already have a config |
+| [WezTerm](wezterm/README.md) | colour scheme with a flat tab bar | select it in `wezterm.lua` |
+| [tmux](tmux/README.md) | accent status strip, accent pane border | reloads live |
+| [Neovim](neovim/README.md) | full colorscheme (treesitter, LSP, telescope) | `:colorscheme tubewm` |
+| [Helix](helix/README.md) | theme with accent status line | set automatically if you had none |
+| [Zed](zed/README.md) | dark + light themes following the system | set automatically if you had none |
+| [Qt apps](qt/README.md) | qt5ct / qt6ct palette on the Fusion style | needs `QT_QPA_PLATFORMTHEME` |
+| [Spotify](spicetify/README.md) | Zune-style headings, flat tiles (via spicetify) | needs spicetify |
+| [btop](btop/README.md) | black canvas, accent graph ramps | quit btop first |
+| [zathura](zathura/README.md) | accent status bar, Open Sans | |
+| [mpv](mpv/README.md) | Open Sans OSD, flat bar with accent seek line | |
+
+Each app's folder has a short README with exactly what is written where.
+Your own config files are only ever edited to add one include/import line or
+a theme name, and only when that is unambiguous. Otherwise the installer
+prints the one line to add. Everything it changes is recorded, and every file
+it modifies is backed up as `<file>.tubewm-<date>.bak` first.
 
 Requirements: `python3` (standard library only) and a POSIX shell. Fonts are
 open: [Open Sans](https://fonts.google.com/specimen/Open+Sans) for UI text and
@@ -79,9 +118,9 @@ colours work with or without the stylesheet.
 
 ## Accent changes
 
-Both installers drop a hook in `~/.config/tubewm/accent.d/` (`50-vscode`,
-`50-vivaldi`). The desktop's `tube-accent` runs those hooks after changing
-the accent, so both apps rebuild for the new colour. VSCode needs a window
+The installers drop hooks in `~/.config/tubewm/accent.d/` (`40-apps`,
+`50-vscode`, `50-vivaldi`). The desktop's `tube-accent` runs those hooks after changing
+the accent, so every themed app rebuilds for the new colour. VSCode needs a window
 reload to pick it up. Vivaldi picks up the CSS on restart, and the theme
 colours the next time the hook runs with Vivaldi closed. Pass `--no-hook` to
 opt out.
@@ -92,8 +131,9 @@ Accent precedence is the same as `palette/tubewm-colors.sh`: `--accent`, then
 
 ## Undoing it
 
-`--uninstall` removes the extension or themes, the CSS folder setting and the
-hooks. In `settings.json` it restores the value each key had before the first
+`--uninstall` removes the generated files (except any you edited), the lines
+it added to your configs, the extension or themes, the CSS folder setting and
+the hooks. In `settings.json` it restores the value each key had before the first
 install, or removes the key if there was none. Keys you changed after
 installing are left as you set them. Timestamped `.bak` copies of
 `settings.json` and `Preferences` sit next to the originals.
@@ -102,8 +142,12 @@ installing are left as you set them. Timestamped `.bak` copies of
 
 ```
 apps/
+  install.sh         themes everything found (calls the per-app installers)
   lib/palette.py     reads palette/ (no shell execution), colour helpers
+  lib/tokens.py      palette -> @TOKEN@ values (ANSI, syntax, ...) + template renderer
+  lib/appthemes.py   the app catalogue, installer and exact-undo state
   lib/jsonc.py       comment-tolerant settings.json merge / restore
+  <app>/             one folder per app: .in templates and a README
   vscode/            build.py, install.sh, settings.jsonc, metro-ui.css
   vivaldi/           build.py, install.sh, prefs.py, metro.css.in
   tests/             python3 -m pytest apps/tests

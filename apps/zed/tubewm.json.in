@@ -1,0 +1,499 @@
+{
+  "$schema": "https://zed.dev/schema/themes/v0.2.0.json",
+  "name": "tubewm Metro",
+  "author": "tubewm (generated, accent @DARK_ACCENT@)",
+  "themes": [
+    {
+      "name": "tubewm Metro Dark",
+      "appearance": "dark",
+      "style": {
+        "background": "@DARK_SHELL@",
+        "background.appearance": "opaque",
+        "border": "@DARK_SHELL@",
+        "border.variant": "@DARK_SHELL@",
+        "border.focused": "@DARK_ACCENT@",
+        "border.selected": "@DARK_ACCENT@",
+        "border.transparent": "#00000000",
+        "border.disabled": "@DARK_SURFACE_ALT@",
+        "surface.background": "@DARK_SURFACE@",
+        "elevated_surface.background": "@DARK_SURFACE@",
+        "element.background": "@DARK_SURFACE_ALT@",
+        "element.hover": "@DARK_SURFACE_ALT@",
+        "element.active": "@DARK_ACCENT@",
+        "element.selected": "@DARK_SELECTION@",
+        "element.disabled": "@DARK_SURFACE@",
+        "drop_target.background": "@DARK_SELECTION_SOFT@",
+        "ghost_element.background": "#00000000",
+        "ghost_element.hover": "@DARK_SURFACE_ALT@",
+        "ghost_element.active": "@DARK_SURFACE_ALT@",
+        "ghost_element.selected": "@DARK_SELECTION@",
+        "ghost_element.disabled": "#00000000",
+        "text": "@DARK_FG@",
+        "text.muted": "@DARK_FG_SUBTLE@",
+        "text.placeholder": "@DARK_FG_DISABLED@",
+        "text.disabled": "@DARK_FG_DISABLED@",
+        "text.accent": "@DARK_ACCENT_TEXT@",
+        "icon": "@DARK_FG@",
+        "icon.muted": "@DARK_FG_SUBTLE@",
+        "icon.disabled": "@DARK_FG_DISABLED@",
+        "icon.placeholder": "@DARK_FG_DISABLED@",
+        "icon.accent": "@DARK_ACCENT_TEXT@",
+        "status_bar.background": "@DARK_SHELL@",
+        "title_bar.background": "@DARK_SHELL@",
+        "title_bar.inactive_background": "@DARK_SHELL@",
+        "toolbar.background": "@DARK_BG@",
+        "tab_bar.background": "@DARK_BG@",
+        "tab.inactive_background": "@DARK_BG@",
+        "tab.active_background": "@DARK_BG@",
+        "search.match_background": "@DARK_SELECTION@",
+        "panel.background": "@DARK_SHELL@",
+        "panel.focused_border": "@DARK_ACCENT@",
+        "pane.focused_border": "@DARK_ACCENT@",
+        "pane_group.border": "@DARK_SHELL@",
+        "scrollbar.thumb.background": "@DARK_SURFACE_ALT@",
+        "scrollbar.thumb.hover_background": "@DARK_FG_DISABLED@",
+        "scrollbar.thumb.border": "#00000000",
+        "scrollbar.track.background": "#00000000",
+        "scrollbar.track.border": "#00000000",
+        "editor.foreground": "@DARK_FG@",
+        "editor.background": "@DARK_BG@",
+        "editor.gutter.background": "@DARK_BG@",
+        "editor.subheader.background": "@DARK_SHELL@",
+        "editor.active_line.background": "@DARK_LINE_HIGHLIGHT@",
+        "editor.highlighted_line.background": "@DARK_LINE_HIGHLIGHT@",
+        "editor.line_number": "@DARK_FG_DISABLED@",
+        "editor.active_line_number": "@DARK_FG@",
+        "editor.invisible": "@DARK_SURFACE_ALT@",
+        "editor.wrap_guide": "@DARK_SURFACE@",
+        "editor.active_wrap_guide": "@DARK_SURFACE_ALT@",
+        "editor.indent_guide": "@DARK_SURFACE@",
+        "editor.indent_guide_active": "@DARK_SURFACE_ALT@",
+        "editor.document_highlight.read_background": "@DARK_SELECTION_SOFT@",
+        "editor.document_highlight.write_background": "@DARK_SELECTION_SOFT@",
+        "terminal.background": "@DARK_BG@",
+        "terminal.foreground": "@DARK_FG@",
+        "terminal.bright_foreground": "@DARK_FG@",
+        "terminal.dim_foreground": "@DARK_FG_SUBTLE@",
+        "link_text.hover": "@DARK_ACCENT_TEXT@",
+        "error": "@DARK_SYN_ERROR@",
+        "error.background": "@DARK_SURFACE@",
+        "error.border": "@DARK_SYN_ERROR@",
+        "warning": "@DARK_WARNING@",
+        "warning.background": "@DARK_SURFACE@",
+        "warning.border": "@DARK_WARNING@",
+        "info": "@DARK_INFO@",
+        "info.background": "@DARK_SURFACE@",
+        "info.border": "@DARK_INFO@",
+        "hint": "@DARK_FG_SUBTLE@",
+        "hint.background": "@DARK_SURFACE@",
+        "hint.border": "@DARK_FG_SUBTLE@",
+        "success": "@DARK_SUCCESS@",
+        "success.background": "@DARK_SURFACE@",
+        "success.border": "@DARK_SUCCESS@",
+        "created": "@DARK_SUCCESS@",
+        "modified": "@DARK_INFO@",
+        "deleted": "@DARK_SYN_ERROR@",
+        "conflict": "@DARK_WARNING@",
+        "ignored": "@DARK_FG_DISABLED@",
+        "hidden": "@DARK_FG_DISABLED@",
+        "renamed": "@DARK_INFO@",
+        "predictive": "@DARK_FG_DISABLED@",
+        "unreachable": "@DARK_FG_DISABLED@",
+        "players": [
+          {
+            "cursor": "@DARK_ACCENT@",
+            "background": "@DARK_ACCENT@",
+            "selection": "@DARK_SELECTION@"
+          }
+        ],
+        "terminal.ansi.black": "@DARK_ANSI0@",
+        "terminal.ansi.bright_black": "@DARK_ANSI8@",
+        "terminal.ansi.dim_black": "@DARK_ANSI0@",
+        "terminal.ansi.red": "@DARK_ANSI1@",
+        "terminal.ansi.bright_red": "@DARK_ANSI9@",
+        "terminal.ansi.dim_red": "@DARK_ANSI1@",
+        "terminal.ansi.green": "@DARK_ANSI2@",
+        "terminal.ansi.bright_green": "@DARK_ANSI10@",
+        "terminal.ansi.dim_green": "@DARK_ANSI2@",
+        "terminal.ansi.yellow": "@DARK_ANSI3@",
+        "terminal.ansi.bright_yellow": "@DARK_ANSI11@",
+        "terminal.ansi.dim_yellow": "@DARK_ANSI3@",
+        "terminal.ansi.blue": "@DARK_ANSI4@",
+        "terminal.ansi.bright_blue": "@DARK_ANSI12@",
+        "terminal.ansi.dim_blue": "@DARK_ANSI4@",
+        "terminal.ansi.magenta": "@DARK_ANSI5@",
+        "terminal.ansi.bright_magenta": "@DARK_ANSI13@",
+        "terminal.ansi.dim_magenta": "@DARK_ANSI5@",
+        "terminal.ansi.cyan": "@DARK_ANSI6@",
+        "terminal.ansi.bright_cyan": "@DARK_ANSI14@",
+        "terminal.ansi.dim_cyan": "@DARK_ANSI6@",
+        "terminal.ansi.white": "@DARK_ANSI7@",
+        "terminal.ansi.bright_white": "@DARK_ANSI15@",
+        "terminal.ansi.dim_white": "@DARK_ANSI7@",
+        "syntax": {
+          "comment": {
+            "color": "@DARK_SYN_COMMENT@",
+            "font_style": "italic"
+          },
+          "comment.doc": {
+            "color": "@DARK_SYN_COMMENT@",
+            "font_style": "italic"
+          },
+          "keyword": {
+            "color": "@DARK_SYN_KEYWORD@"
+          },
+          "operator": {
+            "color": "@DARK_SYN_PUNCT@"
+          },
+          "punctuation": {
+            "color": "@DARK_SYN_PUNCT@"
+          },
+          "punctuation.bracket": {
+            "color": "@DARK_SYN_PUNCT@"
+          },
+          "punctuation.delimiter": {
+            "color": "@DARK_SYN_PUNCT@"
+          },
+          "punctuation.special": {
+            "color": "@DARK_SYN_ESCAPE@"
+          },
+          "punctuation.list_marker": {
+            "color": "@DARK_ACCENT_TEXT@"
+          },
+          "string": {
+            "color": "@DARK_SYN_STRING@"
+          },
+          "string.escape": {
+            "color": "@DARK_SYN_ESCAPE@"
+          },
+          "string.regex": {
+            "color": "@DARK_SYN_ESCAPE@"
+          },
+          "string.special": {
+            "color": "@DARK_SYN_ESCAPE@"
+          },
+          "number": {
+            "color": "@DARK_SYN_NUMBER@"
+          },
+          "boolean": {
+            "color": "@DARK_SYN_NUMBER@"
+          },
+          "constant": {
+            "color": "@DARK_SYN_NUMBER@"
+          },
+          "function": {
+            "color": "@DARK_SYN_FUNC@",
+            "font_weight": 700
+          },
+          "type": {
+            "color": "@DARK_SYN_TYPE@"
+          },
+          "constructor": {
+            "color": "@DARK_SYN_TYPE@"
+          },
+          "enum": {
+            "color": "@DARK_SYN_TYPE@"
+          },
+          "variable": {
+            "color": "@DARK_FG@"
+          },
+          "variable.special": {
+            "color": "@DARK_SYN_KEYWORD@"
+          },
+          "property": {
+            "color": "@DARK_SYN_PROP@"
+          },
+          "attribute": {
+            "color": "@DARK_SYN_ESCAPE@"
+          },
+          "tag": {
+            "color": "@DARK_SYN_KEYWORD@"
+          },
+          "label": {
+            "color": "@DARK_SYN_KEYWORD@"
+          },
+          "embedded": {
+            "color": "@DARK_FG@"
+          },
+          "preproc": {
+            "color": "@DARK_SYN_ESCAPE@"
+          },
+          "title": {
+            "color": "@DARK_FG@",
+            "font_weight": 700
+          },
+          "emphasis": {
+            "color": "@DARK_FG@",
+            "font_style": "italic"
+          },
+          "emphasis.strong": {
+            "color": "@DARK_FG@",
+            "font_weight": 700
+          },
+          "link_text": {
+            "color": "@DARK_ACCENT_TEXT@"
+          },
+          "link_uri": {
+            "color": "@DARK_ACCENT_TEXT@"
+          },
+          "text.literal": {
+            "color": "@DARK_SYN_STRING@"
+          },
+          "hint": {
+            "color": "@DARK_FG_DISABLED@"
+          },
+          "predictive": {
+            "color": "@DARK_FG_DISABLED@",
+            "font_style": "italic"
+          }
+        }
+      }
+    },
+    {
+      "name": "tubewm Metro Light",
+      "appearance": "light",
+      "style": {
+        "background": "@LIGHT_SHELL@",
+        "background.appearance": "opaque",
+        "border": "@LIGHT_SHELL@",
+        "border.variant": "@LIGHT_SHELL@",
+        "border.focused": "@LIGHT_ACCENT@",
+        "border.selected": "@LIGHT_ACCENT@",
+        "border.transparent": "#00000000",
+        "border.disabled": "@LIGHT_SURFACE_ALT@",
+        "surface.background": "@LIGHT_SURFACE@",
+        "elevated_surface.background": "@LIGHT_SURFACE@",
+        "element.background": "@LIGHT_SURFACE_ALT@",
+        "element.hover": "@LIGHT_SURFACE_ALT@",
+        "element.active": "@LIGHT_ACCENT@",
+        "element.selected": "@LIGHT_SELECTION@",
+        "element.disabled": "@LIGHT_SURFACE@",
+        "drop_target.background": "@LIGHT_SELECTION_SOFT@",
+        "ghost_element.background": "#00000000",
+        "ghost_element.hover": "@LIGHT_SURFACE_ALT@",
+        "ghost_element.active": "@LIGHT_SURFACE_ALT@",
+        "ghost_element.selected": "@LIGHT_SELECTION@",
+        "ghost_element.disabled": "#00000000",
+        "text": "@LIGHT_FG@",
+        "text.muted": "@LIGHT_FG_SUBTLE@",
+        "text.placeholder": "@LIGHT_FG_DISABLED@",
+        "text.disabled": "@LIGHT_FG_DISABLED@",
+        "text.accent": "@LIGHT_ACCENT_TEXT@",
+        "icon": "@LIGHT_FG@",
+        "icon.muted": "@LIGHT_FG_SUBTLE@",
+        "icon.disabled": "@LIGHT_FG_DISABLED@",
+        "icon.placeholder": "@LIGHT_FG_DISABLED@",
+        "icon.accent": "@LIGHT_ACCENT_TEXT@",
+        "status_bar.background": "@LIGHT_SHELL@",
+        "title_bar.background": "@LIGHT_SHELL@",
+        "title_bar.inactive_background": "@LIGHT_SHELL@",
+        "toolbar.background": "@LIGHT_BG@",
+        "tab_bar.background": "@LIGHT_BG@",
+        "tab.inactive_background": "@LIGHT_BG@",
+        "tab.active_background": "@LIGHT_BG@",
+        "search.match_background": "@LIGHT_SELECTION@",
+        "panel.background": "@LIGHT_SHELL@",
+        "panel.focused_border": "@LIGHT_ACCENT@",
+        "pane.focused_border": "@LIGHT_ACCENT@",
+        "pane_group.border": "@LIGHT_SHELL@",
+        "scrollbar.thumb.background": "@LIGHT_SURFACE_ALT@",
+        "scrollbar.thumb.hover_background": "@LIGHT_FG_DISABLED@",
+        "scrollbar.thumb.border": "#00000000",
+        "scrollbar.track.background": "#00000000",
+        "scrollbar.track.border": "#00000000",
+        "editor.foreground": "@LIGHT_FG@",
+        "editor.background": "@LIGHT_BG@",
+        "editor.gutter.background": "@LIGHT_BG@",
+        "editor.subheader.background": "@LIGHT_SHELL@",
+        "editor.active_line.background": "@LIGHT_LINE_HIGHLIGHT@",
+        "editor.highlighted_line.background": "@LIGHT_LINE_HIGHLIGHT@",
+        "editor.line_number": "@LIGHT_FG_DISABLED@",
+        "editor.active_line_number": "@LIGHT_FG@",
+        "editor.invisible": "@LIGHT_SURFACE_ALT@",
+        "editor.wrap_guide": "@LIGHT_SURFACE@",
+        "editor.active_wrap_guide": "@LIGHT_SURFACE_ALT@",
+        "editor.indent_guide": "@LIGHT_SURFACE@",
+        "editor.indent_guide_active": "@LIGHT_SURFACE_ALT@",
+        "editor.document_highlight.read_background": "@LIGHT_SELECTION_SOFT@",
+        "editor.document_highlight.write_background": "@LIGHT_SELECTION_SOFT@",
+        "terminal.background": "@LIGHT_BG@",
+        "terminal.foreground": "@LIGHT_FG@",
+        "terminal.bright_foreground": "@LIGHT_FG@",
+        "terminal.dim_foreground": "@LIGHT_FG_SUBTLE@",
+        "link_text.hover": "@LIGHT_ACCENT_TEXT@",
+        "error": "@LIGHT_SYN_ERROR@",
+        "error.background": "@LIGHT_SURFACE@",
+        "error.border": "@LIGHT_SYN_ERROR@",
+        "warning": "@LIGHT_WARNING@",
+        "warning.background": "@LIGHT_SURFACE@",
+        "warning.border": "@LIGHT_WARNING@",
+        "info": "@LIGHT_INFO@",
+        "info.background": "@LIGHT_SURFACE@",
+        "info.border": "@LIGHT_INFO@",
+        "hint": "@LIGHT_FG_SUBTLE@",
+        "hint.background": "@LIGHT_SURFACE@",
+        "hint.border": "@LIGHT_FG_SUBTLE@",
+        "success": "@LIGHT_SUCCESS@",
+        "success.background": "@LIGHT_SURFACE@",
+        "success.border": "@LIGHT_SUCCESS@",
+        "created": "@LIGHT_SUCCESS@",
+        "modified": "@LIGHT_INFO@",
+        "deleted": "@LIGHT_SYN_ERROR@",
+        "conflict": "@LIGHT_WARNING@",
+        "ignored": "@LIGHT_FG_DISABLED@",
+        "hidden": "@LIGHT_FG_DISABLED@",
+        "renamed": "@LIGHT_INFO@",
+        "predictive": "@LIGHT_FG_DISABLED@",
+        "unreachable": "@LIGHT_FG_DISABLED@",
+        "players": [
+          {
+            "cursor": "@LIGHT_ACCENT@",
+            "background": "@LIGHT_ACCENT@",
+            "selection": "@LIGHT_SELECTION@"
+          }
+        ],
+        "terminal.ansi.black": "@LIGHT_ANSI0@",
+        "terminal.ansi.bright_black": "@LIGHT_ANSI8@",
+        "terminal.ansi.dim_black": "@LIGHT_ANSI0@",
+        "terminal.ansi.red": "@LIGHT_ANSI1@",
+        "terminal.ansi.bright_red": "@LIGHT_ANSI9@",
+        "terminal.ansi.dim_red": "@LIGHT_ANSI1@",
+        "terminal.ansi.green": "@LIGHT_ANSI2@",
+        "terminal.ansi.bright_green": "@LIGHT_ANSI10@",
+        "terminal.ansi.dim_green": "@LIGHT_ANSI2@",
+        "terminal.ansi.yellow": "@LIGHT_ANSI3@",
+        "terminal.ansi.bright_yellow": "@LIGHT_ANSI11@",
+        "terminal.ansi.dim_yellow": "@LIGHT_ANSI3@",
+        "terminal.ansi.blue": "@LIGHT_ANSI4@",
+        "terminal.ansi.bright_blue": "@LIGHT_ANSI12@",
+        "terminal.ansi.dim_blue": "@LIGHT_ANSI4@",
+        "terminal.ansi.magenta": "@LIGHT_ANSI5@",
+        "terminal.ansi.bright_magenta": "@LIGHT_ANSI13@",
+        "terminal.ansi.dim_magenta": "@LIGHT_ANSI5@",
+        "terminal.ansi.cyan": "@LIGHT_ANSI6@",
+        "terminal.ansi.bright_cyan": "@LIGHT_ANSI14@",
+        "terminal.ansi.dim_cyan": "@LIGHT_ANSI6@",
+        "terminal.ansi.white": "@LIGHT_ANSI7@",
+        "terminal.ansi.bright_white": "@LIGHT_ANSI15@",
+        "terminal.ansi.dim_white": "@LIGHT_ANSI7@",
+        "syntax": {
+          "comment": {
+            "color": "@LIGHT_SYN_COMMENT@",
+            "font_style": "italic"
+          },
+          "comment.doc": {
+            "color": "@LIGHT_SYN_COMMENT@",
+            "font_style": "italic"
+          },
+          "keyword": {
+            "color": "@LIGHT_SYN_KEYWORD@"
+          },
+          "operator": {
+            "color": "@LIGHT_SYN_PUNCT@"
+          },
+          "punctuation": {
+            "color": "@LIGHT_SYN_PUNCT@"
+          },
+          "punctuation.bracket": {
+            "color": "@LIGHT_SYN_PUNCT@"
+          },
+          "punctuation.delimiter": {
+            "color": "@LIGHT_SYN_PUNCT@"
+          },
+          "punctuation.special": {
+            "color": "@LIGHT_SYN_ESCAPE@"
+          },
+          "punctuation.list_marker": {
+            "color": "@LIGHT_ACCENT_TEXT@"
+          },
+          "string": {
+            "color": "@LIGHT_SYN_STRING@"
+          },
+          "string.escape": {
+            "color": "@LIGHT_SYN_ESCAPE@"
+          },
+          "string.regex": {
+            "color": "@LIGHT_SYN_ESCAPE@"
+          },
+          "string.special": {
+            "color": "@LIGHT_SYN_ESCAPE@"
+          },
+          "number": {
+            "color": "@LIGHT_SYN_NUMBER@"
+          },
+          "boolean": {
+            "color": "@LIGHT_SYN_NUMBER@"
+          },
+          "constant": {
+            "color": "@LIGHT_SYN_NUMBER@"
+          },
+          "function": {
+            "color": "@LIGHT_SYN_FUNC@",
+            "font_weight": 700
+          },
+          "type": {
+            "color": "@LIGHT_SYN_TYPE@"
+          },
+          "constructor": {
+            "color": "@LIGHT_SYN_TYPE@"
+          },
+          "enum": {
+            "color": "@LIGHT_SYN_TYPE@"
+          },
+          "variable": {
+            "color": "@LIGHT_FG@"
+          },
+          "variable.special": {
+            "color": "@LIGHT_SYN_KEYWORD@"
+          },
+          "property": {
+            "color": "@LIGHT_SYN_PROP@"
+          },
+          "attribute": {
+            "color": "@LIGHT_SYN_ESCAPE@"
+          },
+          "tag": {
+            "color": "@LIGHT_SYN_KEYWORD@"
+          },
+          "label": {
+            "color": "@LIGHT_SYN_KEYWORD@"
+          },
+          "embedded": {
+            "color": "@LIGHT_FG@"
+          },
+          "preproc": {
+            "color": "@LIGHT_SYN_ESCAPE@"
+          },
+          "title": {
+            "color": "@LIGHT_FG@",
+            "font_weight": 700
+          },
+          "emphasis": {
+            "color": "@LIGHT_FG@",
+            "font_style": "italic"
+          },
+          "emphasis.strong": {
+            "color": "@LIGHT_FG@",
+            "font_weight": 700
+          },
+          "link_text": {
+            "color": "@LIGHT_ACCENT_TEXT@"
+          },
+          "link_uri": {
+            "color": "@LIGHT_ACCENT_TEXT@"
+          },
+          "text.literal": {
+            "color": "@LIGHT_SYN_STRING@"
+          },
+          "hint": {
+            "color": "@LIGHT_FG_DISABLED@"
+          },
+          "predictive": {
+            "color": "@LIGHT_FG_DISABLED@",
+            "font_style": "italic"
+          }
+        }
+      }
+    }
+  ]
+}

@@ -1,0 +1,177 @@
+-- tubewm Metro for Neovim (generated, accent @ACCENT@, @MODE@).
+-- Do not edit: re-run apps/install.sh. Load with  :colorscheme tubewm
+-- (or vim.cmd.colorscheme("tubewm") in init.lua).
+
+vim.cmd("highlight clear")
+if vim.fn.exists("syntax_on") == 1 then vim.cmd("syntax reset") end
+vim.o.background = "@MODE@"
+vim.o.termguicolors = true
+vim.g.colors_name = "tubewm"
+
+local c = {
+  bg = "@BG@", shell = "@SHELL@", surface = "@SURFACE@", surface_alt = "@SURFACE_ALT@",
+  border = "@BORDER@", fg = "@FG@", subtle = "@FG_SUBTLE@", dim = "@FG_DISABLED@",
+  accent = "@ACCENT@", on_accent = "@ON_ACCENT@", accent_text = "@ACCENT_TEXT@",
+  sel = "@SELECTION@", sel_soft = "@SELECTION_SOFT@", line = "@LINE_HIGHLIGHT@",
+  error = "@SYN_ERROR@", warning = "@WARNING@", success = "@SUCCESS@", info = "@INFO@",
+  kw = "@SYN_KEYWORD@", str = "@SYN_STRING@", num = "@SYN_NUMBER@", type = "@SYN_TYPE@",
+  func = "@SYN_FUNC@", prop = "@SYN_PROP@", punct = "@SYN_PUNCT@", comment = "@SYN_COMMENT@",
+  escape = "@SYN_ESCAPE@",
+}
+
+local hl = function(group, spec) vim.api.nvim_set_hl(0, group, spec) end
+
+-- editor chrome: black canvas, charcoal floats, accent status line --------
+hl("Normal", { fg = c.fg, bg = c.bg })
+hl("NormalNC", { fg = c.fg, bg = c.bg })
+hl("NormalFloat", { fg = c.fg, bg = c.surface })
+hl("FloatBorder", { fg = c.surface, bg = c.surface })
+hl("FloatTitle", { fg = c.fg, bg = c.surface, bold = true })
+hl("WinSeparator", { fg = c.shell, bg = c.bg })
+hl("VertSplit", { link = "WinSeparator" })
+hl("EndOfBuffer", { fg = c.bg })
+hl("LineNr", { fg = c.dim })
+hl("CursorLineNr", { fg = c.fg, bold = true })
+hl("CursorLine", { bg = c.line })
+hl("CursorColumn", { bg = c.line })
+hl("ColorColumn", { bg = c.line })
+hl("SignColumn", { bg = c.bg })
+hl("FoldColumn", { fg = c.dim, bg = c.bg })
+hl("Folded", { fg = c.subtle, bg = c.surface })
+hl("Cursor", { fg = c.on_accent, bg = c.accent })
+hl("TermCursor", { fg = c.on_accent, bg = c.accent })
+hl("Visual", { bg = c.sel })
+hl("VisualNOS", { bg = c.sel_soft })
+hl("Search", { fg = c.fg, bg = c.sel })
+hl("IncSearch", { fg = c.on_accent, bg = c.accent })
+hl("CurSearch", { fg = c.on_accent, bg = c.accent })
+hl("Substitute", { fg = c.on_accent, bg = c.accent })
+hl("MatchParen", { fg = c.accent_text, bold = true, underline = true })
+hl("NonText", { fg = c.dim })
+hl("Whitespace", { fg = c.surface_alt })
+hl("SpecialKey", { fg = c.dim })
+hl("Conceal", { fg = c.dim })
+hl("Directory", { fg = c.fg, bold = true })
+hl("Title", { fg = c.fg, bold = true })
+hl("Question", { fg = c.accent_text })
+hl("MoreMsg", { fg = c.accent_text })
+hl("ModeMsg", { fg = c.fg, bold = true })
+hl("MsgArea", { fg = c.fg })
+hl("ErrorMsg", { fg = c.error })
+hl("WarningMsg", { fg = c.warning })
+hl("StatusLine", { fg = c.on_accent, bg = c.accent })
+hl("StatusLineNC", { fg = c.subtle, bg = c.shell })
+hl("WinBar", { fg = c.fg, bg = c.bg })
+hl("WinBarNC", { fg = c.dim, bg = c.bg })
+hl("TabLine", { fg = c.dim, bg = c.bg })
+hl("TabLineSel", { fg = c.fg, bg = c.bg, bold = true })
+hl("TabLineFill", { bg = c.bg })
+hl("Pmenu", { fg = c.fg, bg = c.surface })
+hl("PmenuSel", { fg = c.on_accent, bg = c.accent })
+hl("PmenuSbar", { bg = c.surface })
+hl("PmenuThumb", { bg = c.surface_alt })
+hl("PmenuMatch", { fg = c.accent_text, bold = true })
+hl("PmenuMatchSel", { fg = c.on_accent, bold = true })
+hl("WildMenu", { fg = c.on_accent, bg = c.accent })
+hl("QuickFixLine", { bg = c.sel_soft })
+hl("SpellBad", { undercurl = true, sp = c.error })
+hl("SpellCap", { undercurl = true, sp = c.warning })
+hl("SpellRare", { undercurl = true, sp = c.info })
+hl("SpellLocal", { undercurl = true, sp = c.info })
+
+-- syntax ----------------------------------------------------------------
+hl("Comment", { fg = c.comment, italic = true })
+hl("Constant", { fg = c.num })
+hl("String", { fg = c.str })
+hl("Character", { fg = c.str })
+hl("Number", { fg = c.num })
+hl("Boolean", { fg = c.num })
+hl("Float", { fg = c.num })
+hl("Identifier", { fg = c.fg })
+hl("Function", { fg = c.func, bold = true })
+hl("Statement", { fg = c.kw })
+hl("Conditional", { fg = c.kw })
+hl("Repeat", { fg = c.kw })
+hl("Label", { fg = c.kw })
+hl("Operator", { fg = c.punct })
+hl("Keyword", { fg = c.kw })
+hl("Exception", { fg = c.kw })
+hl("PreProc", { fg = c.escape })
+hl("Include", { fg = c.kw })
+hl("Define", { fg = c.kw })
+hl("Macro", { fg = c.escape })
+hl("Type", { fg = c.type })
+hl("StorageClass", { fg = c.kw })
+hl("Structure", { fg = c.type })
+hl("Typedef", { fg = c.type })
+hl("Special", { fg = c.escape })
+hl("SpecialChar", { fg = c.escape })
+hl("Tag", { fg = c.kw })
+hl("Delimiter", { fg = c.punct })
+hl("SpecialComment", { fg = c.comment, bold = true })
+hl("Debug", { fg = c.warning })
+hl("Underlined", { underline = true })
+hl("Error", { fg = c.error })
+hl("Todo", { fg = c.on_accent, bg = c.accent, bold = true })
+hl("Added", { fg = c.success })
+hl("Changed", { fg = c.info })
+hl("Removed", { fg = c.error })
+hl("DiffAdd", { fg = c.success, bg = c.line })
+hl("DiffChange", { bg = c.line })
+hl("DiffDelete", { fg = c.error, bg = c.line })
+hl("DiffText", { bg = c.sel_soft })
+
+-- treesitter -------------------------------------------------------------
+local links = {
+  ["@comment"] = "Comment", ["@string"] = "String", ["@string.escape"] = "SpecialChar",
+  ["@string.regexp"] = "SpecialChar", ["@character"] = "Character", ["@number"] = "Number",
+  ["@boolean"] = "Boolean", ["@constant"] = "Constant", ["@constant.builtin"] = "Constant",
+  ["@function"] = "Function", ["@function.call"] = "Function", ["@function.method"] = "Function",
+  ["@function.method.call"] = "Function", ["@function.builtin"] = "Function",
+  ["@constructor"] = "Type", ["@keyword"] = "Keyword", ["@keyword.return"] = "Keyword",
+  ["@keyword.function"] = "Keyword", ["@keyword.import"] = "Include", ["@operator"] = "Operator",
+  ["@punctuation"] = "Delimiter", ["@punctuation.bracket"] = "Delimiter",
+  ["@punctuation.delimiter"] = "Delimiter", ["@type"] = "Type", ["@type.builtin"] = "Type",
+  ["@module"] = "Type", ["@attribute"] = "PreProc", ["@tag"] = "Tag",
+  ["@tag.attribute"] = "Constant", ["@tag.delimiter"] = "Delimiter",
+  ["@markup.heading"] = "Title", ["@markup.link"] = "Underlined",
+}
+for group, target in pairs(links) do hl(group, { link = target }) end
+hl("@variable", { fg = c.fg })
+hl("@variable.builtin", { fg = c.kw })
+hl("@variable.parameter", { fg = c.fg })
+hl("@variable.member", { fg = c.prop })
+hl("@property", { fg = c.prop })
+hl("@markup.strong", { bold = true })
+hl("@markup.italic", { italic = true })
+hl("@markup.raw", { fg = c.str })
+hl("@markup.list", { fg = c.accent_text })
+hl("@markup.link.url", { fg = c.accent_text, underline = true })
+
+-- diagnostics & LSP ------------------------------------------------------
+for name, col in pairs({ Error = c.error, Warn = c.warning, Info = c.info, Hint = c.subtle, Ok = c.success }) do
+  hl("Diagnostic" .. name, { fg = col })
+  hl("DiagnosticUnderline" .. name, { undercurl = true, sp = col })
+  hl("DiagnosticVirtualText" .. name, { fg = col, italic = true })
+end
+hl("LspReferenceText", { bg = c.sel_soft })
+hl("LspReferenceRead", { bg = c.sel_soft })
+hl("LspReferenceWrite", { bg = c.sel_soft, underline = true })
+hl("LspInlayHint", { fg = c.dim, italic = true })
+hl("@lsp.type.parameter", { fg = c.fg })
+hl("@lsp.type.property", { fg = c.prop })
+
+-- git signs & common plugins -------------------------------------------
+hl("GitSignsAdd", { fg = c.success })
+hl("GitSignsChange", { fg = c.info })
+hl("GitSignsDelete", { fg = c.error })
+hl("TelescopeSelection", { fg = c.on_accent, bg = c.accent })
+hl("TelescopeMatching", { fg = c.accent_text, bold = true })
+hl("TelescopeBorder", { fg = c.surface, bg = c.surface })
+hl("TelescopeNormal", { fg = c.fg, bg = c.surface })
+hl("TelescopePromptTitle", { fg = c.on_accent, bg = c.accent, bold = true })
+
+-- terminal colours -----------------------------------------------------------
+local ansi = { "@ANSI0@", "@ANSI1@", "@ANSI2@", "@ANSI3@", "@ANSI4@", "@ANSI5@", "@ANSI6@", "@ANSI7@",
+               "@ANSI8@", "@ANSI9@", "@ANSI10@", "@ANSI11@", "@ANSI12@", "@ANSI13@", "@ANSI14@", "@ANSI15@" }
+for i, col in ipairs(ansi) do vim.g["terminal_color_" .. (i - 1)] = col end
