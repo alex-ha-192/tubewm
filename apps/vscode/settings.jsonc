@@ -1,0 +1,44 @@
+// Settings merged into the editor's user settings.json by install.sh.
+// Every key is optional; delete the ones you don't want before installing,
+// or run install.sh --no-settings and copy what you like by hand.
+{
+    // Theme. "Auto detect colour scheme" picks light/dark from the desktop.
+    "workbench.colorTheme": "tubewm Metro Dark",
+    "workbench.preferredDarkColorTheme": "tubewm Metro Dark",
+    "workbench.preferredLightColorTheme": "tubewm Metro Light",
+
+    // Type: open fonts, generous leading on a 20px-ish rhythm.
+    "editor.fontFamily": "'JetBrains Mono', 'DejaVu Sans Mono', monospace",
+    "editor.fontSize": 14,
+    "editor.lineHeight": 1.6,
+    "editor.fontLigatures": true,
+    "terminal.integrated.fontFamily": "'JetBrains Mono', 'DejaVu Sans Mono', monospace",
+    "terminal.integrated.fontSize": 14,
+    "terminal.integrated.cursorStyle": "line",
+
+    // Content over chrome.
+    "window.titleBarStyle": "custom",
+    "window.menuBarVisibility": "toggle",
+    "window.commandCenter": false,
+    "window.controlsStyle": "hidden",
+    "workbench.layoutControl.enabled": false,
+    "workbench.startupEditor": "none",
+    "editor.minimap.enabled": false,
+    "editor.overviewRulerBorder": false,
+    "editor.hideCursorInOverviewRuler": true,
+    "editor.renderLineHighlight": "line",
+    "editor.padding.top": 20,
+    "editor.scrollbar.verticalScrollbarSize": 6,
+    "editor.scrollbar.horizontalScrollbarSize": 6,
+    "workbench.tree.indent": 20,
+    "workbench.tree.renderIndentGuides": "none",
+    "workbench.editor.highlightModifiedTabs": true,
+
+    // Motion: smooth, physical-feeling movement instead of jumps.
+    "editor.smoothScrolling": true,
+    "workbench.list.smoothScrolling": true,
+    "terminal.integrated.smoothScrolling": true,
+    "editor.cursorSmoothCaretAnimation": "on",
+    "editor.cursorBlinking": "solid",
+    "editor.cursorWidth": 2
+}
