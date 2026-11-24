@@ -218,7 +218,8 @@ disable_on_fullscreen = true
 autostart_wf_shell = false
 0_env = dbus-update-activation-environment --systemd WAYLAND_DISPLAY XDG_CURRENT_DESKTOP=wayfire XDG_SESSION_TYPE=wayland WAYFIRE_SOCKET
 desktops = ~/.local/bin/tube-desktops daemon
-bar = waybar -c ~/.config/waybar/wayfire.jsonc
+# The Wayfire bar layout ships with tubewm; its look is the same style.css.
+bar = waybar -c ~/.local/share/tubewm/desktop/config/waybar/wayfire.jsonc -s ~/.config/waybar/style.css
 notifications = mako
 wallpaper = ~/.local/bin/tube-wallpaper show
 idle = ~/.local/bin/tube-idle
