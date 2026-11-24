@@ -67,8 +67,14 @@ day to day. Everything is a click away; keys are extras.
 * **Start**: tap the Windows key on its own, or click the accent square.
   It opens on every app from a to z in columns, nothing cut off. Just type:
   the list slides away and the best match comes up first (Enter opens it),
-  apps before web apps. On the right, always: what's playing, what's next
-  today, the weather, the apps you have open, and settings, lock and power.
+  apps before web apps. On the right, always: the glance, live tiles you
+  arrange yourself. Drag one to move it, drag its corner to make it any
+  width and height, right-click for shapes, colour, settings and remove, and
+  "add a tile" for the library (now playing, calendar, weather,
+  notifications, battery, sound, network, clock, system, storage, photos,
+  recent files, open windows, note, command, shortcut). Click a tile for its
+  applet: the music controls, the week ahead, the sound devices and so on.
+  Under the tiles are the apps you have open, and settings, lock and power.
 * **High-density screens**: a built-in screen is scaled to a comfortable size
   by itself (2 on a Framework 13 with the 2.8K screen, 1.5 on the
   2256 x 1504 one). Apps that can draw for Wayland stay sharp.

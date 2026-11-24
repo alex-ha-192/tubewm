@@ -323,16 +323,46 @@ window.start { background-color: @tube_bg; }
 .start-open { font-size: 28px; font-weight: 300; color: @tube_fg; }
 .start-foot { font-size: 20px; font-weight: 300; color: #9A9A9A; }
 .start-link:hover .start-foot { color: @tube_fg; }
-.glance-tile { padding: 20px 24px; border: none; border-radius: 0; box-shadow: none;
-               background-color: #262626; background-image: none; }
+/* the glance: live tiles you arrange (glance.py) */
+.glance-tile { background-color: #262626; color: @tube_fg; }
 .glance-tile:hover { background-color: #303030; }
 .glance-tile.glance-accent { background-color: @tube_accent; }
 .glance-tile.glance-accent:hover { background-color: @tube_accent_light; }
+.glance-tile.dragging { background-color: #1A1A1A; box-shadow: inset 0 0 0 2px @tube_accent; }
+.glance-tile.sizing { box-shadow: inset 0 0 0 2px @tube_accent; }
+.glance-face { padding: 16px 18px; }
+.glance-face.row { padding: 12px 16px 14px 16px; }
+.glance-face.cell, .glance-face.narrow { padding: 10px 6px 9px 6px; }
+.glance-caption { font-size: 13px; font-weight: 600; color: #BDBDBD; }
+.glance-accent .glance-caption { color: #FFFFFF; }
 .glance-label { font-size: 16px; font-weight: 600; color: #BDBDBD; }
-.glance-big { font-size: 48px; font-weight: 300; color: @tube_fg; margin-top: 10px; }
-.glance-sub { font-size: 18px; font-weight: 400; color: #BDBDBD; }
+.glance-big { font-size: 36px; font-weight: 300; color: @tube_fg; }
+.glance-big.cols-3, .glance-big.cols-4 { font-size: 44px; }
+.glance-big.row { font-size: 30px; }
+.glance-sub { font-size: 17px; font-weight: 400; color: #BDBDBD; }
+.glance-value { font-size: 26px; font-weight: 300; color: @tube_fg; }
+.glance-more { margin-top: 14px; }
+.glance-more-left { font-size: 16px; color: @tube_fg; }
 .glance-accent .glance-label, .glance-accent .glance-sub { color: #FFFFFF; }
-.glance-accent .glance-big { font-size: 40px; color: #FFFFFF; margin-top: 18px; }
+.glance-shade { background-image: linear-gradient(to bottom, alpha(#000000, 0) 50%, alpha(#000000, 0.55)); }
+.glance-grip { background: none; color: @tube_fg; }
+.glance-link { padding: 0; }
+.glance-link:hover .start-hint { color: @tube_fg; }
+.glance-head { margin-bottom: 22px; }
+.glance-title { font-size: 40px; font-weight: 300; color: @tube_fg; }
+.glance-page { padding-right: 8px; }
+button.glance-lib-row { padding: 9px 0; margin: 0; border: none; border-radius: 0; background: none; box-shadow: none; }
+.glance-lib-icon { background-color: @tube_accent; color: #FFFFFF; }
+.glance-lib-title { font-size: 22px; font-weight: 300; color: @tube_fg; }
+.glance-lib-blurb { font-size: 15px; color: #9A9A9A; }
+button.glance-lib-row:hover .glance-lib-title { color: @tube_accent_light; }
+.glance-when { font-size: 16px; color: #BDBDBD; min-width: 64px; }
+button.applet-button.glance-primary { background: @tube_accent; border-color: @tube_accent; color: #FFFFFF; }
+textview.glance-note, textview.glance-note text { background-color: #262626; color: @tube_fg;
+                                                  font-size: 22px; font-weight: 300; }
+textview.glance-note { padding: 10px; border: 2px solid #262626; }
+textview.glance-note:focus { border-color: @tube_accent; }
+.tube-popup-item.current label { color: @tube_accent_light; }
 
 /* ── the strip along the top ────────────────────────────────────────────── */
 window.strip { background-color: @tube_bg; }
