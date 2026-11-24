@@ -74,4 +74,17 @@ for f in gtk-3.0/user.css gtk-4.0/user.css tubewm/user.css foot/local.ini; do
     [ -e "$CONFIG/$f" ] || { mkdir -p "$(dirname "$CONFIG/$f")"; : > "$CONFIG/$f"; }
 done
 
+# foot before 1.22 knows [colors] (with the cursor colour under [cursor]);
+# newer foot only knows [colors-dark]. The template is in the new form, so
+# convert it back if this foot rejects it.
+foot_ini=$CONFIG/foot/foot.ini
+if [ -f "$foot_ini" ] && command -v foot >/dev/null 2>&1 \
+        && ! foot --check-config --config="$foot_ini" >/dev/null 2>&1; then
+    cursor=$(sed -n 's/^cursor=//p' "$foot_ini")
+    tmp=$(mktemp "$foot_ini.XXXXXX")
+    sed -e '/^cursor=/d' -e 's/^\[colors-dark\]$/[colors]/' \
+        -e "s/^\[cursor\]$/[cursor]\ncolor=$cursor/" "$foot_ini" > "$tmp"
+    mv -f "$tmp" "$foot_ini"
+fi
+
 [ "$quiet" = 1 ] || echo "tube-render: wrote $count files with accent $TUBEWM_ACCENT"

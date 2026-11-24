@@ -41,21 +41,21 @@ tooltip label { color: @FG@; padding: 4px 6px; }
     font-weight: 300;
 }
 #workspaces button {
-    color: @DIM@;
+    color: @SUBTLE@;
     background: transparent;
     padding: 0 12px 4px 6px;
     margin: 0;
     transition: color 150ms ease-out;
 }
 #workspaces button:hover {
-    color: @SUBTLE@;
+    color: #D0D0D0;
     background: transparent;
     box-shadow: none;
 }
-#workspaces button.visible { color: @SUBTLE@; }
+#workspaces button.visible { color: #B0B0B0; }
 #workspaces button.focused { color: @FG@; }
 #workspaces button.urgent  { color: @ACCENT@; }
-#workspaces button.persistent { color: #2c2c2c; }
+#workspaces button.persistent { color: #6E6E6E; }
 
 #mode {
     background: @ACCENT@;

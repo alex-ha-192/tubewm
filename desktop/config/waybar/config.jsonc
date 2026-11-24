@@ -84,8 +84,10 @@
         "format": "vol {volume}",
         "format-muted": "muted",
         "on-click": "~/.local/bin/tube-osd volume mute",
-        "on-scroll-up": "~/.local/bin/tube-osd volume up",
-        "on-scroll-down": "~/.local/bin/tube-osd volume down",
+        "on-scroll-up": "TUBE_OSD_STEP=2 ~/.local/bin/tube-osd volume up",
+        "on-scroll-down": "TUBE_OSD_STEP=2 ~/.local/bin/tube-osd volume down",
+        // Touchpads send a stream of tiny scrolls; only act on a deliberate one.
+        "smooth-scrolling-threshold": 6,
         "on-click-right": "pavucontrol"
     },
 
@@ -98,7 +100,7 @@
     },
 
     "clock#date": {
-        "format": "{:%A %d}",
+        "format": "{:%A %d %B}",
         "tooltip-format": "<tt>{calendar}</tt>",
         "calendar": { "mode": "month", "format": { "today": "<b><u>{}</u></b>" } }
     },

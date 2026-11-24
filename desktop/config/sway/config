@@ -66,6 +66,8 @@ input type:touchpad {
 }
 
 input type:keyboard {
+    # British English. Change to us, de, fr... to suit your keyboard.
+    xkb_layout gb
     repeat_delay 300
     repeat_rate 40
 }
