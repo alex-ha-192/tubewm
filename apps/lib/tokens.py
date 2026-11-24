@@ -70,8 +70,17 @@ def syntax(c: dict, mode: str) -> dict:
     }
 
 
-def tokens(pal: dict, mode: str = "dark") -> dict:
-    """Upper-case token name -> value, for one polarity."""
+STATUS_STYLES = ("plain", "accent")
+
+
+def tokens(pal: dict, mode: str = "dark", status: str = "plain") -> dict:
+    """Upper-case token name -> value, for one polarity.
+
+    ``status`` picks how status bars look: ``plain`` (black, grey text, the
+    accent only on the emphasised part) or ``accent`` (a solid accent strip).
+    """
+    if status not in STATUS_STYLES:
+        raise ValueError(f"status bar style must be one of {STATUS_STYLES}")
     c = P.polarity(pal, mode)
     t = {k.upper(): v for k, v in c.items() if isinstance(v, str) and v.startswith("#")}
     a = c["accent"]
@@ -88,6 +97,10 @@ def tokens(pal: dict, mode: str = "dark") -> dict:
         ACCENT_HOVER=P.mix(a, "#FFFFFF" if mode == "dark" else "#000000", 0.15),
         LINE_HIGHLIGHT=P.mix(c["bg"], c["fg"], 0.05),
     )
+    if status == "accent":
+        t.update(STATUS_BG=a, STATUS_FG=t["ON_ACCENT"], STATUS_EMPHASIS=t["ON_ACCENT"])
+    else:
+        t.update(STATUS_BG=c["bg"], STATUS_FG=c["fg_subtle"], STATUS_EMPHASIS=t["ACCENT_TEXT"])
     for i, hex_ in enumerate(ansi(c, mode)):
         t[f"ANSI{i}"] = hex_
     for k, v in syntax(c, mode).items():

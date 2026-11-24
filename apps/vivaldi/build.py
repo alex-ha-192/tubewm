@@ -15,6 +15,7 @@ from __future__ import annotations
 
 import argparse
 import json
+import re
 import sys
 import uuid
 import zipfile
@@ -64,15 +65,12 @@ def theme(mode: str, pal: dict) -> dict:
 
 
 def css(pal: dict) -> str:
-    d, l = P.polarity(pal, "dark"), P.polarity(pal, "light")
-    subs = {"ACCENT": d["accent"], "ON_ACCENT": P.on_color(d["accent"])}
-    for k in ("bg", "shell", "surface", "surface_alt", "fg", "fg_subtle", "fg_disabled"):
-        subs[k.upper()] = d[k]
-        subs["L_" + k.upper()] = l[k]
+    d = P.polarity(pal, "dark")
+    subs = {"ACCENT": d["accent"], "ON_ACCENT": P.on_color(d["accent"]), "FG": d["fg"], "BG": d["bg"]}
     out = (HERE / "metro.css.in").read_text(encoding="utf-8")
     for k, v in subs.items():
         out = out.replace(f"@{k}@", v)
-    if "@" in out.replace("@media", "").replace("@keyframes", ""):
+    if re.search(r"@[A-Z_]+@", out):
         raise RuntimeError("metro.css.in has an unknown @PLACEHOLDER@")
     return out
 

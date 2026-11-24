@@ -1,18 +1,18 @@
 # tubewm Metro for tmux (generated, accent @ACCENT@). Do not edit: re-run apps/install.sh.
 # Sourced from tmux.conf:  source-file ~/.config/tmux/tubewm.conf
-# The status line is the accent strip; window names are a lowercase pivot.
+# Quiet status line; the current window is marked in the accent.
 
 set -g status-position bottom
 set -g status-justify left
-set -g status-style "bg=@ACCENT@,fg=@ON_ACCENT@"
+set -g status-style "bg=@STATUS_BG@,fg=@STATUS_FG@"
 set -g status-left " #{=12:session_name}  "
-set -g status-left-style "bg=@ACCENT@,fg=@ON_ACCENT@,bold"
+set -g status-left-style "bg=@STATUS_BG@,fg=@STATUS_EMPHASIS@,bold"
 set -g status-right " %H:%M "
-set -g status-right-style "bg=@ACCENT@,fg=@ON_ACCENT@"
+set -g status-right-style "bg=@STATUS_BG@,fg=@STATUS_FG@"
 set -g window-status-format " #W "
 set -g window-status-current-format " #W "
-set -g window-status-style "bg=@ACCENT@,fg=@ON_ACCENT@,dim"
-set -g window-status-current-style "bg=@ACCENT@,fg=@ON_ACCENT@,bold"
+set -g window-status-style "bg=@STATUS_BG@,fg=@STATUS_FG@"
+set -g window-status-current-style "bg=@STATUS_BG@,fg=@STATUS_EMPHASIS@,bold"
 set -g window-status-separator ""
 set -g pane-border-style "fg=@SHELL@"
 set -g pane-active-border-style "fg=@ACCENT@"

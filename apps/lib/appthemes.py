@@ -87,6 +87,7 @@ class Ctx:
     def put(self, template: str, dest: Path) -> Path:
         text = T.render((APPS / template).read_text(encoding="utf-8"), self.toks)
         files = self.rec.setdefault("files", {})
+        self.track_dirs(dest)
         if dest.exists() and str(dest) not in files:
             backup(dest)  # a file of the same name that isn't ours
         write_text(dest, text)
@@ -118,8 +119,18 @@ class Ctx:
                 return
         edits.append({"kind": kind, "path": str(path), "key": key, "had": had, "old": old, "new": new})
 
+    def track_dirs(self, path: Path) -> None:
+        """Note the folders that will only exist because we write ``path``."""
+        made = self.rec.setdefault("dirs", [])
+        d = path.parent
+        while not d.exists() and d != d.parent:
+            if str(d) not in made:
+                made.append(str(d))
+            d = d.parent
+
     def created(self, path: Path) -> None:
         """Note a config file that only exists because we wrote to it."""
+        self.track_dirs(path)
         made = self.rec.setdefault("created", [])
         if not path.exists() and str(path) not in made:
             made.append(str(path))
@@ -300,6 +311,7 @@ def _alacritty(ctx: Ctx) -> None:
     main = d / "alacritty.toml"
     ref = str(theme).replace(str(HOME), "~", 1)
     if not main.exists():
+        ctx.track_dirs(main)
         write_text(main, f'[general]\nimport = ["{ref}"]\n')
         ctx.rec.setdefault("files", {})[str(main)] = sha(main.read_text())
     elif "tubewm.toml" not in main.read_text(encoding="utf-8"):
@@ -349,8 +361,18 @@ def _zed(ctx: Ctx) -> None:
 
 def firefox_profiles() -> list[Path]:
     """Default profile of each Firefox install found (classic, XDG and Flatpak)."""
-    roots = [HOME / ".mozilla" / "firefox", CONFIG / "mozilla" / "firefox",
-             HOME / ".var" / "app" / "org.mozilla.firefox" / ".mozilla" / "firefox"]
+    return mozilla_profiles([HOME / ".mozilla" / "firefox", CONFIG / "mozilla" / "firefox",
+                             HOME / ".var" / "app" / "org.mozilla.firefox" / ".mozilla" / "firefox"])
+
+
+def thunderbird_profiles() -> list[Path]:
+    """Default profile of each Thunderbird install found (classic and Flatpak)."""
+    return mozilla_profiles([HOME / ".thunderbird",
+                             HOME / ".var" / "app" / "org.mozilla.Thunderbird" / ".thunderbird"])
+
+
+def mozilla_profiles(roots: list[Path]) -> list[Path]:
+    """The profile each Mozilla app under these roots opens by default."""
     out = []
     for root in roots:
         ini = root / "profiles.ini"
@@ -390,6 +412,20 @@ def _firefox(ctx: Ctx) -> None:
         ctx.ensure_line(prof / "user.js",
                         'user_pref("toolkit.legacyUserProfileCustomizations.stylesheets", true);')
     ctx.note("firefox: restart Firefox to load the new chrome")
+
+
+def _thunderbird(ctx: Ctx) -> None:
+    profiles = thunderbird_profiles()
+    if not profiles:
+        ctx.note("thunderbird: no profile found; start Thunderbird once and re-run")
+        return
+    for prof in profiles:
+        chrome = prof / "chrome"
+        ctx.put("thunderbird/tubewm-metro.css.in", chrome / "tubewm-metro.css")
+        ctx.ensure_line(chrome / "userChrome.css", '@import url("tubewm-metro.css");', where="prepend")
+        ctx.ensure_line(prof / "user.js",
+                        'user_pref("toolkit.legacyUserProfileCustomizations.stylesheets", true);')
+    ctx.note("thunderbird: restart Thunderbird to load the new look")
 
 
 def _qt(ctx: Ctx) -> None:
@@ -442,19 +478,115 @@ def _mpv(ctx: Ctx) -> None:
     ctx.ensure_line(d / "mpv.conf", 'include="~~/tubewm.conf"')
 
 
+def _ghostty(ctx: Ctx) -> None:
+    d = CONFIG / "ghostty"
+    ctx.put("ghostty/tubewm-metro.in", d / "themes" / "tubewm-metro")
+    cfg = d / "config"
+    text = cfg.read_text(encoding="utf-8") if cfg.exists() else ""
+    m = re.search(r"^\s*theme\s*=\s*(.+?)\s*$", text, re.M)
+    if m and m.group(1).strip('"') != "tubewm-metro":
+        ctx.note(f"ghostty: your config sets theme = {m.group(1)}; change it to tubewm-metro to switch")
+    elif not m:
+        ctx.ensure_line(cfg, "theme = tubewm-metro")
+
+
+def _fish(ctx: Ctx) -> None:
+    ctx.put("fish/tubewm.fish.in", CONFIG / "fish" / "conf.d" / "tubewm.fish")
+    ctx.note("fish: new shells pick the colours up; run  exec fish  to reload this one")
+
+
+def _qutebrowser(ctx: Ctx) -> None:
+    d = CONFIG / "qutebrowser"
+    ctx.put("qutebrowser/tubewm.py.in", d / "tubewm.py")
+    cfg = d / "config.py"
+    if not cfg.exists():
+        # a config.py stops qutebrowser reading its own settings unless it asks to
+        ctx.ensure_line(cfg, "config.load_autoconfig()")
+    ctx.ensure_line(cfg, 'config.source("tubewm.py")')
+    run_quiet("qutebrowser", ":config-source")
+
+
+def bat_cmd() -> str | None:
+    return next((n for n in ("bat", "batcat") if which(n)), None)
+
+
+def bat_dir() -> Path:
+    if bat_cmd():
+        out = subprocess.run([bat_cmd(), "--config-dir"], capture_output=True, text=True)
+        if out.returncode == 0 and out.stdout.strip():
+            return Path(out.stdout.strip())
+    return CONFIG / "bat"
+
+
+def _bat(ctx: Ctx) -> None:
+    d = bat_dir()
+    ctx.put("bat/tubewm.tmTheme.in", d / "themes" / "tubewm.tmTheme")
+    cfg = d / "config"
+    text = cfg.read_text(encoding="utf-8") if cfg.exists() else ""
+    m = re.search(r"^\s*--theme[= ](.+?)\s*$", text, re.M)
+    if m and m.group(1).strip('"') != "tubewm":
+        ctx.note(f"bat: your config sets --theme={m.group(1)}; change it to tubewm to switch")
+    elif not m:
+        ctx.ensure_line(cfg, '--theme="tubewm"')
+    if bat_cmd() and not run_quiet(bat_cmd(), "cache", "--build"):
+        ctx.note("bat: run  bat cache --build  so bat sees the new theme")
+
+
+def _lazygit(ctx: Ctx) -> None:
+    d = CONFIG / "lazygit"
+    cfg = d / "config.yml"
+    theme = ctx.put("lazygit/tubewm.yml.in", d / "tubewm.yml")
+    text = cfg.read_text(encoding="utf-8") if cfg.exists() else ""
+    if not re.search(r"^gui\s*:", text, re.M):
+        # lazygit has no include; the theme block goes in as lines we can take out again
+        for line in theme.read_text(encoding="utf-8").splitlines():
+            if line and not line.startswith("#"):
+                ctx.ensure_line(cfg, line, present=lambda t: False)
+    else:
+        ctx.note(f"lazygit: your config already has a gui: section; copy the theme: block from {theme} into it")
+
+
+def obsidian_vaults() -> list[Path]:
+    roots = [CONFIG / "obsidian", HOME / ".var" / "app" / "md.obsidian.Obsidian" / "config" / "obsidian"]
+    out = []
+    for root in roots:
+        try:
+            data = json.loads((root / "obsidian.json").read_text(encoding="utf-8"))
+        except (OSError, ValueError):
+            continue
+        for v in (data.get("vaults") or {}).values():
+            p = Path(v.get("path", ""))
+            if p.is_dir() and p not in out:
+                out.append(p)
+    return out
+
+
+def _obsidian(ctx: Ctx) -> None:
+    vaults = obsidian_vaults()
+    if not vaults:
+        ctx.note("obsidian: no vault found; open a vault once and re-run")
+        return
+    for v in vaults:
+        d = v / ".obsidian" / "themes" / "tubewm Metro"
+        ctx.put("obsidian/theme.css.in", d / "theme.css")
+        ctx.put("obsidian/manifest.json.in", d / "manifest.json")
+        if not json_set(ctx, v / ".obsidian" / "appearance.json", "cssTheme", "tubewm Metro"):
+            ctx.note(f'obsidian: pick "tubewm Metro" in Settings > Appearance > Themes for {v.name}')
+
+
 APPS_LIST: list[App] = [
     App("kitty", "kitty", lambda: which("kitty") or (CONFIG / "kitty").is_dir(), _kitty,
-        "colours, 20px padding, accent focus border, lowercase pivot tabs", ["terminal"]),
+        "colours, 20px padding, accent focus border, plain tab names", ["terminal"]),
     App("alacritty", "Alacritty", lambda: which("alacritty") or (CONFIG / "alacritty").is_dir(), _alacritty,
         "colours, no decorations, 20px padding, accent selection and hints", ["terminal"]),
     App("wezterm", "WezTerm", lambda: which("wezterm") or (CONFIG / "wezterm").is_dir(), _wezterm,
         "colour scheme with a flat pivot tab bar", ["terminal"]),
     App("tmux", "tmux", lambda: which("tmux"), _tmux,
-        "accent status strip, accent active pane border, flat menus", ["terminal"]),
+        "black status line, accent active pane border, flat menus", ["terminal"]),
     App("neovim", "Neovim", lambda: which("nvim") or (CONFIG / "nvim").is_dir(), _neovim,
-        "full colorscheme incl. treesitter, LSP and telescope; accent statusline", ["editor"]),
+        "full colour scheme for treesitter, LSP and telescope; black status line", ["editor"]),
     App("helix", "Helix", lambda: which("hx", "helix") or (CONFIG / "helix").is_dir(), _helix,
-        "theme with accent statusline and menus", ["editor"]),
+        "theme with a black status line and accent menus", ["editor"]),
     App("zed", "Zed", lambda: which("zed", "zeditor") or (CONFIG / "zed").is_dir(), _zed,
         "dark and light themes following the system", ["editor"]),
     App("firefox", "Firefox", lambda: which("firefox") or bool(firefox_profiles()), _firefox,
@@ -463,13 +595,27 @@ APPS_LIST: list[App] = [
         or (CONFIG / "qt6ct").is_dir(), _qt,
         "Fusion style with the tubewm palette: flat, square, accent selection", ["toolkit"]),
     App("spicetify", "Spotify (spicetify)", lambda: which("spicetify"), _spicetify,
-        "Zune-style: big light lowercase headings, flat tiles, accent play button", ["music"]),
+        "Zune-style: big light headings, flat tiles, accent play button", ["music"]),
     App("btop", "btop", lambda: which("btop") or (CONFIG / "btop").is_dir(), _btop,
         "black canvas, every graph an accent ramp", ["tool"]),
     App("zathura", "zathura", lambda: which("zathura") or (CONFIG / "zathura").is_dir(), _zathura,
-        "PDF viewer: accent status bar, Open Sans UI", ["tool"]),
+        "PDF viewer: black status bar, Open Sans interface", ["tool"]),
     App("mpv", "mpv", lambda: which("mpv") or (CONFIG / "mpv").is_dir(), _mpv,
-        "Open Sans OSD, flat bottom bar with an accent seek line", ["music"]),
+        "Open Sans on-screen display, flat bottom bar with an accent seek line", ["music"]),
+    App("ghostty", "Ghostty", lambda: which("ghostty") or (CONFIG / "ghostty").is_dir(), _ghostty,
+        "colours, accent cursor, quiet split dividers", ["terminal"]),
+    App("fish", "fish shell", lambda: which("fish") or (CONFIG / "fish").is_dir(), _fish,
+        "command-line colours, accent current folder and pager selection", ["terminal"]),
+    App("qutebrowser", "qutebrowser", lambda: which("qutebrowser") or (CONFIG / "qutebrowser").is_dir(),
+        _qutebrowser, "black tabs and status bar, accent hints and completion", ["browser"]),
+    App("bat", "bat", lambda: which("bat", "batcat"), _bat,
+        "syntax colours matching the editors", ["tool"]),
+    App("lazygit", "lazygit", lambda: which("lazygit") or (CONFIG / "lazygit").is_dir(), _lazygit,
+        "accent active panel, quiet borders, readable selection", ["tool"]),
+    App("obsidian", "Obsidian", lambda: bool(obsidian_vaults()), _obsidian,
+        "square, flat, big light headings, accent links and active tab", ["editor"]),
+    App("thunderbird", "Thunderbird", lambda: which("thunderbird") or bool(thunderbird_profiles()),
+        _thunderbird, "black panes, accent edge on the selected message, accent unread counts", ["mail"]),
 ]
 BY_NAME = {a.name: a for a in APPS_LIST}
 
@@ -488,10 +634,14 @@ def save_state(state: dict) -> None:
     write_text(STATE_FILE, json.dumps(state, indent=2) + "\n")
 
 
-def prune(d: Path) -> None:
-    """Remove now-empty folders upward, stopping at the config roots."""
+def prune(d: Path, ours: set[str] | None = None) -> None:
+    """Remove now-empty folders upward that we made, stopping at the config roots.
+
+    ``ours`` is the set of folders an install created; state written before
+    that was recorded has none, and falls back to removing any empty folder.
+    """
     stop = {HOME, CONFIG, HOME / ".mozilla", HOME / ".var"}
-    while d not in stop and d != d.parent:
+    while d not in stop and d != d.parent and (ours is None or str(d) in ours):
         try:
             d.rmdir()
         except OSError:
@@ -500,6 +650,7 @@ def prune(d: Path) -> None:
 
 
 def uninstall_app(name: str, rec: dict, say) -> None:
+    ours = set(rec["dirs"]) if "dirs" in rec else None
     for e in reversed(rec.get("edits", [])):
         RESTORERS[e["kind"]](e)
     for path, line in rec.get("lines", []):
@@ -518,7 +669,7 @@ def uninstall_app(name: str, rec: dict, say) -> None:
             continue
         if sha(p.read_text(encoding="utf-8")) == digest:
             p.unlink()
-            prune(p.parent)
+            prune(p.parent, ours)
         else:
             say(f"{name}: kept {p} (you edited it)")
     for path in rec.get("created", []):
@@ -526,7 +677,7 @@ def uninstall_app(name: str, rec: dict, say) -> None:
         # a config file we created only to hold our line: drop it if that's all it held
         if p.exists() and p.read_text(encoding="utf-8").strip() in ("", "{}", "[Appearance]", "[Appearance]\n"):
             p.unlink()
-            prune(p.parent)
+            prune(p.parent, ours)
     if rec.get("spicetify_applied") and which("spicetify"):
         run_quiet("spicetify", "config", "current_theme", "SpicetifyDefault", "color_scheme", "")
         run_quiet("spicetify", "apply")
@@ -551,6 +702,8 @@ def main(argv=None) -> int:
     ap.add_argument("--skip", help="comma-separated app names to leave alone")
     ap.add_argument("--accent", help="accent name from palette/accents, or #RRGGBB")
     ap.add_argument("--light", action="store_true", help="use the light polarity")
+    ap.add_argument("--status-bar", choices=T.STATUS_STYLES, default="plain",
+                    help="status bars: plain black (default) or a solid accent strip")
     ap.add_argument("--force", action="store_true", help="install even where the app wasn't found")
     ap.add_argument("-q", "--quiet", action="store_true")
     a = ap.parse_args(argv)
@@ -580,9 +733,9 @@ def main(argv=None) -> int:
         print(f"appthemes: {e}", file=sys.stderr)
         return 2
     mode = "light" if a.light else "dark"
-    toks = T.tokens(pal, mode)
+    toks = T.tokens(pal, mode, a.status_bar)
     for m in ("dark", "light"):
-        toks.update({f"{m.upper()}_{k}": v for k, v in T.tokens(pal, m).items()})
+        toks.update({f"{m.upper()}_{k}": v for k, v in T.tokens(pal, m, a.status_bar).items()})
 
     notes, failed = [], []
     for app in apps:

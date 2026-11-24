@@ -1,0 +1,30 @@
+# tubewm Metro for fish (generated, accent @ACCENT@). Do not edit: re-run apps/install.sh.
+# fish runs every file in conf.d at start-up; these session-wide colours
+# override the universal ones without changing them.
+
+set -g fish_color_normal @FG.bare@
+set -g fish_color_command @FG.bare@ --bold
+set -g fish_color_keyword @SYN_KEYWORD.bare@
+set -g fish_color_quote @SYN_STRING.bare@
+set -g fish_color_redirection @SYN_ESCAPE.bare@
+set -g fish_color_end @SYN_PUNCT.bare@
+set -g fish_color_error @SYN_ERROR.bare@
+set -g fish_color_param @FG.bare@
+set -g fish_color_option @SYN_PROP.bare@
+set -g fish_color_comment @SYN_COMMENT.bare@ --italics
+set -g fish_color_operator @SYN_PUNCT.bare@
+set -g fish_color_escape @SYN_ESCAPE.bare@
+set -g fish_color_autosuggestion @FG_DISABLED.bare@
+set -g fish_color_valid_path --underline
+set -g fish_color_cwd @ACCENT_TEXT.bare@
+set -g fish_color_cwd_root @SYN_ERROR.bare@
+set -g fish_color_user @FG_SUBTLE.bare@
+set -g fish_color_host @FG_SUBTLE.bare@
+set -g fish_color_cancel @SYN_ERROR.bare@
+set -g fish_color_search_match --background=@SELECTION.bare@
+set -g fish_color_selection @FG.bare@ --background=@SELECTION.bare@
+set -g fish_pager_color_progress @FG_SUBTLE.bare@
+set -g fish_pager_color_prefix @ACCENT_TEXT.bare@ --bold
+set -g fish_pager_color_completion @FG.bare@
+set -g fish_pager_color_description @FG_SUBTLE.bare@
+set -g fish_pager_color_selected_background --background=@SELECTION.bare@

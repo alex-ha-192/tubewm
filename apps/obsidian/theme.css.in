@@ -1,0 +1,136 @@
+/*
+ * tubewm Metro for Obsidian (generated, accent @ACCENT@).
+ * Do not edit: re-run apps/install.sh. Pick it in Settings > Appearance >
+ * Themes ("tubewm Metro"). Works in dark and light mode.
+ */
+
+.theme-dark {
+    --tubewm-accent: @DARK_ACCENT@;
+    --background-primary: @DARK_BG@;
+    --background-primary-alt: @DARK_BG@;
+    --background-secondary: @DARK_BG@;
+    --background-secondary-alt: @DARK_SURFACE@;
+    --background-modifier-hover: @DARK_SURFACE_ALT@;
+    --background-modifier-active-hover: @DARK_SURFACE_ALT@;
+    --background-modifier-border: @DARK_SURFACE_ALT@;
+    --background-modifier-border-hover: @DARK_FG_DISABLED@;
+    --background-modifier-border-focus: @DARK_ACCENT@;
+    --background-modifier-form-field: @DARK_SURFACE@;
+    --text-normal: @DARK_FG@;
+    --text-muted: @DARK_FG_SUBTLE@;
+    --text-faint: @DARK_FG_DISABLED@;
+    --text-accent: @DARK_ACCENT_TEXT@;
+    --text-accent-hover: @DARK_FG@;
+    --text-on-accent: @DARK_ON_ACCENT@;
+    --text-selection: @DARK_SELECTION@;
+    --interactive-accent: @DARK_ACCENT@;
+    --interactive-accent-hover: @DARK_ACCENT_HOVER@;
+    --interactive-normal: @DARK_SURFACE@;
+    --interactive-hover: @DARK_SURFACE_ALT@;
+    --code-normal: @DARK_FG@;
+    --code-comment: @DARK_SYN_COMMENT@;
+    --code-keyword: @DARK_SYN_KEYWORD@;
+    --code-string: @DARK_SYN_STRING@;
+    --code-value: @DARK_SYN_NUMBER@;
+    --code-function: @DARK_SYN_FUNC@;
+    --code-property: @DARK_SYN_PROP@;
+    --code-punctuation: @DARK_SYN_PUNCT@;
+    --code-operator: @DARK_SYN_PUNCT@;
+    --code-tag: @DARK_SYN_KEYWORD@;
+    --code-important: @DARK_SYN_ESCAPE@;
+    --code-background: @DARK_SURFACE@;
+}
+
+.theme-light {
+    --tubewm-accent: @LIGHT_ACCENT@;
+    --background-primary: @LIGHT_BG@;
+    --background-primary-alt: @LIGHT_BG@;
+    --background-secondary: @LIGHT_SHELL@;
+    --background-secondary-alt: @LIGHT_SURFACE_ALT@;
+    --background-modifier-hover: @LIGHT_SURFACE_ALT@;
+    --background-modifier-active-hover: @LIGHT_SURFACE_ALT@;
+    --background-modifier-border: @LIGHT_SURFACE_ALT@;
+    --background-modifier-border-hover: @LIGHT_FG_DISABLED@;
+    --background-modifier-border-focus: @LIGHT_ACCENT@;
+    --background-modifier-form-field: @LIGHT_BG@;
+    --text-normal: @LIGHT_FG@;
+    --text-muted: @LIGHT_FG_SUBTLE@;
+    --text-faint: @LIGHT_FG_DISABLED@;
+    --text-accent: @LIGHT_ACCENT_TEXT@;
+    --text-accent-hover: @LIGHT_FG@;
+    --text-on-accent: @LIGHT_ON_ACCENT@;
+    --text-selection: @LIGHT_SELECTION@;
+    --interactive-accent: @LIGHT_ACCENT@;
+    --interactive-accent-hover: @LIGHT_ACCENT_HOVER@;
+    --interactive-normal: @LIGHT_SHELL@;
+    --interactive-hover: @LIGHT_SURFACE_ALT@;
+    --code-normal: @LIGHT_FG@;
+    --code-comment: @LIGHT_SYN_COMMENT@;
+    --code-keyword: @LIGHT_SYN_KEYWORD@;
+    --code-string: @LIGHT_SYN_STRING@;
+    --code-value: @LIGHT_SYN_NUMBER@;
+    --code-function: @LIGHT_SYN_FUNC@;
+    --code-property: @LIGHT_SYN_PROP@;
+    --code-punctuation: @LIGHT_SYN_PUNCT@;
+    --code-operator: @LIGHT_SYN_PUNCT@;
+    --code-tag: @LIGHT_SYN_KEYWORD@;
+    --code-important: @LIGHT_SYN_ESCAPE@;
+    --code-background: @LIGHT_SHELL@;
+}
+
+body {
+    --font-interface-theme: "@FONT_UI@", "Noto Sans", sans-serif;
+    --font-text-theme: "@FONT_UI@", "Noto Sans", sans-serif;
+    --font-monospace-theme: "@FONT_MONO@", monospace;
+    --radius-s: 0;
+    --radius-m: 0;
+    --radius-l: 0;
+    --radius-xl: 0;
+    --checkbox-radius: 0;
+    --button-radius: 0;
+    --input-radius: 0;
+    --tab-radius: 0;
+    --shadow-s: none;
+    --shadow-l: none;
+    --input-shadow: none;
+    --input-shadow-hover: none;
+    --color-accent: var(--tubewm-accent);
+    /* Metro headings: big and light for the top levels, then regular */
+    --h1-size: 2.6em;
+    --h1-weight: 300;
+    --h2-size: 1.9em;
+    --h2-weight: 300;
+    --h3-size: 1.35em;
+    --h3-weight: 600;
+    --inline-title-size: 2.6em;
+    --inline-title-weight: 300;
+    --link-decoration: none;
+    --link-external-decoration: none;
+}
+
+/* the open note's tab: white and semibold with an accent underline */
+.workspace-tab-header.is-active {
+    box-shadow: inset 0 -2px 0 var(--interactive-accent);
+}
+.workspace-tab-header.is-active .workspace-tab-header-inner-title {
+    font-weight: 600;
+}
+.workspace-tab-header:not(.is-active) .workspace-tab-header-inner-title {
+    color: var(--text-muted);
+}
+.workspace-tab-header::before,
+.workspace-tab-header::after {
+    display: none;
+}
+
+/* the selected file in the sidebar is filled with the accent */
+.nav-file-title.is-active,
+.tree-item-self.is-active {
+    background: var(--interactive-accent) !important;
+    color: var(--text-on-accent) !important;
+}
+
+/* links read as accent text, underlined on hover */
+.cm-s-obsidian span.cm-hmd-internal-link a,
+.markdown-rendered a { text-decoration: none; }
+.markdown-rendered a:hover { text-decoration: underline; }

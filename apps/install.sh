@@ -5,6 +5,7 @@
 #
 #   --accent NAME|#HEX   accent colour (default: the desktop's current accent)
 #   --light              light polarity instead of dark
+#   --status-bar STYLE   plain (black, the default) or accent (a solid strip)
 #   --only a,b           just these apps (see --list for names)
 #   --skip a,b           everything found except these
 #   --list               show the apps and whether they were found / themed
@@ -21,15 +22,17 @@ HERE=$(CDPATH='' cd -- "$(dirname -- "$0")" && pwd)
 CONFIG_HOME=${XDG_CONFIG_HOME:-$HOME/.config}
 HOOK=$CONFIG_HOME/tubewm/accent.d/40-apps
 
-accent='' light=0 only='' skip='' list=0 uninstall=0 hook=1 quiet=0
+bar_style=plain accent='' light=0 only='' skip='' list=0 uninstall=0 hook=1 quiet=0
 die() { printf 'apps/install.sh: %s\n' "$*" >&2; exit 1; }
-usage() { sed -n '2,16p' "$0" | sed 's/^# \{0,1\}//'; }
+usage() { sed -n '2,17p' "$0" | sed 's/^# \{0,1\}//'; }
 
 while [ $# -gt 0 ]; do
     case $1 in
         --accent) [ $# -ge 2 ] || die "--accent needs a value"; accent=$2; shift ;;
         --accent=*) accent=${1#*=} ;;
         --light) light=1 ;;
+        --status-bar) [ $# -ge 2 ] || die "--status-bar needs a value"; bar_style=$2; shift ;;
+        --status-bar=*) bar_style=${1#*=} ;;
         --only) [ $# -ge 2 ] || die "--only needs a value"; only=$2; shift ;;
         --only=*) only=${1#*=} ;;
         --skip) [ $# -ge 2 ] || die "--skip needs a value"; skip=$2; shift ;;
@@ -78,7 +81,7 @@ elif [ "$uninstall" = 1 ]; then
     python3 "$HERE/lib/appthemes.py" "$@" || status=1
 else
     # shellcheck disable=SC2086
-    set -- install $common ${rest_only:+--only "$rest_only"} ${rest_skip:+--skip "$rest_skip"}
+    set -- install $common --status-bar "$bar_style" ${rest_only:+--only "$rest_only"} ${rest_skip:+--skip "$rest_skip"}
     [ "$light" = 1 ] && set -- "$@" --light
     python3 "$HERE/lib/appthemes.py" "$@" || status=1
 fi
@@ -93,6 +96,7 @@ run_sub() {  # run_sub DIR: the app's own installer, if it finds its app
         # shellcheck disable=SC2086
         set -- $common
         [ "$light" = 1 ] && set -- "$@" --light
+        [ "$sub" = "$HERE/vscode/install.sh" ] && set -- "$@" --status-bar "$bar_style"
         [ "$hook" = 0 ] && set -- "$@" --no-hook
     fi
     sh "$sub" "$@" 2>&1 | sed "s/^vscode\/install.sh: no VSCode.*/vscode: not found, skipped/" || true
@@ -118,7 +122,7 @@ elif [ "$hook" = 1 ] && { [ -z "$only" ] || [ -n "$rest_only" ]; }; then
         echo '#!/bin/sh'
         echo '# Installed by tubewm apps/install.sh: re-theme the apps for the new accent.'
         echo 'unset TUBEWM_ACCENT   # the accent file written by tube-accent wins'
-        printf 'exec python3 "%s" install --quiet' "$HERE/lib/appthemes.py"
+        printf 'exec python3 "%s" install --quiet --status-bar %s' "$HERE/lib/appthemes.py" "$bar_style"
         [ -n "$rest_only" ] && printf ' --only "%s"' "$rest_only"
         [ -n "$rest_skip" ] && printf ' --skip "%s"' "$rest_skip"
         [ "$light" = 1 ] && printf ' --light'

@@ -18,11 +18,11 @@ body, button, input {
     font-family: "@FONT_UI@", "Noto Sans", sans-serif !important;
 }
 
-/* headings: huge, light and lowercase, like the Zune panorama */
+/* headings: huge and light like the Zune panorama; section titles are
+   lowercase, album and artist names keep their own case */
 h1, .main-entityHeader-title h1, .encore-text-headline-large, .encore-text-headline-medium {
     font-weight: 300 !important;
     letter-spacing: -0.02em !important;
-    text-transform: lowercase;
 }
 h2, .main-shelf-title, .encore-text-title-medium, .encore-text-title-small {
     font-weight: 300 !important;

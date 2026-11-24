@@ -4,8 +4,8 @@
 set font "@FONT_UI@ 11"
 set default-bg "@BG@"
 set default-fg "@FG@"
-set statusbar-bg "@ACCENT@"
-set statusbar-fg "@ON_ACCENT@"
+set statusbar-bg "@STATUS_BG@"
+set statusbar-fg "@STATUS_FG@"
 set statusbar-h-padding 12
 set statusbar-v-padding 4
 set inputbar-bg "@SURFACE@"

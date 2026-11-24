@@ -1,0 +1,95 @@
+/*
+ * tubewm Metro for Thunderbird (generated, accent @ACCENT@, @MODE@).
+ * Do not edit: re-run apps/install.sh. Loaded by an @import line at the top
+ * of <profile>/chrome/userChrome.css; needs the pref
+ * toolkit.legacyUserProfileCustomizations.stylesheets = true (install.sh sets
+ * it in user.js).
+ *
+ * Black panes, white text, one accent. The selected folder and message are
+ * marked by an accent bar on their left edge, not a slab of colour, so the
+ * text stays easy to read. Every rule is cosmetic and simply stops applying
+ * if Thunderbird renames what it targets.
+ */
+
+:root {
+    --tubewm-accent: @ACCENT@;
+    --tubewm-on-accent: @ON_ACCENT@;
+    --tubewm-bg: @BG@;
+    --tubewm-surface: @SURFACE@;
+    --tubewm-hover: @SURFACE_ALT@;
+    --tubewm-fg: @FG@;
+    --tubewm-subtle: @FG_SUBTLE@;
+
+    --lwt-accent-color: var(--tubewm-bg) !important;
+    --lwt-text-color: var(--tubewm-fg) !important;
+    --toolbar-bgcolor: var(--tubewm-bg) !important;
+    --toolbar-color: var(--tubewm-fg) !important;
+    --toolbar-field-background-color: var(--tubewm-surface) !important;
+    --toolbar-field-color: var(--tubewm-fg) !important;
+    --toolbar-field-focus-border-color: var(--tubewm-accent) !important;
+    --tab-selected-bgcolor: transparent !important;
+    --arrowpanel-background: var(--tubewm-surface) !important;
+    --arrowpanel-color: var(--tubewm-fg) !important;
+    --arrowpanel-border-color: transparent !important;
+    --foldertree-background: var(--tubewm-bg) !important;
+    --tree-view-bg: var(--tubewm-bg) !important;
+    --tree-view-color: var(--tubewm-fg) !important;
+    --tree-card-background: var(--tubewm-bg) !important;
+    --layout-background-0: var(--tubewm-bg) !important;
+    --layout-background-1: var(--tubewm-bg) !important;
+    --layout-color-1: var(--tubewm-fg) !important;
+    --layout-border-0: var(--tubewm-surface) !important;
+    --selected-item-color: var(--tubewm-hover) !important;
+    --selected-item-text-color: var(--tubewm-fg) !important;
+    --color-accent-primary: var(--tubewm-accent) !important;
+    font-family: "Open Sans", "Noto Sans", sans-serif !important;
+}
+
+* { border-radius: 0 !important; box-shadow: none !important; }
+
+/* Tabs: grey titles, the open one white with an accent underline. */
+.tabmail-tab { color: var(--tubewm-subtle) !important; }
+.tabmail-tab .tab-background { background: transparent !important; border: 0 !important; }
+.tabmail-tab[selected] { color: var(--tubewm-fg) !important; font-weight: 600 !important; }
+.tabmail-tab[selected] .tab-background {
+    box-shadow: inset 0 -2px 0 var(--tubewm-accent) !important;
+}
+.tabmail-tab .tab-close-button { fill: currentColor !important; color: inherit !important; }
+
+/* Folder pane and message list: the selection is an accent edge. */
+#folderTree li > .container:hover,
+#threadTree tr:hover { background: var(--tubewm-surface) !important; }
+#folderTree li.selected > .container,
+#threadTree tr.selected {
+    background: var(--tubewm-hover) !important;
+    color: var(--tubewm-fg) !important;
+    box-shadow: inset 3px 0 0 var(--tubewm-accent) !important;
+}
+#threadTree tr.unread { font-weight: 600 !important; }
+#folderTree .unread-count {
+    background: transparent !important;
+    color: var(--tubewm-accent) !important;
+    font-weight: 600 !important;
+}
+
+/* The pane headers read like Zune section titles. */
+#folderPaneHeaderBar, #threadPaneHeaderBar { background: var(--tubewm-bg) !important; }
+#threadPaneFolderName, #folderPaneHeaderTitle {
+    font-size: 1.6em !important;
+    font-weight: 300 !important;
+}
+
+/* Buttons that do something are solid accent. */
+#folderPaneWriteMessage, .button-primary, button.primary {
+    background: var(--tubewm-accent) !important;
+    color: var(--tubewm-on-accent) !important;
+    border: 0 !important;
+}
+
+/* Search and address fields show the accent while you type. */
+search-bar input:focus, #unifiedToolbarContent input:focus {
+    outline: 2px solid var(--tubewm-accent) !important;
+    outline-offset: -2px !important;
+}
+
+menupopup, panel { --panel-background: var(--tubewm-surface) !important; --panel-color: var(--tubewm-fg) !important; }

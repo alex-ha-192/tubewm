@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import hashlib
 import json
+import xml.etree.ElementTree as ET
 import os
 import re
 import subprocess
@@ -22,9 +23,9 @@ TEMPLATES = sorted(p for p in APPS.rglob("*.in") if "vivaldi" not in p.parts)
 LEFTOVER = re.compile(r"@[A-Z][A-Z0-9_]*(\.[a-z]+)?@")
 
 
-def all_tokens(accent, mode):
+def all_tokens(accent, mode, status="plain"):
     pal = P.load(accent=accent)
-    toks = T.tokens(pal, mode)
+    toks = T.tokens(pal, mode, status)
     for m in ("dark", "light"):
         toks.update({f"{m.upper()}_{k}": v for k, v in T.tokens(pal, m).items()})
     return toks
@@ -42,6 +43,15 @@ def test_every_template_renders_and_parses(accent, mode):
             tomllib.loads(out)
         elif name.endswith(".json"):
             json.loads(out)
+        elif name.endswith(".py"):
+            compile(out, str(tpl), "exec")
+        elif name.endswith(".tmTheme"):
+            ET.fromstring(out.encode())
+        elif name.endswith(".css"):
+            body = re.sub(r"/\*.*?\*/", "", out, flags=re.S)
+            assert body.count("{") == body.count("}"), tpl
+        elif name.endswith((".yml", ".yaml")):
+            assert "\t" not in out, tpl
 
 
 def test_render_forms():
@@ -67,9 +77,13 @@ def test_neovim_colorscheme_runs():
     L.execute("""groups = {}
       vim = { o = {}, g = {}, fn = { exists = function() return 0 end }, cmd = function() end,
               api = { nvim_set_hl = function(_, name, spec) groups[name] = spec end } }""")
-    L.execute(T.render((APPS / "neovim" / "tubewm.lua.in").read_text(), all_tokens("teal", "dark")))
+    src = (APPS / "neovim" / "tubewm.lua.in").read_text()
+    L.execute(T.render(src, all_tokens("teal", "dark", "accent")))
     g = L.globals()
     assert g.groups["StatusLine"]["bg"] == P.accent_swatches()["teal"]
+    L.execute(T.render(src, all_tokens("teal", "dark", "plain")))
+    assert g.groups["StatusLine"]["bg"] == "#000000"
+    assert g.groups["StatusLineEmphasis"]["fg"] == P.accent_swatches()["teal"]
     assert g.groups["Normal"]["bg"] == "#000000"
     assert g.vim.g["terminal_color_15"]
     assert g.vim.g.colors_name == "tubewm"
@@ -107,6 +121,21 @@ def home(tmp_path):
     (cfg / "qt6ct" / "qt6ct.conf").write_text("[Appearance]\nicon_theme=Papirus\nstyle=kvantum\n")
     (cfg / "zed" / "settings.json").write_text('// zed\n{ "ui_font_size": 16, }\n')
     (cfg / "alacritty" / "alacritty.toml").write_text("[font]\nsize = 11\n")
+    # the apps added later
+    tb = h / ".thunderbird" / "xyz.default-release"
+    tb.mkdir(parents=True)
+    (h / ".thunderbird" / "profiles.ini").write_text(
+        "[Profile0]\nName=default\nIsRelative=1\nPath=xyz.default-release\nDefault=1\n")
+    vault = h / "Notes"
+    (vault / ".obsidian").mkdir(parents=True)
+    (vault / ".obsidian" / "appearance.json").write_text('{"baseFontSize": 16}')
+    (cfg / "obsidian").mkdir(parents=True)
+    (cfg / "obsidian" / "obsidian.json").write_text(json.dumps({"vaults": {"a1": {"path": str(vault)}}}))
+    for d in ("lazygit", "qutebrowser", "ghostty"):
+        (cfg / d).mkdir(parents=True)
+    (cfg / "lazygit" / "config.yml").write_text("git:\n  autoFetch: false\n")
+    (cfg / "qutebrowser" / "config.py").write_text("config.load_autoconfig()\nc.zoom.default = 110\n")
+    (cfg / "ghostty" / "config").write_text("font-size = 12\n")
     return h
 
 
@@ -134,6 +163,18 @@ def test_install_then_uninstall_restores_everything(home):
     # alacritty.toml existed without our import: left alone, with a note
     assert "tubewm" not in (cfg / "alacritty" / "alacritty.toml").read_text()
     assert "alacritty: add" in r.stdout
+    # the newer apps
+    tbc = (home / ".thunderbird/xyz.default-release/chrome/userChrome.css").read_text()
+    assert tbc.startswith('@import url("tubewm-metro.css");')
+    app = json.loads((home / "Notes/.obsidian/appearance.json").read_text())
+    assert app == {"baseFontSize": 16, "cssTheme": "tubewm Metro"}
+    assert (home / "Notes/.obsidian/themes/tubewm Metro/theme.css").exists()
+    lg = yaml_ish = (cfg / "lazygit" / "config.yml").read_text()
+    assert lg.startswith("git:\n  autoFetch: false\n") and "\ngui:\n" in yaml_ish
+    assert 'config.source("tubewm.py")' in (cfg / "qutebrowser" / "config.py").read_text()
+    assert "theme = tubewm-metro" in (cfg / "ghostty" / "config").read_text()
+    assert (cfg / "fish" / "conf.d" / "tubewm.fish").exists()
+    assert (cfg / "bat" / "themes" / "tubewm.tmTheme").exists()
 
     # re-install with a new accent: no duplicate lines
     assert run(home, "install", "--force", "--accent", "lime").returncode == 0
@@ -148,6 +189,9 @@ def test_install_then_uninstall_restores_everything(home):
     zed = ".config/zed/settings.json"
     assert json.loads((home / zed).read_text()) == {"ui_font_size": 16}
     before.pop(zed), after.pop(zed)
+    obs = "Notes/.obsidian/appearance.json"
+    assert json.loads((home / obs).read_text()) == {"baseFontSize": 16}
+    before.pop(obs), after.pop(obs)
     assert after == before
 
 
@@ -187,3 +231,22 @@ def test_wrapper_hook_rethemes_with_accent_file(home):
     assert "#0078D7" in (home / ".config" / "kitty" / "tubewm.conf").read_text()
     r = run(home, "--uninstall", "-q", script="install.sh")
     assert r.returncode == 0 and not hook.exists()
+
+
+def test_qutebrowser_theme_runs_against_a_stub_config():
+    class Node:
+        def __getattr__(self, k):
+            v = Node(); object.__setattr__(self, k, v); return v
+    c = Node()
+    toks = all_tokens("cobalt", "dark")
+    out = T.render((APPS / "qutebrowser" / "tubewm.py.in").read_text(), toks)
+    exec(compile(out, "tubewm.py", "exec"), {"c": c, "config": Node()})
+    assert c.colors.tabs.selected.odd.fg == toks["FG"]
+    assert c.colors.tabs.odd.fg == toks["FG_SUBTLE"]
+
+
+def test_fish_colours_are_bare_hex():
+    out = T.render((APPS / "fish" / "tubewm.fish.in").read_text(), all_tokens("cobalt", "dark"))
+    for line in out.splitlines():
+        if line.startswith("set -g fish_color_") and len(line.split()) > 3:
+            assert "#" not in line.split()[3], line

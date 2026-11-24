@@ -15,11 +15,11 @@
 "ui.linenr" = "dim"
 "ui.linenr.selected" = { fg = "fg", modifiers = ["bold"] }
 "ui.gutter" = { bg = "bg" }
-"ui.statusline" = { fg = "on_accent", bg = "accent" }
-"ui.statusline.inactive" = { fg = "subtle", bg = "shell" }
-"ui.statusline.normal" = { fg = "on_accent", bg = "accent", modifiers = ["bold"] }
-"ui.statusline.insert" = { fg = "bg", bg = "fg", modifiers = ["bold"] }
-"ui.statusline.select" = { fg = "bg", bg = "type", modifiers = ["bold"] }
+"ui.statusline" = { fg = "status_fg", bg = "status_bg" }
+"ui.statusline.inactive" = { fg = "dim", bg = "bg" }
+"ui.statusline.normal" = { fg = "status_emphasis", bg = "status_bg", modifiers = ["bold"] }
+"ui.statusline.insert" = { fg = "status_emphasis", bg = "status_bg", modifiers = ["bold", "underlined"] }
+"ui.statusline.select" = { fg = "status_emphasis", bg = "status_bg", modifiers = ["bold", "reversed"] }
 "ui.bufferline" = { fg = "subtle", bg = "bg" }
 "ui.bufferline.active" = { fg = "fg", bg = "bg", modifiers = ["bold"] }
 "ui.bufferline.background" = { bg = "bg" }
@@ -112,3 +112,6 @@ prop = "@SYN_PROP@"
 punct = "@SYN_PUNCT@"
 comment = "@SYN_COMMENT@"
 escape = "@SYN_ESCAPE@"
+status_bg = "@STATUS_BG@"
+status_fg = "@STATUS_FG@"
+status_emphasis = "@STATUS_EMPHASIS@"

@@ -20,10 +20,12 @@
         box-shadow: none !important;
         background-color: @ACCENT@ !important;
     }
-    .top-site-outer .title { text-transform: lowercase; }
     .search-wrapper .search-handoff-button, .search-wrapper input {
         border-radius: 0 !important;
         box-shadow: none !important;
         border: 2px solid @FG_DISABLED@ !important;
+    }
+    .search-wrapper input:focus {
+        border-color: @ACCENT@ !important;
     }
 }

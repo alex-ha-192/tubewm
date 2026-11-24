@@ -1,7 +1,7 @@
 # tubewm app themes
 
 Metro / Zune styling for the apps you live in: black canvas, white type, one
-accent colour, square corners, lowercase pivot headers. Every theme is
+accent colour, square corners, big light headings. Every theme is
 generated from the shared palette in `palette/`, so it uses the same accent as
 the Sway desktop and follows it when you change it with `tube-accent`.
 
@@ -15,6 +15,7 @@ apps/install.sh                      # theme every supported app that is install
 apps/install.sh --list               # what is supported, found and themed
 apps/install.sh --accent cobalt      # any name from palette/accents, or '#RRGGBB'
 apps/install.sh --light              # light polarity
+apps/install.sh --status-bar accent  # solid accent status bars (default: plain black)
 apps/install.sh --only kitty,neovim  # just these
 apps/install.sh --skip firefox       # everything found but these
 apps/install.sh --uninstall          # undo all of it
@@ -24,19 +25,26 @@ apps/install.sh --uninstall          # undo all of it
 | --- | --- | --- |
 | [VSCode / VSCodium](#vscode) | colour themes, settings, optional workbench CSS | `apps/vscode` |
 | [Vivaldi](#vivaldi) | themes, UI CSS mods, tile-style speed dials | `apps/vivaldi` |
-| [Firefox](firefox/README.md) | pivot tabs, flat accent-focus URL bar, square menus, new-tab tiles | restart Firefox |
-| [kitty](kitty/README.md) | colours, padding, accent focus border, lowercase tabs | reloads live |
+| [Firefox](firefox/README.md) | readable grey tabs with an accent underline, accent-focus URL bar, square menus | restart Firefox |
+| [Thunderbird](thunderbird/README.md) | black panes, accent edge on the selected message, accent unread counts | restart Thunderbird |
+| [qutebrowser](qutebrowser/README.md) | black tabs and status bar, accent hints and completion | `config.source` line added |
+| [kitty](kitty/README.md) | colours, padding, accent focus border, plain tab names | reloads live |
+| [Ghostty](ghostty/README.md) | colours, accent cursor, quiet split dividers | set automatically if you had no theme |
 | [Alacritty](alacritty/README.md) | colours, no decorations, padding | one import line if you already have a config |
 | [WezTerm](wezterm/README.md) | colour scheme with a flat tab bar | select it in `wezterm.lua` |
-| [tmux](tmux/README.md) | accent status strip, accent pane border | reloads live |
+| [tmux](tmux/README.md) | black status line, accent pane border | reloads live |
+| [fish](fish/README.md) | command-line colours, accent current folder | new shells |
 | [Neovim](neovim/README.md) | full colorscheme (treesitter, LSP, telescope) | `:colorscheme tubewm` |
-| [Helix](helix/README.md) | theme with accent status line | set automatically if you had none |
-| [Zed](zed/README.md) | dark + light themes following the system | set automatically if you had none |
+| [Helix](helix/README.md) | theme with a black status line and accent menus | set automatically if you had none |
+| [Zed](zed/README.md) | dark and light themes following the system | set automatically if you had none |
+| [Obsidian](obsidian/README.md) | square, flat, big light headings, accent links | set in every vault that had no theme |
 | [Qt apps](qt/README.md) | qt5ct / qt6ct palette on the Fusion style | needs `QT_QPA_PLATFORMTHEME` |
 | [Spotify](spicetify/README.md) | Zune-style headings, flat tiles (via spicetify) | needs spicetify |
 | [btop](btop/README.md) | black canvas, accent graph ramps | quit btop first |
-| [zathura](zathura/README.md) | accent status bar, Open Sans | |
-| [mpv](mpv/README.md) | Open Sans OSD, flat bar with accent seek line | |
+| [zathura](zathura/README.md) | black status bar, Open Sans | |
+| [bat](bat/README.md) | syntax colours matching the editors | set automatically if you had no theme |
+| [lazygit](lazygit/README.md) | accent active panel, quiet borders | added to `config.yml` if it has no `gui:` |
+| [mpv](mpv/README.md) | Open Sans on-screen display, flat bar with accent seek line | |
 
 Each app's folder has a short README with exactly what is written where.
 Your own config files are only ever edited to add one include/import line or
@@ -75,7 +83,7 @@ What it does:
    first if you want fewer changes.
 
 The colour theme handles every colour. What a theme cannot do (UI font,
-square corners on every widget, lowercase pivot-style tabs, the short
+square corners on every widget, semibold active tab, the short
 "turnstile" animation on menus and the command palette) is in
 `metro-ui.css`. To use it, install the *Custom CSS and JS Loader* extension
 (`be5invis.vscode-custom-css`), run `install.sh --ui-css`, then run
@@ -97,8 +105,9 @@ It writes everything to `~/.local/share/tubewm/vivaldi/`:
 - `themes/tubewm-metro-{dark,light}.zip`: importable themes. The accent is
   Vivaldi's *Highlight* colour; the tab bar stays black, with 0px corner
   radius and solid scrollbars.
-- `css/tubewm-metro.css`: UI modifications. Tabs become a lowercase pivot
-  row with an accent underline on the active tab. The address bar is a flat
+- `css/tubewm-metro.css`: UI modifications. Tab titles are a readable
+  grey; the active tab is white with an accent underline, and its close
+  button is always visible (the others show theirs on hover). The address bar is a flat
   field with an accent border on focus. Panels get big light headers, the V
   button becomes a solid accent square, speed dials become flat accent tiles
   with bottom-left labels, and menus get a short turnstile animation.
@@ -115,6 +124,21 @@ for using CSS modifications**, and restart Vivaldi.
 Vivaldi renames its internal UI classes now and then. Every rule in the CSS
 is cosmetic, so a rule that stops matching just stops applying. The theme
 colours work with or without the stylesheet.
+
+## Design rules
+
+Every theme follows the same few rules, so the apps look like one system:
+
+- **Black and white first, one accent.** The accent marks what is active or
+  focused: the current tab's underline, a focused field's edge, the cursor,
+  links. It is never a background for long text.
+- **Readable greys.** Secondary text is at least 7:1 against its background
+  and disabled text at least 4.5:1. Tests check both, in dark and light.
+- **No forced lowercase and no abbreviations.** Names show as the app or
+  page wrote them; size and weight give the Metro feel.
+- **Flat and square.** No rounded corners, shadows or gradients.
+- **Status bars are plain black** by default, with the mode or position in
+  the accent. `--status-bar accent` brings back a solid accent strip.
 
 ## Accent changes
 

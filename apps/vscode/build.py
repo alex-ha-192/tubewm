@@ -29,7 +29,7 @@ THEMES = {"dark": "tubewm Metro Dark", "light": "tubewm Metro Light"}
 CLEAR = "#00000000"
 
 
-def workbench(c: dict, mode: str) -> dict:
+def workbench(c: dict, mode: str, status: str = "plain") -> dict:
     a, on_a = c["accent"], P.on_color(c["accent"])
     bg, sh, sf, sa = c["bg"], c["shell"], c["surface"], c["surface_alt"]
     fg, sub, dim, br = c["fg"], c["fg_subtle"], c["fg_disabled"], c["border"]
@@ -62,9 +62,9 @@ def workbench(c: dict, mode: str) -> dict:
         "badge.background": a,
         "badge.foreground": on_a,
         # --- window -----------------------------------------------------
-        "titleBar.activeBackground": sh,
+        "titleBar.activeBackground": bg,
         "titleBar.activeForeground": fg,
-        "titleBar.inactiveBackground": sh,
+        "titleBar.inactiveBackground": bg,
         "titleBar.inactiveForeground": sub,
         "titleBar.border": CLEAR,
         "menubar.selectionBackground": hover,
@@ -80,7 +80,7 @@ def workbench(c: dict, mode: str) -> dict:
         "commandCenter.activeBackground": hover,
         "commandCenter.border": CLEAR,
         # --- activity bar: a quiet charcoal rail; the accent marks the active pivot
-        "activityBar.background": sh,
+        "activityBar.background": bg,
         "activityBar.foreground": fg,
         "activityBar.inactiveForeground": sub,
         "activityBar.activeBorder": a,
@@ -92,12 +92,12 @@ def workbench(c: dict, mode: str) -> dict:
         "activityBarTop.inactiveForeground": sub,
         "activityBarTop.activeBorder": a,
         # --- side bar -----------------------------------------------------
-        "sideBar.background": sh,
+        "sideBar.background": bg,
         "sideBar.foreground": fg,
         "sideBar.border": CLEAR,
         "sideBarTitle.foreground": fg,
-        "sideBarSectionHeader.background": sh,
-        "sideBarSectionHeader.foreground": fg,
+        "sideBarSectionHeader.background": bg,
+        "sideBarSectionHeader.foreground": sub,
         "sideBarSectionHeader.border": CLEAR,
         "list.activeSelectionBackground": a,
         "list.activeSelectionForeground": on_a,
@@ -116,16 +116,17 @@ def workbench(c: dict, mode: str) -> dict:
         "tree.indentGuidesStroke": br,
         "tree.inactiveIndentGuidesStroke": CLEAR,
         # --- editor groups & tabs: pivot headers, no boxes ------------------
-        "editorGroup.border": sh,
+        "editorGroup.border": sa,
         "editorGroup.dropBackground": sel_soft,
         "editorGroupHeader.tabsBackground": bg,
         "editorGroupHeader.tabsBorder": CLEAR,
         "editorGroupHeader.noTabsBackground": bg,
         "tab.activeBackground": bg,
         "tab.activeForeground": fg,
-        "tab.activeBorder": CLEAR,
+        "tab.activeBorder": a,
         "tab.activeBorderTop": CLEAR,
         "tab.unfocusedActiveBorderTop": CLEAR,
+        "tab.unfocusedActiveBorder": sub,
         "tab.inactiveBackground": bg,
         "tab.inactiveForeground": sub,
         "tab.unfocusedActiveForeground": sub,
@@ -220,7 +221,7 @@ def workbench(c: dict, mode: str) -> dict:
         # --- inputs & buttons: rectangles with a 2px-feeling border ---------
         "input.background": bg if mode == "dark" else "#FFFFFF",
         "input.foreground": fg,
-        "input.border": sub,
+        "input.border": dim,
         "input.placeholderForeground": dim,
         "inputOption.activeBackground": a,
         "inputOption.activeForeground": on_a,
@@ -234,7 +235,7 @@ def workbench(c: dict, mode: str) -> dict:
         "dropdown.background": sf,
         "dropdown.listBackground": sf,
         "dropdown.foreground": fg,
-        "dropdown.border": sub,
+        "dropdown.border": dim,
         "button.background": a,
         "button.foreground": on_a,
         "button.hoverBackground": P.mix(a, "#FFFFFF" if mode == "dark" else "#000000", 0.15),
@@ -245,7 +246,7 @@ def workbench(c: dict, mode: str) -> dict:
         "button.secondaryHoverBackground": P.mix(sa, fg, 0.12),
         "checkbox.background": bg,
         "checkbox.foreground": fg,
-        "checkbox.border": fg,
+        "checkbox.border": sub,
         "toolbar.hoverBackground": hover,
         "keybindingLabel.background": sa,
         "keybindingLabel.foreground": fg,
@@ -258,31 +259,32 @@ def workbench(c: dict, mode: str) -> dict:
         "minimapSlider.background": P.alpha(fg, 0.08),
         # --- panel (terminal, problems) -------------------------------------
         "panel.background": bg,
-        "panel.border": sh,
+        "panel.border": sa,
         "panelTitle.activeForeground": fg,
         "panelTitle.inactiveForeground": sub,
         "panelTitle.activeBorder": a,
         "panelSection.border": sh,
-        "panelInput.border": sub,
+        "panelInput.border": dim,
         "terminal.background": bg,
         "terminal.foreground": fg,
         "terminalCursor.foreground": a,
         "terminal.selectionBackground": sel,
         "terminal.border": sh,
         **terminal_ansi(c, mode),
-        # --- status bar: the accent strip --------------------------------
-        "statusBar.background": a,
-        "statusBar.foreground": on_a,
-        "statusBar.border": CLEAR,
-        "statusBar.noFolderBackground": a,
-        "statusBar.noFolderForeground": on_a,
+        # --- status bar: plain black with grey text, or the accent strip ---
+        "statusBar.background": a if status == "accent" else bg,
+        "statusBar.foreground": on_a if status == "accent" else sub,
+        "statusBar.border": CLEAR if status == "accent" else sa,
+        "statusBar.noFolderBackground": a if status == "accent" else bg,
+        "statusBar.noFolderForeground": on_a if status == "accent" else sub,
         "statusBar.debuggingBackground": c["warning"],
         "statusBar.debuggingForeground": P.on_color(c["warning"]),
         "statusBar.focusBorder": on_a,
-        "statusBarItem.hoverBackground": P.alpha(on_a, 0.15),
-        "statusBarItem.activeBackground": P.alpha(on_a, 0.25),
-        "statusBarItem.remoteBackground": sh,
-        "statusBarItem.remoteForeground": fg,
+        "statusBarItem.hoverBackground": P.alpha(on_a, 0.15) if status == "accent" else sa,
+        "statusBarItem.hoverForeground": on_a if status == "accent" else fg,
+        "statusBarItem.activeBackground": P.alpha(on_a, 0.25) if status == "accent" else sa,
+        "statusBarItem.remoteBackground": sh if status == "accent" else bg,
+        "statusBarItem.remoteForeground": fg if status == "accent" else a_text,
         "statusBarItem.prominentBackground": P.alpha("#000000", 0.25),
         "statusBarItem.errorBackground": c["error"],
         "statusBarItem.errorForeground": P.on_color(c["error"]),
@@ -395,7 +397,7 @@ def syntax(c: dict, mode: str) -> tuple[list, dict]:
     return tokens, semantic
 
 
-def theme(mode: str, pal: dict) -> dict:
+def theme(mode: str, pal: dict, status: str = "plain") -> dict:
     c = P.polarity(pal, mode)
     tokens, semantic = syntax(c, mode)
     return {
@@ -403,7 +405,7 @@ def theme(mode: str, pal: dict) -> dict:
         "name": THEMES[mode],
         "type": mode,
         "semanticHighlighting": True,
-        "colors": workbench(c, mode),
+        "colors": workbench(c, mode, status),
         "tokenColors": tokens,
         "semanticTokenColors": semantic,
     }
@@ -428,14 +430,14 @@ def package_json(accent: str) -> dict:
     }
 
 
-def build(out: Path, accent: str | None = None) -> Path:
+def build(out: Path, accent: str | None = None, status: str = "plain") -> Path:
     pal = P.load(accent=accent)
     themes = out / "themes"
     themes.mkdir(parents=True, exist_ok=True)
     dump = lambda p, d: p.write_text(json.dumps(d, indent=2) + "\n", encoding="utf-8")
     dump(out / "package.json", package_json(pal["TUBEWM_ACCENT"]))
     for mode in ("dark", "light"):
-        dump(themes / f"tubewm-metro-{mode}.json", theme(mode, pal))
+        dump(themes / f"tubewm-metro-{mode}.json", theme(mode, pal, status))
     (out / "README.md").write_text(
         "# tubewm Metro for VSCode\n\nGenerated by `apps/vscode/build.py` from the shared "
         "tubewm palette. Do not edit by hand; change `palette/` or the generator and rebuild.\n",
@@ -496,9 +498,10 @@ def main(argv=None) -> int:
     ap.add_argument("--accent", help="accent name from palette/accents, or #RRGGBB")
     ap.add_argument("--out", type=Path, default=HERE / "extension")
     ap.add_argument("--vsix", type=Path, help="also pack the result into this .vsix file")
+    ap.add_argument("--status-bar", choices=("plain", "accent"), default="plain")
     args = ap.parse_args(argv)
     try:
-        out = build(args.out, args.accent)
+        out = build(args.out, args.accent, args.status_bar)
     except ValueError as e:
         print(f"build.py: {e}", file=sys.stderr)
         return 2

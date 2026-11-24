@@ -3,30 +3,32 @@
  * Do not edit: re-run apps/install.sh. Loaded by an @import line at the top
  * of <profile>/chrome/userChrome.css; needs the pref
  * toolkit.legacyUserProfileCustomizations.stylesheets = true (install.sh sets
- * it in user.js). Firefox renames internals now and then; every rule here is
- * cosmetic and simply stops applying if its selector goes away.
+ * it in user.js).
+ *
+ * Black chrome, white text, one accent: the active tab is marked by an
+ * accent underline, the address field gets an accent edge while you type,
+ * menus are flat charcoal sheets. Firefox renames internals now and then;
+ * every rule is cosmetic and simply stops applying if its target goes away.
  */
 
 :root {
     --tubewm-accent: @ACCENT@;
     --tubewm-on-accent: @ON_ACCENT@;
     --tubewm-bg: @BG@;
-    --tubewm-shell: @SHELL@;
     --tubewm-surface: @SURFACE@;
-    --tubewm-surface-hi: @SURFACE_ALT@;
+    --tubewm-hover: @SURFACE_ALT@;
     --tubewm-fg: @FG@;
     --tubewm-subtle: @FG_SUBTLE@;
-    --tubewm-dim: @FG_DISABLED@;
     --tubewm-ease: cubic-bezier(0.1, 0.9, 0.2, 1);
 
     /* Firefox's own theme variables */
-    --lwt-accent-color: var(--tubewm-shell) !important;
+    --lwt-accent-color: var(--tubewm-bg) !important;
     --lwt-text-color: var(--tubewm-fg) !important;
-    --toolbar-bgcolor: var(--tubewm-shell) !important;
+    --toolbar-bgcolor: var(--tubewm-bg) !important;
     --toolbar-color: var(--tubewm-fg) !important;
     --toolbar-field-background-color: var(--tubewm-surface) !important;
     --toolbar-field-color: var(--tubewm-fg) !important;
-    --toolbar-field-focus-background-color: var(--tubewm-bg) !important;
+    --toolbar-field-focus-background-color: var(--tubewm-surface) !important;
     --toolbar-field-focus-color: var(--tubewm-fg) !important;
     --toolbar-field-focus-border-color: var(--tubewm-accent) !important;
     --toolbar-field-border-color: transparent !important;
@@ -37,37 +39,48 @@
     --arrowpanel-color: var(--tubewm-fg) !important;
     --arrowpanel-border-color: transparent !important;
     --arrowpanel-border-radius: 0 !important;
-    --panel-separator-color: var(--tubewm-surface-hi) !important;
-    --sidebar-background-color: var(--tubewm-shell) !important;
+    --panel-separator-color: var(--tubewm-hover) !important;
+    --sidebar-background-color: var(--tubewm-bg) !important;
     --sidebar-text-color: var(--tubewm-fg) !important;
     --focus-outline-color: var(--tubewm-accent) !important;
     --toolbarbutton-border-radius: 0 !important;
     --tab-border-radius: 0 !important;
     --border-radius-small: 0 !important;
     --border-radius-medium: 0 !important;
-    --toolbarbutton-hover-background: var(--tubewm-surface-hi) !important;
-    --toolbarbutton-active-background: var(--tubewm-accent) !important;
+    --toolbarbutton-hover-background: var(--tubewm-hover) !important;
+    --toolbarbutton-active-background: var(--tubewm-hover) !important;
     --urlbarView-highlight-background: var(--tubewm-accent) !important;
     --urlbarView-highlight-color: var(--tubewm-on-accent) !important;
-    --chrome-content-separator-color: var(--tubewm-shell) !important;
+    --chrome-content-separator-color: var(--tubewm-bg) !important;
+    font-family: "@FONT_UI@", "Noto Sans", sans-serif;
 }
 
-/* geometry: square and shadowless */
-#navigator-toolbox *,
-menupopup, panel, #urlbar, #urlbar-background {
-    border-radius: 0 !important;
-    box-shadow: none !important;
-}
 #navigator-toolbox { border-bottom: 0 !important; }
+#urlbar-background, menupopup, panel { border-radius: 0 !important; }
+menupopup, panel { --panel-shadow-margin: 0px !important; }
 
-/* tabs as a pivot row: lowercase light labels, the active one bright with
-   an accent rule, inactive ones dim with grey favicons */
+/* tabs: plain text, secondary grey when inactive, white and underlined in
+   the accent when active */
 .tabbrowser-tab .tab-background {
     background: transparent !important;
     border: 0 !important;
     outline: 0 !important;
+    box-shadow: none !important;
 }
-/* close button: clearly visible, white when pointed at */
+.tabbrowser-tab .tab-label {
+    color: var(--tubewm-subtle);
+    transition: color 120ms var(--tubewm-ease);
+}
+.tabbrowser-tab:hover .tab-label,
+.tabbrowser-tab[selected] .tab-label {
+    color: var(--tubewm-fg) !important;
+}
+.tabbrowser-tab[selected] .tab-label { font-weight: 600; }
+.tabbrowser-tab[selected] .tab-background {
+    box-shadow: inset 0 -2px 0 var(--tubewm-accent) !important;
+}
+
+/* close button: always clear, white when pointed at */
 .tabbrowser-tab .tab-close-button {
     fill: var(--tubewm-subtle) !important;
     fill-opacity: 1 !important;
@@ -76,30 +89,12 @@ menupopup, panel, #urlbar, #urlbar-background {
 .tabbrowser-tab[selected] .tab-close-button,
 .tabbrowser-tab .tab-close-button:hover {
     fill: var(--tubewm-fg) !important;
-    background: var(--tubewm-surface-hi) !important;
 }
-.tabbrowser-tab .tab-label {
-    text-transform: lowercase;
-    font-weight: 300;
-    color: var(--tubewm-subtle);
-    transition: color 120ms var(--tubewm-ease);
-}
-.tabbrowser-tab:hover .tab-label { color: var(--tubewm-fg); }
-.tabbrowser-tab[selected] .tab-label,
-.tabbrowser-tab[visuallyselected] .tab-label {
-    color: var(--tubewm-fg) !important;
-    font-weight: 400;
-}
-.tabbrowser-tab[selected] .tab-background,
-.tabbrowser-tab[visuallyselected] .tab-background {
-    box-shadow: inset 0 -2px 0 var(--tubewm-accent) !important;
-}
-.tabbrowser-tab:not([selected], [visuallyselected]) .tab-icon-image {
-    filter: grayscale(1);
-    opacity: 0.75;
+.tabbrowser-tab .tab-close-button:hover {
+    background: var(--tubewm-hover) !important;
 }
 
-/* address bar: flat field, accent border only while focused */
+/* address field: flat, with a 2px accent edge while you type */
 #urlbar-background {
     border: 2px solid transparent !important;
     transition: border-color 120ms var(--tubewm-ease);
@@ -109,22 +104,13 @@ menupopup, panel, #urlbar, #urlbar-background {
     border-color: var(--tubewm-accent) !important;
 }
 
-/* menus and panels slide in with a short turnstile */
-menupopup, panel {
-    --panel-border-radius: 0 !important;
-    --panel-shadow-margin: 0 !important;
-}
-menupopup menuitem:hover,
-menupopup menu:hover,
+/* menus: flat sheets; the item under the pointer is filled with the accent */
 menupopup menuitem[_moz-menuactive],
 menupopup menu[_moz-menuactive] {
     background: var(--tubewm-accent) !important;
     color: var(--tubewm-on-accent) !important;
 }
 
-/* the loading throbber line under the active tab */
-.tab-throbber[busy]::before { fill: var(--tubewm-accent) !important; }
-
 @media (prefers-reduced-motion: reduce) {
-    * { transition: none !important; animation: none !important; }
+    * { transition: none !important; }
 }

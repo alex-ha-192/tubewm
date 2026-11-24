@@ -1,0 +1,31 @@
+# tubewm Metro for lazygit (generated, accent @ACCENT@). Do not edit: re-run apps/install.sh.
+gui:
+  border: single
+  nerdFontsVersion: ""
+  theme:
+    activeBorderColor:
+      - "@ACCENT_TEXT@"
+      - bold
+    inactiveBorderColor:
+      - "@FG_DISABLED@"
+    searchingActiveBorderColor:
+      - "@WARNING@"
+      - bold
+    optionsTextColor:
+      - "@FG_SUBTLE@"
+    selectedLineBgColor:
+      - "@SURFACE_ALT@"
+    inactiveViewSelectedLineBgColor:
+      - "@SURFACE@"
+    cherryPickedCommitFgColor:
+      - "@ACCENT_TEXT@"
+    cherryPickedCommitBgColor:
+      - "@SURFACE@"
+    markedBaseCommitFgColor:
+      - "@ACCENT_TEXT@"
+    markedBaseCommitBgColor:
+      - "@SURFACE@"
+    unstagedChangesColor:
+      - "@SYN_ERROR@"
+    defaultFgColor:
+      - "@FG@"
