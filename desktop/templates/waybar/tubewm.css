@@ -110,3 +110,65 @@ tooltip label { color: @FG@; padding: 4px 6px; }
     padding: 0 22px 4px 8px;
 }
 
+
+/* Desktops under Wayfire (tube-desktops): the same big lowercase names. */
+#custom-desktop-1,
+#custom-desktop-2,
+#custom-desktop-3,
+#custom-desktop-4,
+#custom-desktop-5,
+#custom-desktop-6,
+#custom-desktop-7,
+#custom-desktop-8,
+#custom-desktop-9,
+#custom-desktop-10,
+#custom-desktop-new {
+    font-size: 30px;
+    font-weight: 300;
+    color: @SUBTLE@;
+    padding: 0 9px 4px 9px;
+    transition: color 150ms ease-out;
+}
+#custom-desktop-new { color: #6E6E6E; font-size: 26px; padding: 0 12px 4px 12px; }
+#custom-desktop-new:hover { color: @FG@; }
+#custom-desktop-1:hover,
+#custom-desktop-2:hover,
+#custom-desktop-3:hover,
+#custom-desktop-4:hover,
+#custom-desktop-5:hover,
+#custom-desktop-6:hover,
+#custom-desktop-7:hover,
+#custom-desktop-8:hover,
+#custom-desktop-9:hover,
+#custom-desktop-10:hover {
+    color: #D0D0D0;
+}
+#custom-desktop-1.current,
+#custom-desktop-2.current,
+#custom-desktop-3.current,
+#custom-desktop-4.current,
+#custom-desktop-5.current,
+#custom-desktop-6.current,
+#custom-desktop-7.current,
+#custom-desktop-8.current,
+#custom-desktop-9.current,
+#custom-desktop-10.current {
+    color: @FG@;
+}
+#custom-desktop-1.empty,
+#custom-desktop-2.empty,
+#custom-desktop-3.empty,
+#custom-desktop-4.empty,
+#custom-desktop-5.empty,
+#custom-desktop-6.empty,
+#custom-desktop-7.empty,
+#custom-desktop-8.empty,
+#custom-desktop-9.empty,
+#custom-desktop-10.empty {
+    color: #B0B0B0;
+}
+
+#window {
+    color: #B0B0B0;
+    padding: 0 0 0 28px;
+}

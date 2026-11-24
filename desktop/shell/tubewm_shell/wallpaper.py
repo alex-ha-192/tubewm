@@ -170,8 +170,33 @@ def current():
         return None
 
 
+def show():
+    """Under Wayfire the wallpaper is a swaybg process; (re)start it."""
+    if not os.environ.get("WAYFIRE_SOCKET") or not common.have("swaybg"):
+        return
+    pidfile = os.path.join(common.RUNTIME, "tubewm-swaybg.pid")
+    try:
+        with open(pidfile) as fh:
+            os.kill(int(fh.read().strip()), 15)
+    except (OSError, ValueError):
+        pass
+    if os.path.exists(OFF) or not os.path.exists(OUT):
+        return
+    proc = subprocess.Popen(["swaybg", "-m", "fill", "-i", OUT], start_new_session=True,
+                            stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+    with open(pidfile, "w") as fh:
+        fh.write(str(proc.pid))
+
+
 def biggest_output():
     import json
+    from . import wm
+    if wm.WAYFIRE:
+        sizes = [((o.get("geometry") or {}).get("width", 0), (o.get("geometry") or {}).get("height", 0))
+                 for o in wm._wf_outputs()]
+        sizes = [s for s in sizes if s[0] and s[1]]
+        if sizes:
+            return max(sizes, key=lambda s: s[0] * s[1])
     try:
         outs = json.loads(common.sh("swaymsg -r -t get_outputs") or "[]")
         sizes = [(o["current_mode"]["width"], o["current_mode"]["height"])
@@ -200,12 +225,13 @@ def apply(style, reload=True):
     if os.environ.get("SWAYSOCK") and common.have("swaymsg"):
         # Set it straight away; a full reload isn't needed.
         subprocess.run(["swaymsg", "-q", "output", "*", "bg", OUT, "fill"], check=False)
+    show()
 
 
 def main(argv=None):
     parser = argparse.ArgumentParser(prog="tube-wallpaper",
                                      description="Minimal wallpapers drawn from the accent colour.")
-    parser.add_argument("style", nargs="?", help="a style name, 'list', 'off', or 'refresh'")
+    parser.add_argument("style", nargs="?", help="a style name, 'list', 'off', 'refresh', or 'show' (start it under Wayfire)")
     parser.add_argument("--preview", metavar="DIR",
                         help="write a small PNG of every style into DIR and exit")
     args = parser.parse_args(argv)
@@ -231,6 +257,10 @@ def main(argv=None):
         open(OFF, "w").close()
         if os.environ.get("SWAYSOCK"):
             subprocess.run(["swaymsg", "-q", "reload"], check=False)
+        show()
+        return 0
+    if args.style == "show":
+        show()
         return 0
     if args.style == "refresh":
         cur = current()

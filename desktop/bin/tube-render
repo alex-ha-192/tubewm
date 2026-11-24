@@ -87,4 +87,10 @@ if [ -f "$foot_ini" ] && command -v foot >/dev/null 2>&1 \
     mv -f "$tmp" "$foot_ini"
 fi
 
+# Wayfire's config is built by a script of its own (it merges your
+# ~/.config/tubewm/wayfire.ini on top); only when Wayfire is installed.
+if command -v wayfire >/dev/null 2>&1 && [ -x "$TUBEWM_HOME/desktop/bin/tube-wayfire-config" ]; then
+    "$TUBEWM_HOME/desktop/bin/tube-wayfire-config" --quiet || echo "tube-render: wayfire.ini not written" >&2
+fi
+
 [ "$quiet" = 1 ] || echo "tube-render: wrote $count files with accent $TUBEWM_ACCENT"

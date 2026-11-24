@@ -1,0 +1,226 @@
+# tubewm for Wayfire.
+#
+# tube-render writes ~/.config/wayfire.ini from this file every time the
+# accent or the keyboard layout changes, so edits to wayfire.ini are lost.
+# Put your own settings in ~/.config/tubewm/wayfire.ini instead: any
+# [section] and key there is merged on top of this file.
+#
+# Wayfire reloads the file by itself; nothing needs restarting.
+
+[core]
+plugins = \
+  alpha animate autostart command decoration expo fast-switcher foreign-toplevel \
+  grid gtk-shell idle ipc ipc-rules move place resize session-lock \
+  shortcuts-inhibit vswipe vswitch wayfire-shell window-rules wm-actions \
+  xdg-activation
+# Each desktop is a column. tube-desktops shows the ones in use on the bar.
+vwidth = @COLUMNS@
+vheight = 1
+background_color = @SHELL_RGBA@
+# Title bars on every app that will take them: something to grab with the mouse.
+preferred_decoration_mode = server
+close_top_view = <super> KEY_W | <alt> KEY_F4
+xwayland = true
+
+[input]
+xkb_layout = @XKB_LAYOUT@
+xkb_variant = @XKB_VARIANT@
+xkb_options = @XKB_OPTIONS@
+kb_repeat_delay = 300
+kb_repeat_rate = 40
+kb_numlock_default_state = true
+# A tap on Super alone opens start; this is how long a "tap" may last.
+modifier_binding_timeout = 400
+tap_to_click = true
+natural_scroll = true
+tap_and_drag = true
+disable_touchpad_while_typing = true
+middle_emulation = true
+click_method = clickfinger
+cursor_theme = default
+cursor_size = 24
+
+# ── windows ────────────────────────────────────────────────────────────────
+
+[decoration]
+font = Open Sans
+font_color = @FG_RGBA@
+title_height = 32
+border_size = 2
+button_order = minimize maximize close
+active_color = @ACCENT_RGBA@
+inactive_color = @SURFACE_RGBA@
+
+[move]
+# Drag a window by its title bar (or Super + drag anywhere in it).
+activate = <super> BTN_LEFT
+# Drop it on the left or right edge for half the screen, on a corner for a
+# quarter, on the top edge to fill the screen. Drag it off again to restore.
+enable_snap = true
+snap_threshold = 16
+quarter_snap_threshold = 80
+enable_snap_off = true
+snap_off_threshold = 24
+join_views = false
+preview_base_color = @ACCENT_A40@
+preview_base_border = @ACCENT_RGBA@
+preview_border_width = 2
+workspace_switch_after = 600
+
+[resize]
+activate = <super> BTN_RIGHT
+
+[grid]
+duration = 220ms circle
+type = crossfade
+slot_l = <super> KEY_LEFT
+slot_r = <super> KEY_RIGHT
+slot_c = <super> KEY_UP
+restore = <super> KEY_DOWN
+slot_tl = none
+slot_tr = none
+slot_bl = none
+slot_br = none
+slot_t = none
+slot_b = none
+
+[place]
+mode = center
+
+[wm-actions]
+toggle_fullscreen = <super> KEY_F
+toggle_maximize = <super> KEY_M
+minimize = <super> KEY_H
+toggle_always_on_top = <super> KEY_T
+toggle_showdesktop = <super> KEY_D
+
+# ── motion ─────────────────────────────────────────────────────────────────
+
+[animate]
+open_animation = zoom
+close_animation = fade
+minimize_animation = squeezimize
+duration = 220ms circle
+startup_duration = 400ms circle
+zoom_duration = 240ms circle
+fade_duration = 180ms linear
+squeezimize_duration = 260ms circle
+# The bar, start and charms animate themselves.
+enabled_for = (type equals "toplevel" | (type equals "x-or" & focusable equals true))
+fade_enabled_for = type equals "overlay"
+zoom_enabled_for = none
+
+[vswitch]
+duration = 320ms circle
+gap = 0
+background = @SHELL_RGBA@
+wraparound = false
+binding_left = <super> <ctrl> KEY_LEFT | <super> KEY_PAGEUP
+binding_right = <super> <ctrl> KEY_RIGHT | <super> KEY_PAGEDOWN
+binding_up = none
+binding_down = none
+binding_last = <super> KEY_GRAVE
+with_win_left = <super> <ctrl> <shift> KEY_LEFT
+with_win_right = <super> <ctrl> <shift> KEY_RIGHT
+with_win_up = none
+with_win_down = none
+with_win_last = none
+send_win_left = none
+send_win_right = none
+send_win_up = none
+send_win_down = none
+send_win_last = none
+@DESKTOP_BINDINGS@
+
+[vswipe]
+enable_horizontal = true
+enable_vertical = false
+enable_smooth_transition = true
+fingers = 3
+duration = 260ms circle
+background = @SHELL_RGBA@
+gap = 0
+
+# Every desktop side by side (Super+Tab); drag windows between them.
+[expo]
+toggle = <super> KEY_TAB
+background = @SHELL_RGBA@
+duration = 300ms circle
+offset = 16
+inactive_brightness = 0.6
+keyboard_interaction = true
+
+[fast-switcher]
+activate = <alt> KEY_TAB
+activate_backward = <alt> <shift> KEY_TAB
+inactive_alpha = 0.5
+
+# ── shell ──────────────────────────────────────────────────────────────────
+
+[command]
+# Tap Super on its own for start.
+binding_start = <super>
+command_start = ~/.local/bin/tube-start
+binding_start_key = <super> KEY_S
+command_start_key = ~/.local/bin/tube-start
+binding_apps = <super> KEY_A
+command_apps = ~/.local/bin/tube-start --apps
+binding_search = <super> KEY_Q
+command_search = ~/.local/bin/tube-start --search
+binding_charms = <super> KEY_C
+command_charms = ~/.local/bin/tube-charms
+binding_settings = <super> KEY_I
+command_settings = ~/.local/bin/tube-charms --settings
+binding_power = <super> <shift> KEY_E
+command_power = ~/.local/bin/tube-charms --power
+binding_terminal = <super> KEY_ENTER
+command_terminal = foot
+binding_files = <super> KEY_E | <super> KEY_F2
+command_files = xdg-open ~
+binding_lock = <super> KEY_L
+command_lock = loginctl lock-session
+binding_shot = KEY_SYSRQ
+command_shot = ~/.local/bin/tube-share screen
+binding_shot_region = <shift> KEY_SYSRQ | <super> <shift> KEY_S
+command_shot_region = ~/.local/bin/tube-share region
+
+repeatable_binding_volup = KEY_VOLUMEUP
+command_volup = ~/.local/bin/tube-osd volume up
+repeatable_binding_voldown = KEY_VOLUMEDOWN
+command_voldown = ~/.local/bin/tube-osd volume down
+repeatable_binding_lightup = KEY_BRIGHTNESSUP
+command_lightup = ~/.local/bin/tube-osd brightness up
+repeatable_binding_lightdown = KEY_BRIGHTNESSDOWN
+command_lightdown = ~/.local/bin/tube-osd brightness down
+
+# These also work on the lock screen.
+always_binding_mute = KEY_MUTE
+command_mute = ~/.local/bin/tube-osd volume mute
+always_binding_micmute = KEY_MICMUTE
+command_micmute = ~/.local/bin/tube-osd mic mute
+always_binding_play = KEY_PLAYPAUSE
+command_play = playerctl play-pause
+always_binding_next = KEY_NEXTSONG
+command_next = playerctl next
+always_binding_prev = KEY_PREVIOUSSONG
+command_prev = playerctl previous
+
+# Lock and screen-off. The lid and suspend are handled by tube-idle (swayidle),
+# so that the screen is always locked before the laptop sleeps.
+[idle]
+toggle = none
+screensaver_timeout = -1
+# The screen turns off after 10 minutes; tube-idle dims and locks before that.
+dpms_timeout = 600
+disable_on_fullscreen = true
+
+[autostart]
+autostart_wf_shell = false
+0_env = dbus-update-activation-environment --systemd WAYLAND_DISPLAY XDG_CURRENT_DESKTOP=wayfire XDG_SESSION_TYPE=wayland WAYFIRE_SOCKET
+desktops = ~/.local/bin/tube-desktops daemon
+# The Wayfire bar layout ships with tubewm; its look is the same style.css.
+bar = waybar -c ~/.local/share/tubewm/desktop/config/waybar/wayfire.jsonc -s ~/.config/waybar/style.css
+notifications = mako
+wallpaper = ~/.local/bin/tube-wallpaper show
+idle = ~/.local/bin/tube-idle
+start = ~/.local/bin/tube-start
