@@ -1,0 +1,75 @@
+name: ci
+
+# Validates every config tubewm generates with the real, current tools from
+# Arch Linux (the same packages a CachyOS / Arch user gets), and boots a
+# headless sway session the way a display manager would.
+#
+# Runs on every push and PR, and weekly, so a new upstream release that
+# starts rejecting a config (as foot 1.22 did) shows up here before it shows
+# up on a laptop. Run the same checks locally with tests/ci/in-arch.sh.
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  schedule:
+    - cron: "17 6 * * 1"   # Mondays, 06:17 UTC
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  arch:
+    name: configs on current Arch
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    container:
+      image: archlinux:latest
+      # Arch's sway binary carries cap_sys_nice; without it in the bounding
+      # set, exec fails with "Operation not permitted".
+      options: --cap-add SYS_NICE
+    steps:
+      - name: git (so checkout keeps .git)
+        run: pacman -Syu --noconfirm --needed git
+
+      - uses: actions/checkout@v4
+
+      - name: packages
+        run: |
+          git config --global --add safe.directory "$GITHUB_WORKSPACE"
+          tests/ci/arch-deps.sh
+
+      - name: lint (shellcheck, pyflakes, JSON/TOML)
+        if: ${{ !cancelled() }}
+        run: tests/ci/lint.sh
+
+      - name: unit tests
+        if: ${{ !cancelled() }}
+        run: python3 -m pytest -q apps/tests
+
+      - name: desktop configs (foot, sway, fuzzel, swaylock, GTK CSS)
+        if: ${{ !cancelled() }}
+        run: tests/ci/check-desktop.sh
+
+      - name: app themes (tmux, neovim, mpv, kitty, helix)
+        if: ${{ !cancelled() }}
+        run: tests/ci/check-apps.sh
+
+      - name: headless session, display-manager PATH
+        if: ${{ !cancelled() }}
+        env:
+          SMOKE_LOG_OUT: ${{ runner.temp }}/session.log
+        run: tests/ci/smoke-session.sh
+
+      - name: keep the session log
+        if: ${{ failure() }}
+        uses: actions/upload-artifact@v4
+        with:
+          name: session-log
+          path: ${{ runner.temp }}/session.log
+          if-no-files-found: ignore
