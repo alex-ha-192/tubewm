@@ -31,6 +31,46 @@ artwork.
 | **Apps** | GTK 3/4 squared off and accent-coloured, foot terminal on a full-bleed black canvas, no title-bar buttons. | gtk.css, gsettings, foot |
 | **Accent** | One command recolours everything above, plus any hooks in `~/.config/tubewm/accent.d/` (the VS Code and Vivaldi themes in `apps/` use this). | `tube-accent` |
 
+## Wayfire: the mouse-first desktop
+
+If Wayfire is installed, tubewm also runs on it, and that is the one to use
+day to day. Everything is a click away; keys are extras.
+
+* **Windows** have title bars with minimise, maximise and close. Drag one by
+  its title bar to the left or right edge for half the screen, into a corner
+  for a quarter, to the top to fill it. An accent outline shows where it will
+  land. Drag it away again to restore it.
+* **Desktops** look after themselves. There is always a spare `+` at the end
+  of the bar. Open something there and it becomes a desktop named after it
+  (`web`, `code`, `music`, `web 2`…). Leave a desktop empty and it goes away.
+  Right-click a name to rename it, keep it, move it or close it. Three
+  fingers sideways on the touchpad slide between desktops.
+* **The bar**: click the volume, brightness, battery, network, date or clock
+  for a panel that drops down under it; click the window title for what you
+  can do with that window. The tray is on the right.
+* **Start**: tap the Windows key on its own, or click the accent square.
+* **Away from the laptop**: after 4 minutes the screen dims, at 5 it locks,
+  at 10 it turns off. Closing the lid locks, then sleeps.
+* **Motion**: windows zoom open and fade closed, minimise into place, and
+  desktops slide.
+
+| Keys (optional) | |
+|---|---|
+| Windows key | start |
+| Super+←/→, ↑, ↓ | snap left/right, maximise, restore |
+| Super+1…0 | go to that desktop (Shift: take the window) |
+| Super+Tab | every desktop side by side; drag windows between them |
+| Alt+Tab | switch windows |
+| Super+W / Alt+F4 | close the window |
+| Super+Enter, Super+E | terminal, files |
+| Super+L | lock |
+| Print, Shift+Print | screenshot, of a region |
+
+Your own Wayfire settings go in `~/.config/tubewm/wayfire.ini`; they are
+merged on top of tubewm's when `tube-render` writes `~/.config/wayfire.ini`.
+The keyboard layout comes from `~/.config/tubewm/keyboard` (the installer
+asks), otherwise from the system.
+
 ## Install
 
 ```sh
