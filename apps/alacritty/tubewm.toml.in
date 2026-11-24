@@ -1,0 +1,63 @@
+# tubewm Metro for Alacritty (generated, accent @ACCENT@). Do not edit: re-run apps/install.sh.
+# Imported from alacritty.toml:  [general] import = ["~/.config/alacritty/tubewm.toml"]
+
+[window]
+decorations = "None"
+padding = { x = 20, y = 20 }
+dynamic_padding = true
+
+[cursor]
+style = { shape = "Beam", blinking = "Never" }
+thickness = 0.15
+
+[colors.primary]
+foreground = "@FG@"
+background = "@BG@"
+
+[colors.cursor]
+text = "@ON_ACCENT@"
+cursor = "@ACCENT@"
+
+[colors.selection]
+text = "@ON_ACCENT@"
+background = "@ACCENT@"
+
+[colors.search.matches]
+foreground = "@ON_ACCENT@"
+background = "@ACCENT@"
+
+[colors.search.focused_match]
+foreground = "@BG@"
+background = "@FG@"
+
+[colors.footer_bar]
+foreground = "@ON_ACCENT@"
+background = "@ACCENT@"
+
+[colors.hints.start]
+foreground = "@ON_ACCENT@"
+background = "@ACCENT@"
+
+[colors.hints.end]
+foreground = "@FG@"
+background = "@SURFACE@"
+
+[colors.normal]
+black = "@ANSI0@"
+red = "@ANSI1@"
+green = "@ANSI2@"
+yellow = "@ANSI3@"
+blue = "@ANSI4@"
+magenta = "@ANSI5@"
+cyan = "@ANSI6@"
+white = "@ANSI7@"
+
+[colors.bright]
+black = "@ANSI8@"
+red = "@ANSI9@"
+green = "@ANSI10@"
+yellow = "@ANSI11@"
+blue = "@ANSI12@"
+magenta = "@ANSI13@"
+cyan = "@ANSI14@"
+white = "@ANSI15@"

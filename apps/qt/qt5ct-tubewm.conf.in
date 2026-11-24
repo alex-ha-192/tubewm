@@ -1,0 +1,6 @@
+# tubewm Metro palette for qt5ct (generated). Do not edit: re-run apps/install.sh.
+# Roles: WindowText, Button, Light, Midlight, Dark, Mid, Text, BrightText, ButtonText, Base, Window, Shadow, Highlight, HighlightedText, Link, LinkVisited, AlternateBase, NoRole, ToolTipBase, ToolTipText, PlaceholderText
+[ColorScheme]
+active_colors=@FG.argb@, @SURFACE.argb@, @SURFACE_ALT.argb@, @SURFACE_ALT.argb@, @SHELL.argb@, @BORDER.argb@, @FG.argb@, @FG.argb@, @FG.argb@, @BG.argb@, @SHELL.argb@, @SHELL.argb@, @ACCENT.argb@, @ON_ACCENT.argb@, @ACCENT_TEXT.argb@, @ACCENT_TEXT.argb@, @SURFACE.argb@, @SHELL.argb@, @SURFACE.argb@, @FG.argb@, @FG_DISABLED.argb@
+disabled_colors=@FG_DISABLED.argb@, @SURFACE.argb@, @SURFACE_ALT.argb@, @SURFACE_ALT.argb@, @SHELL.argb@, @BORDER.argb@, @FG_DISABLED.argb@, @FG_DISABLED.argb@, @FG_DISABLED.argb@, @BG.argb@, @SHELL.argb@, @SHELL.argb@, @SURFACE_ALT.argb@, @FG_DISABLED.argb@, @ACCENT_TEXT.argb@, @ACCENT_TEXT.argb@, @SURFACE.argb@, @SHELL.argb@, @SURFACE.argb@, @FG.argb@, @FG_DISABLED.argb@
+inactive_colors=@FG.argb@, @SURFACE.argb@, @SURFACE_ALT.argb@, @SURFACE_ALT.argb@, @SHELL.argb@, @BORDER.argb@, @FG.argb@, @FG.argb@, @FG.argb@, @BG.argb@, @SHELL.argb@, @SHELL.argb@, @ACCENT.argb@, @ON_ACCENT.argb@, @ACCENT_TEXT.argb@, @ACCENT_TEXT.argb@, @SURFACE.argb@, @SHELL.argb@, @SURFACE.argb@, @FG.argb@, @FG_DISABLED.argb@

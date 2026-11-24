@@ -1,0 +1,27 @@
+# tubewm Metro for mpv (generated, accent @ACCENT@). Do not edit: re-run apps/install.sh.
+# Pulled in by an `include="~~/tubewm.conf"` line in mpv.conf.
+
+osd-font="@FONT_UI@"
+osd-font-size=36
+osd-color="@FG@"
+osd-border-color="#000000"
+osd-border-size=1.5
+osd-shadow-offset=0
+osd-bar-align-y=0.9
+osd-bar-h=1.5
+osd-bar-w=60
+osd-margin-x=40
+osd-margin-y=32
+background-color="@BG@"
+sub-font="@FONT_UI@"
+sub-color="@FG@"
+sub-border-color="#000000"
+sub-border-size=2
+sub-shadow-offset=0
+# the built-in controller: a flat bar, accent progress, no rounded box
+script-opts-append=osc-layout=bottombar
+script-opts-append=osc-seekbarstyle=bar
+script-opts-append=osc-boxalpha=0
+script-opts-append=osc-seekbarfg_color=@ACCENT@
+script-opts-append=osc-seekbarbg_color=@SURFACE_ALT@
+script-opts-append=osc-font=@FONT_UI@

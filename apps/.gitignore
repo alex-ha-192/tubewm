@@ -1,0 +1,4 @@
+# build outputs; install.sh regenerates them for the chosen accent
+vscode/extension/
+vivaldi/dist/
+__pycache__/

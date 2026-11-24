@@ -1,0 +1,31 @@
+# tubewm Metro for tmux (generated, accent @ACCENT@). Do not edit: re-run apps/install.sh.
+# Sourced from tmux.conf:  source-file ~/.config/tmux/tubewm.conf
+# The status line is the accent strip; window names are a lowercase pivot.
+
+set -g status-position bottom
+set -g status-justify left
+set -g status-style "bg=@ACCENT@,fg=@ON_ACCENT@"
+set -g status-left " #{=12:session_name}  "
+set -g status-left-style "bg=@ACCENT@,fg=@ON_ACCENT@,bold"
+set -g status-right " %H:%M "
+set -g status-right-style "bg=@ACCENT@,fg=@ON_ACCENT@"
+set -g window-status-format " #W "
+set -g window-status-current-format " #W "
+set -g window-status-style "bg=@ACCENT@,fg=@ON_ACCENT@,dim"
+set -g window-status-current-style "bg=@ACCENT@,fg=@ON_ACCENT@,bold"
+set -g window-status-separator ""
+set -g pane-border-style "fg=@SHELL@"
+set -g pane-active-border-style "fg=@ACCENT@"
+set -g pane-border-lines heavy
+set -g message-style "bg=@SURFACE@,fg=@FG@"
+set -g message-command-style "bg=@SURFACE@,fg=@ACCENT_TEXT@"
+set -g mode-style "bg=@ACCENT@,fg=@ON_ACCENT@"
+set -g copy-mode-match-style "bg=@SELECTION@,fg=@FG@"
+set -g copy-mode-current-match-style "bg=@ACCENT@,fg=@ON_ACCENT@"
+set -g clock-mode-colour "@ACCENT@"
+set -g display-panes-active-colour "@ACCENT@"
+set -g display-panes-colour "@FG_DISABLED@"
+set -g menu-style "bg=@SURFACE@,fg=@FG@"
+set -g menu-selected-style "bg=@ACCENT@,fg=@ON_ACCENT@"
+set -g menu-border-style "fg=@SURFACE@"
+set -g popup-border-style "fg=@ACCENT@"

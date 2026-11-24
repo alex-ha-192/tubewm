@@ -1,0 +1,253 @@
+/*
+ * tubewm Metro: Vivaldi UI modifications.            accent @ACCENT@
+ *
+ * Generated from apps/vivaldi/metro.css.in by build.py; edit the template.
+ *
+ * Vivaldi only loads this when CSS modifications are allowed:
+ *   1. open vivaldi://experiments and tick "Allow for using CSS modifications"
+ *   2. Settings > Appearance > Custom UI Modifications > select this folder
+ *      (install.sh sets the folder for you when Vivaldi is closed)
+ *   3. restart Vivaldi
+ *
+ * Vivaldi's UI class names change between releases. Every rule here is
+ * cosmetic, so a rule that stops matching just stops applying; nothing
+ * breaks. The colours also live in the theme, so the browser still looks
+ * right with this file disabled, just with rounder corners.
+ */
+
+:root {
+    --tubewm-accent: @ACCENT@;
+    --tubewm-on-accent: @ON_ACCENT@;
+    --tubewm-bg: @BG@;
+    --tubewm-shell: @SHELL@;
+    --tubewm-surface: @SURFACE@;
+    --tubewm-surface-hi: @SURFACE_ALT@;
+    --tubewm-fg: @FG@;
+    --tubewm-subtle: @FG_SUBTLE@;
+    --tubewm-dim: @FG_DISABLED@;
+    --tubewm-ui-font: "Open Sans", "Noto Sans", "DejaVu Sans", sans-serif;
+    --tubewm-ease: cubic-bezier(0.1, 0.9, 0.2, 1);
+}
+
+/* In light polarity, swap the neutrals. Vivaldi marks the window when its
+   theme is light, so this follows Settings > Themes and the OS schedule. */
+#browser.theme-light {
+    --tubewm-bg: @L_BG@;
+    --tubewm-shell: @L_SHELL@;
+    --tubewm-surface: @L_SURFACE@;
+    --tubewm-surface-hi: @L_SURFACE_ALT@;
+    --tubewm-fg: @L_FG@;
+    --tubewm-subtle: @L_FG_SUBTLE@;
+    --tubewm-dim: @L_FG_DISABLED@;
+}
+
+/* --- geometry: square, flat, shadowless ---------------------------------- */
+#browser,
+#browser * {
+    border-radius: 0 !important;
+    box-shadow: none !important;
+    text-shadow: none !important;
+}
+#browser {
+    font-family: var(--tubewm-ui-font);
+    --radius: 0px;
+    --radiusHalf: 0px;
+    --radiusCap: 0px;
+    --radiusRounded: 0px;
+    --radiusRoundedHalf: 0px;
+}
+
+/* --- tabs as a pivot: lowercase labels, no boxes, the active one bright ---- */
+#tabs-container,
+#tabs-tabbar-container {
+    background: var(--tubewm-shell) !important;
+}
+#browser .tab-position .tab,
+#browser .tab-position .tab:hover {
+    background: transparent !important;
+    border: 0 !important;
+}
+#browser .tab-position .tab .title {
+    text-transform: lowercase;
+    font-size: 14px;
+    font-weight: 300;
+    letter-spacing: 0;
+    color: var(--tubewm-dim);
+    transition: color 120ms var(--tubewm-ease);
+}
+#browser .tab-position .tab:hover .title {
+    color: var(--tubewm-subtle);
+}
+#browser .tab-position .tab.active .title {
+    color: var(--tubewm-fg);
+    font-weight: 400;
+}
+/* a thin accent mark under the active tab; it is the only coloured chrome */
+#browser .tab-position .tab.active {
+    box-shadow: inset 0 -2px 0 var(--tubewm-accent) !important;
+}
+#browser .tab-position .tab .favicon {
+    opacity: 0.85;
+}
+#browser .tab-position .tab:not(.active) .favicon {
+    filter: grayscale(1);
+    opacity: 0.55;
+}
+#browser .tab-position .tab .close {
+    opacity: 0;
+}
+#browser .tab-position .tab:hover .close,
+#browser .tab-position .tab.active .close {
+    opacity: 1;
+}
+/* tab stacks keep a flat accent rule instead of a pill */
+#browser .tab-position .tab .stack-counter {
+    background: var(--tubewm-accent) !important;
+    color: var(--tubewm-on-accent) !important;
+}
+
+/* --- address bar: a flat rectangle that lights up in accent when focused -- */
+#browser .toolbar-mainbar,
+#browser .mainbar,
+#browser #header {
+    background: var(--tubewm-shell) !important;
+    border: 0 !important;
+}
+#browser .UrlBar-AddressField,
+#browser .UrlBar-SearchField,
+#browser .toolbar-mainbar .SearchField {
+    background: var(--tubewm-surface) !important;
+    border: 2px solid transparent !important;
+    transition: border-color 120ms var(--tubewm-ease);
+}
+#browser .UrlBar-AddressField:focus-within,
+#browser .UrlBar-SearchField:focus-within,
+#browser .toolbar-mainbar .SearchField:focus-within {
+    border-color: var(--tubewm-accent) !important;
+    background: var(--tubewm-bg) !important;
+}
+#browser .UrlFragment-Wrapper,
+#browser .UrlBar-UrlField {
+    font-family: var(--tubewm-ui-font);
+}
+#browser .UrlFragment--Lowlight {
+    color: var(--tubewm-subtle) !important;
+}
+
+/* toolbar buttons: plain glyphs, an accent fill only while pressed */
+#browser .toolbar .button-toolbar > button:hover,
+#browser .toolbar .button-toolbar > button:focus-visible {
+    background: var(--tubewm-surface-hi) !important;
+}
+#browser .toolbar .button-toolbar > button:active,
+#browser .toolbar .button-toolbar.button-pressed > button {
+    background: var(--tubewm-accent) !important;
+    color: var(--tubewm-on-accent) !important;
+}
+
+/* --- the V menu button becomes a solid accent square, like a small tile --- */
+#browser .vivaldi {
+    background: var(--tubewm-accent) !important;
+    color: var(--tubewm-on-accent) !important;
+}
+
+/* --- panels: charcoal sheets with big light lowercase headers -------------- */
+#browser #panels-container,
+#browser #panels,
+#browser .panel-group {
+    background: var(--tubewm-surface) !important;
+    border: 0 !important;
+}
+#browser #switch {
+    background: var(--tubewm-shell) !important;
+}
+#browser #switch button.active {
+    box-shadow: inset 2px 0 0 var(--tubewm-accent) !important;
+}
+#browser .panel header h1,
+#browser .panel .panel-header h1,
+#browser .panel-header h1 {
+    text-transform: lowercase;
+    font-size: 28px;
+    font-weight: 300;
+    letter-spacing: 0;
+    line-height: 1.2;
+}
+
+/* --- menus and popups: flat sheets, accent-filled selection --------------- */
+#browser .menu,
+#browser .menubar-menu,
+#browser .vivaldi-menu,
+#browser .context-menu,
+.menu-container,
+#browser .UrlBar-Popup,
+#browser .OmniDropdown {
+    background: var(--tubewm-surface) !important;
+    border: 0 !important;
+    font-family: var(--tubewm-ui-font);
+    transform-origin: left top;
+    animation: tubewm-turnstile 170ms var(--tubewm-ease);
+}
+#browser .menu .menu-item:hover,
+#browser .menu .menu-item.focus,
+#browser .context-menu .menu-item:hover,
+.menu-container .menu-item:hover,
+#browser .OmniDropdown .OmniLinkItem--Selected,
+#browser .OmniDropdown .OmniLinkItem:hover {
+    background: var(--tubewm-accent) !important;
+    color: var(--tubewm-on-accent) !important;
+}
+
+/* --- status bar: a quiet strip; the progress bar carries the accent ------- */
+#browser .toolbar-statusbar {
+    background: var(--tubewm-shell) !important;
+    border: 0 !important;
+}
+#browser .progress-bar,
+#browser .loading-progress {
+    background: var(--tubewm-accent) !important;
+}
+
+/* --- start page: speed dials as solid tiles with bottom-left labels ------- */
+.startpage {
+    background: var(--tubewm-bg) !important;
+}
+.startpage .dial,
+.startpage .SpeedDialView .dial {
+    background: var(--tubewm-accent) !important;
+    outline: 0 !important;
+    transition: transform 140ms var(--tubewm-ease);
+}
+.startpage .dial:hover {
+    transform: scale(0.97);
+    outline: 2px solid var(--tubewm-fg) !important;
+}
+.startpage .dial:active {
+    transform: scale(0.94);
+}
+.startpage .dial .title,
+.startpage .dial-title {
+    text-transform: lowercase;
+    text-align: left !important;
+    font-family: var(--tubewm-ui-font);
+    font-weight: 600;
+    font-size: 12px;
+}
+.startpage .startpage-navigation .button-startpage {
+    text-transform: lowercase;
+    font-size: 24px;
+    font-weight: 300;
+    color: var(--tubewm-dim);
+}
+.startpage .startpage-navigation .button-startpage.active {
+    color: var(--tubewm-fg);
+}
+
+/* --- motion -------------------------------------------------------------- */
+@keyframes tubewm-turnstile {
+    from { opacity: 0; transform: perspective(700px) rotateY(-16deg) translateX(-10px); }
+    to   { opacity: 1; transform: none; }
+}
+@media (prefers-reduced-motion: reduce) {
+    #browser *, .menu-container, .startpage * { animation: none !important; transition: none !important; }
+}

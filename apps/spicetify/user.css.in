@@ -1,0 +1,71 @@
+/*
+ * tubewm Metro for Spotify via spicetify (generated, accent @ACCENT@).
+ * The Zune look: big light lowercase headings, square everything, flat
+ * fills, the accent only where something is active. Spotify's class names
+ * change often; every rule here is cosmetic and stops applying quietly.
+ */
+:root {
+    --tubewm-ease: cubic-bezier(0.1, 0.9, 0.2, 1);
+    --border-radius-1: 0;
+    --border-radius-2: 0;
+    --border-radius-3: 0;
+}
+*, *::before, *::after {
+    border-radius: 0 !important;
+    box-shadow: none !important;
+}
+body, button, input {
+    font-family: "@FONT_UI@", "Noto Sans", sans-serif !important;
+}
+
+/* headings: huge, light and lowercase, like the Zune panorama */
+h1, .main-entityHeader-title h1, .encore-text-headline-large, .encore-text-headline-medium {
+    font-weight: 300 !important;
+    letter-spacing: -0.02em !important;
+    text-transform: lowercase;
+}
+h2, .main-shelf-title, .encore-text-title-medium, .encore-text-title-small {
+    font-weight: 300 !important;
+    text-transform: lowercase;
+}
+
+/* no gradient washes behind headers and the home page */
+.main-entityHeader-backgroundColor,
+.main-entityHeader-overlay,
+.main-actionBarBackground-background,
+.main-home-homeHeader,
+[data-testid="background-image"] {
+    background: none !important;
+    background-image: none !important;
+}
+
+/* cards as flat tiles; the art fills them edge to edge */
+.main-card-card {
+    background: var(--spice-card) !important;
+    transition: transform 140ms var(--tubewm-ease);
+}
+.main-card-card:hover { background: var(--spice-highlight) !important; }
+.main-card-card:active { transform: scale(0.97); }
+.main-card-imageContainer, .main-image-image { border-radius: 0 !important; }
+
+/* the play button is a solid accent square */
+.main-playButton-PlayButton button, .encore-bright-accent-set {
+    --background-base: var(--spice-button) !important;
+    --background-highlight: var(--spice-button-active) !important;
+}
+
+/* now-playing bar: a thin accent progress line */
+.playback-bar .progress-bar {
+    --fg-color: var(--spice-button) !important;
+    --bg-color: var(--spice-misc) !important;
+}
+
+/* lists: no row pills; the playing row is marked by accent text */
+.main-trackList-trackListRow:hover { background: var(--spice-highlight) !important; }
+.main-trackList-playingIcon, .main-trackList-active .main-trackList-rowTitle {
+    color: var(--spice-button) !important;
+}
+
+@media (prefers-reduced-motion: reduce) {
+    * { transition: none !important; animation: none !important; }
+}

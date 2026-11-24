@@ -1,0 +1,29 @@
+/*
+ * tubewm Metro for Firefox pages (generated, accent @ACCENT@).
+ * Only Firefox's own pages (new tab, about:*) are touched; websites keep
+ * their own look.
+ */
+@-moz-document url-prefix("about:newtab"), url-prefix("about:home") {
+    body {
+        --newtab-background-color: @BG@ !important;
+        --newtab-background-color-secondary: @SURFACE@ !important;
+        --newtab-text-primary-color: @FG@ !important;
+        --newtab-primary-action-background: @ACCENT@ !important;
+        --newtab-border-radius: 0 !important;
+        --border-radius-small: 0 !important;
+        --border-radius-medium: 0 !important;
+        --border-radius-large: 0 !important;
+        background: @BG@ !important;
+    }
+    .top-site-outer .tile, .top-site-outer .top-site-icon {
+        border-radius: 0 !important;
+        box-shadow: none !important;
+        background-color: @ACCENT@ !important;
+    }
+    .top-site-outer .title { text-transform: lowercase; }
+    .search-wrapper .search-handoff-button, .search-wrapper input {
+        border-radius: 0 !important;
+        box-shadow: none !important;
+        border: 2px solid @FG_DISABLED@ !important;
+    }
+}

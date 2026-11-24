@@ -1,0 +1,53 @@
+# tubewm Metro for kitty (generated, accent @ACCENT@). Do not edit: re-run apps/install.sh.
+# Pulled in by an `include tubewm.conf` line in kitty.conf.
+
+foreground              @FG@
+background              @BG@
+selection_foreground    @ON_ACCENT@
+selection_background    @ACCENT@
+url_color               @ACCENT_TEXT@
+cursor                  @ACCENT@
+cursor_text_color       @ON_ACCENT@
+
+# content over chrome: no decorations, a 20px margin, a 2px accent focus edge
+hide_window_decorations yes
+window_padding_width    20
+window_border_width     2px
+active_border_color     @ACCENT@
+inactive_border_color   @SHELL@
+bell_border_color       @WARNING@
+inactive_text_alpha     0.75
+
+# tabs as a pivot: plain lowercase-friendly titles, the active one bright
+tab_bar_edge            top
+tab_bar_style           separator
+tab_separator           "   "
+tab_bar_margin_width    12
+tab_title_template      "{title.lower()}"
+active_tab_foreground   @FG@
+active_tab_background   @BG@
+active_tab_font_style   bold
+inactive_tab_foreground @FG_DISABLED@
+inactive_tab_background @BG@
+inactive_tab_font_style normal
+tab_bar_background      @BG@
+
+mark1_foreground @ON_ACCENT@
+mark1_background @ACCENT@
+
+color0  @ANSI0@
+color1  @ANSI1@
+color2  @ANSI2@
+color3  @ANSI3@
+color4  @ANSI4@
+color5  @ANSI5@
+color6  @ANSI6@
+color7  @ANSI7@
+color8  @ANSI8@
+color9  @ANSI9@
+color10 @ANSI10@
+color11 @ANSI11@
+color12 @ANSI12@
+color13 @ANSI13@
+color14 @ANSI14@
+color15 @ANSI15@

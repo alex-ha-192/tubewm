@@ -1,0 +1,37 @@
+# tubewm Metro for zathura (generated, accent @ACCENT@). Do not edit: re-run apps/install.sh.
+# Pulled in by an `include tubewm` line in zathurarc.
+
+set font "@FONT_UI@ 11"
+set default-bg "@BG@"
+set default-fg "@FG@"
+set statusbar-bg "@ACCENT@"
+set statusbar-fg "@ON_ACCENT@"
+set statusbar-h-padding 12
+set statusbar-v-padding 4
+set inputbar-bg "@SURFACE@"
+set inputbar-fg "@FG@"
+set notification-bg "@SURFACE@"
+set notification-fg "@FG@"
+set notification-error-bg "@ERROR@"
+set notification-error-fg "@ON_ACCENT@"
+set notification-warning-bg "@WARNING@"
+set notification-warning-fg "#000000"
+set completion-bg "@SURFACE@"
+set completion-fg "@FG@"
+set completion-group-bg "@SHELL@"
+set completion-group-fg "@FG_SUBTLE@"
+set completion-highlight-bg "@ACCENT@"
+set completion-highlight-fg "@ON_ACCENT@"
+set index-bg "@BG@"
+set index-fg "@FG@"
+set index-active-bg "@ACCENT@"
+set index-active-fg "@ON_ACCENT@"
+set highlight-color "rgba(@ACCENT.rgb@, 0.35)"
+set highlight-active-color "rgba(@ACCENT.rgb@, 0.65)"
+set highlight-fg "@ON_ACCENT@"
+set recolor-lightcolor "@BG@"
+set recolor-darkcolor "@FG@"
+set render-loading-bg "@BG@"
+set render-loading-fg "@FG_DISABLED@"
+set page-padding 8
+set adjust-open width
