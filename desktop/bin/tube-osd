@@ -1,39 +1,78 @@
 #!/usr/bin/env bash
-# tube-osd: volume / brightness keys with a flat on-screen indicator.
+# tube-osd: volume / brightness keys with a small fading indicator.
 #   tube-osd volume up|down|mute
 #   tube-osd mic mute
 #   tube-osd brightness up|down
+# Add "scroll" (or set TUBE_OSD_STEP, as the bar does) for scroll wheels and
+# touchpads: smaller steps, and at most one change every 120 ms, so a flick
+# of the touchpad doesn't throw the volume to 0 or 100.
+PATH="$(dirname "$(readlink -f "$0")"):$PATH"  # find the other tube-* commands
 set -u
-step=${TUBE_OSD_STEP:-5}
-idfile=${XDG_RUNTIME_DIR:-/tmp}/tube-osd.id
+here=$(dirname "$(readlink -f "$0")")
+run=${XDG_RUNTIME_DIR:-/tmp}
+fifo=$run/tube-osd.fifo
+lockfile=$run/tube-osd.lock
+nolayer=$run/tube-osd.nolayer
 
-show() { # title value(0-100) text
-    local args=(-a tube-osd -h "int:value:$2" -h string:x-canonical-private-synchronous:tube-osd -p)
-    local old; old=$(cat "$idfile" 2>/dev/null || true)
-    [ -n "$old" ] && args+=(-r "$old")
-    notify-send "${args[@]}" "$1" "$3" > "$idfile" 2>/dev/null || true
+scroll=0
+[ "${3:-}" = scroll ] && scroll=1
+[ -n "${TUBE_OSD_STEP:-}" ] && scroll=1
+if [ "$scroll" = 1 ]; then step=${TUBE_OSD_STEP:-2}; else step=5; fi
+
+usage() { sed -n '2,8p' "$0" | sed 's/^# \{0,1\}//'; exit 2; }
+
+# Scrolling: drop events that come in faster than one per 120 ms.
+if [ "$scroll" = 1 ]; then
+    stamp=$run/tube-osd.scroll
+    now=$(date +%s%3N)
+    last=$(cat "$stamp" 2>/dev/null || echo 0)
+    [ $(( now - last )) -lt 120 ] && exit 0
+    printf '%s' "$now" > "$stamp"
+fi
+
+# show <volume|brightness|microphone> <0-100> <muted 0|1>
+show() {
+    local msg="$1 $2 $3"
+    # A running indicator: hand it the line (it holds the FIFO open, so this
+    # never blocks; the lock tells us it's alive).
+    if [ -p "$fifo" ] && ! flock -n "$lockfile" true 2>/dev/null; then
+        printf '%s\n' "$msg" > "$fifo" && return
+    fi
+    if [ ! -e "$nolayer" ]; then
+        setsid -f "$here/tube-osd-daemon" $msg >/dev/null 2>&1 < /dev/null && return
+    fi
+    # No layer shell here: a plain notification.
+    local text=$2; [ "$3" = 1 ] && text=off
+    notify-send -a tube-osd -t 1500 -h "int:value:$2" \
+        -h string:x-canonical-private-synchronous:tube-osd "$1" "$text" 2>/dev/null || true
 }
 
-vol_get() { wpctl get-volume @DEFAULT_AUDIO_SINK@ 2>/dev/null; }
+sink=@DEFAULT_AUDIO_SINK@
+source=@DEFAULT_AUDIO_SOURCE@
 
 case "${1:-} ${2:-}" in
-    "volume up")   wpctl set-mute @DEFAULT_AUDIO_SINK@ 0; wpctl set-volume -l 1.0 @DEFAULT_AUDIO_SINK@ "${step}%+" ;;
-    "volume down") wpctl set-volume @DEFAULT_AUDIO_SINK@ "${step}%-" ;;
-    "volume mute") wpctl set-mute @DEFAULT_AUDIO_SINK@ toggle ;;
-    "mic mute")    wpctl set-mute @DEFAULT_AUDIO_SOURCE@ toggle
-                   if wpctl get-volume @DEFAULT_AUDIO_SOURCE@ | grep -q MUTED; then show "microphone" 0 "off"; else show "microphone" 100 "on"; fi
+    "volume up")   wpctl set-mute $sink 0; wpctl set-volume -l 1.0 $sink "${step}%+" ;;
+    "volume down") wpctl set-volume $sink "${step}%-" ;;
+    "volume mute") wpctl set-mute $sink toggle ;;
+    "mic mute")    wpctl set-mute $source toggle
+                   if wpctl get-volume $source | grep -q MUTED; then show microphone 0 1; else show microphone 100 0; fi
                    exit 0 ;;
     "brightness up")   brightnessctl -q set "${step}%+" ;;
-    "brightness down") brightnessctl -q set "${step}%-" ;;
-    *) sed -n '2,5p' "$0" | sed 's/^# \{0,1\}//'; exit 2 ;;
+    "brightness down")
+        # Never all the way to black: stop at 1%.
+        cur=$(brightnessctl get); max=$(brightnessctl max)
+        floor=$(( max / 100 )); [ "$floor" -lt 1 ] && floor=1
+        new=$(( cur - max * step / 100 )); [ "$new" -lt "$floor" ] && new=$floor
+        brightnessctl -q set "$new" ;;
+    *) usage ;;
 esac
 
 case $1 in
     volume)
-        out=$(vol_get)
+        out=$(wpctl get-volume $sink 2>/dev/null)
         pct=$(awk '{printf "%d", $2 * 100 + 0.5}' <<<"$out")
-        if grep -q MUTED <<<"$out"; then show "volume" "$pct" "muted"; else show "volume" "$pct" "$pct"; fi ;;
+        if grep -q MUTED <<<"$out"; then show volume "${pct:-0}" 1; else show volume "${pct:-0}" 0; fi ;;
     brightness)
-        pct=$(( $(brightnessctl get) * 100 / $(brightnessctl max) ))
-        show "brightness" "$pct" "$pct" ;;
+        pct=$(( ($(brightnessctl get) * 100 + $(brightnessctl max) / 2) / $(brightnessctl max) ))
+        show brightness "$pct" 0 ;;
 esac

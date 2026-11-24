@@ -26,8 +26,9 @@ artwork.
 | **Settings flyout** | Accent swatches, wallpapers, volume, brightness, do-not-disturb, wi-fi, and power (restart / shut down ask twice). | `tube-charms --settings` |
 | **Snap** | Dock the focused window as a 320 px column at either edge, press again for 500 px, then half. | `tube-snap` |
 | **Switcher** | Every open window on every workspace in one flat list. | `tube-switcher` (fuzzel) |
-| **Toasts** | Flat accent rectangles, top right, 380 px wide. Volume and brightness get their own small indicator, top left. | mako, `tube-osd` |
-| **Lock** | Big clock curtain with gtklock if you have it, otherwise swaylock(-effects) in the same colours. | `tube-lock` |
+| **Toasts** | Plain charcoal cards, top right under the bar: the app's icon, a title and the message. Click one to open the app. | mako |
+| **Volume and brightness** | A small bar at the bottom centre (glyph, level, number) that fades after 1.5 s. Clicks go through it. Scrolling on the bar's volume moves in small steps and ignores touchpad bursts. | `tube-osd` |
+| **Lock** | A big clock and the date. Any key or click brings up your name, the password box and your keyboard layout (e.g. English (UK)). gtklock 4 or later gets the full layout, older gtklock the same colours, and swaylock(-effects) is the fallback. | `tube-lock` |
 | **Apps** | GTK 3/4 squared off and accent-coloured, foot terminal on a full-bleed black canvas, no title-bar buttons. | gtk.css, gsettings, foot |
 | **Accent** | One command recolours everything above, plus any hooks in `~/.config/tubewm/accent.d/` (the VS Code and Vivaldi themes in `apps/` use this). | `tube-accent` |
 
@@ -198,5 +199,6 @@ small tools instead, so a few things are approximated or left out:
 * **Background suspension, direct scanout, and the custom `zmetro_shell_surface_v1`
   protocol** are compositor internals and out of scope here (sway already does
   direct scanout for full-screen windows).
-* **Lock curtain:** a sliding curtain needs a lock client that supports it; gtklock
-  gets closest, and swaylock is the fallback.
+* **Lock curtain:** the clock shows alone until you press a key or click, then
+  the password box slides in under it (gtklock). It doesn't slide the whole
+  curtain up, and swaylock is the fallback.
