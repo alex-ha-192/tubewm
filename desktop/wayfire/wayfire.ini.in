@@ -37,7 +37,9 @@ natural_scroll = true
 tap_and_drag = true
 disable_touchpad_while_typing = true
 middle_emulation = true
-click_method = clickfinger
+# Press the bottom-right corner of the touchpad for a right click (as on
+# Windows). A two-finger tap is a right click too.
+click_method = button-areas
 cursor_theme = default
 cursor_size = 24
 

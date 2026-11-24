@@ -63,8 +63,9 @@ input type:touchpad {
     # so a palm resting on it doesn't move the pointer or click.
     dwt enabled
     dwtp enabled
-    # Two fingers pressed down is a right click, wherever they are.
-    click_method clickfinger
+    # Press the bottom-right corner for a right click; a two-finger tap is
+    # a right click too.
+    click_method button_areas
     middle_emulation enabled
 }
 
