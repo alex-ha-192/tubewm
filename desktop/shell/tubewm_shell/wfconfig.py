@@ -25,6 +25,15 @@ COLUMNS = 10
 # Empty means "what the system uses": the session launcher exports
 # XKB_DEFAULT_* from the same file, and libxkbcommon falls back to those.
 KEYBOARD_DEFAULT = {"layout": "", "variant": "", "options": ""}
+# tubewm's own title bars (desktop/wayfire/plugins/tube-decor), once
+# plugins/build.sh has built them. Until then, Wayfire's stock decoration.
+DATA = os.environ.get("XDG_DATA_HOME") or os.path.expanduser("~/.local/share")
+TUBE_DECOR = os.path.join(DATA, "wayfire", "plugins", "libtube-decor.so")
+
+
+def decoration():
+    """The plugin that draws title bars: tube-decor if it is built."""
+    return "tube-decor" if os.path.exists(TUBE_DECOR) else "decoration"
 
 
 def keyboard():
@@ -124,6 +133,7 @@ def build(pal=None):
     kb = keyboard()
     values = {
         "COLUMNS": str(COLUMNS),
+        "DECOR": decoration(),
         "DESKTOP_BINDINGS": _desktop_bindings(),
         "OUTPUTS": outputs(),
         "XKB_LAYOUT": kb.get("layout", ""),

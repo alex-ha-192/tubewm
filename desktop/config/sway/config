@@ -192,7 +192,6 @@ bindsym $mod+Ctrl+Shift+Left  move container to workspace prev_on_output, worksp
 # Swipe between pivots with three fingers, like panning a panorama.
 bindgesture swipe:3:right workspace prev_on_output
 bindgesture swipe:3:left  workspace next_on_output
-bindgesture swipe:3:up    exec $tubebin/tube-start
 bindgesture swipe:3:down  exec $tubebin/tube-switcher
 bindgesture swipe:4:left  exec $tubebin/tube-charms
 bindgesture swipe:4:right exec $tubebin/tube-charms --close

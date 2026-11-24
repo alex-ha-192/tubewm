@@ -38,8 +38,12 @@ If Wayfire is installed, tubewm also runs on it, and that is the one to use
 day to day. Everything is a click away; keys are extras.
 
 * **Windows** open filling the screen, each with a thin flat title strip
-  (accent when it's the one you're in) and a close button; apps that draw
-  their own header keep it. Drag the title, or the handle in the strip along
+  (accent when it's the one you're in) and a square close button that
+  turns red under the mouse; apps that draw their own header keep it. The
+  title strip is tubewm's own Wayfire plugin
+  ([`wayfire/plugins/tube-decor`](wayfire/plugins/tube-decor)), which the
+  installer and updater build with `wayfire/plugins/build.sh`; until it is
+  built, Wayfire's stock title bars stand in. Drag the title, or the handle in the strip along
   the top, to a side of the screen for half, into a corner for a quarter,
   or to the middle to fill the screen. Snap one window to half the screen
   and the one you used before it takes the other half. A new window takes
@@ -160,7 +164,7 @@ There is also a [one-page key reference](docs/keys.html) ([view it rendered](htt
 | `Super+Shift+E` | power options |
 | `Print` / `Shift+Print` | screenshot screen / region (copied and saved) |
 | 3 fingers ← → | previous / next pivot |
-| 3 fingers ↑ / ↓ | start / switcher |
+| 3 fingers ↓ | switcher |
 | 4 fingers ← / → | charms open / close |
 
 Inside start: type to search the app list, `Esc` to clear the search or close,
