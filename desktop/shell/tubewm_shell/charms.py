@@ -264,7 +264,8 @@ class Charms:
         for label, cmd, confirm in (
             ("lock", "tube-lock", False),
             ("sleep", "systemctl suspend", False),
-            ("sign out", "swaymsg exit", True),
+            ("sign out", "swaymsg exit" if os.environ.get("SWAYSOCK")
+             else 'loginctl terminate-session "$XDG_SESSION_ID"', True),
             ("restart", "systemctl reboot", True),
             ("shut down", "systemctl poweroff", True),
         ):
