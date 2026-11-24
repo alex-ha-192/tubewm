@@ -72,11 +72,11 @@
     font-size: 14px;
     font-weight: 300;
     letter-spacing: 0;
-    color: var(--tubewm-dim);
+    color: var(--tubewm-subtle);
     transition: color 120ms var(--tubewm-ease);
 }
 #browser .tab-position .tab:hover .title {
-    color: var(--tubewm-subtle);
+    color: var(--tubewm-fg);
 }
 #browser .tab-position .tab.active .title {
     color: var(--tubewm-fg);
@@ -91,14 +91,34 @@
 }
 #browser .tab-position .tab:not(.active) .favicon {
     filter: grayscale(1);
-    opacity: 0.55;
+    opacity: 0.75;
 }
+/* close button: a clear grey X on the active tab and on hover, white when
+   pointed at, on an accent square while pressed */
 #browser .tab-position .tab .close {
     opacity: 0;
+    color: var(--tubewm-subtle) !important;
+    background: transparent !important;
+}
+#browser .tab-position .tab .close svg,
+#browser .tab-position .tab .close svg path {
+    fill: currentColor !important;
+    opacity: 1 !important;
 }
 #browser .tab-position .tab:hover .close,
 #browser .tab-position .tab.active .close {
-    opacity: 1;
+    opacity: 1 !important;
+}
+#browser .tab-position .tab.active .close {
+    color: var(--tubewm-fg) !important;
+}
+#browser .tab-position .tab .close:hover {
+    color: var(--tubewm-fg) !important;
+    background: var(--tubewm-surface-hi) !important;
+}
+#browser .tab-position .tab .close:active {
+    color: var(--tubewm-on-accent) !important;
+    background: var(--tubewm-accent) !important;
 }
 /* tab stacks keep a flat accent rule instead of a pill */
 #browser .tab-position .tab .stack-counter {
@@ -237,7 +257,7 @@
     text-transform: lowercase;
     font-size: 24px;
     font-weight: 300;
-    color: var(--tubewm-dim);
+    color: var(--tubewm-subtle);
 }
 .startpage .startpage-navigation .button-startpage.active {
     color: var(--tubewm-fg);

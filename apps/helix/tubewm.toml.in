@@ -4,7 +4,7 @@
 "ui.background" = { bg = "bg" }
 "ui.text" = "fg"
 "ui.text.focus" = { fg = "fg", modifiers = ["bold"] }
-"ui.text.inactive" = "dim"
+"ui.text.inactive" = "subtle"
 "ui.text.directory" = { fg = "fg", modifiers = ["bold"] }
 "ui.cursor" = { fg = "on_accent", bg = "subtle" }
 "ui.cursor.primary" = { fg = "on_accent", bg = "accent" }
@@ -20,7 +20,7 @@
 "ui.statusline.normal" = { fg = "on_accent", bg = "accent", modifiers = ["bold"] }
 "ui.statusline.insert" = { fg = "bg", bg = "fg", modifiers = ["bold"] }
 "ui.statusline.select" = { fg = "bg", bg = "type", modifiers = ["bold"] }
-"ui.bufferline" = { fg = "dim", bg = "bg" }
+"ui.bufferline" = { fg = "subtle", bg = "bg" }
 "ui.bufferline.active" = { fg = "fg", bg = "bg", modifiers = ["bold"] }
 "ui.bufferline.background" = { bg = "bg" }
 "ui.popup" = { fg = "fg", bg = "surface" }
