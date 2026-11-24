@@ -1,17 +1,65 @@
 #!/usr/bin/env bash
-# tube-lock: lock the session with the tubewm curtain.
-# Prefers gtklock (big clock, styled by ~/.config/gtklock/style.css), then
-# swaylock-effects (clock in the ring), then plain swaylock. If a fancier
-# locker fails to start, the next one is tried, so the screen always locks.
+# tube-lock: lock the session.
+# A big clock and the date; any key or click brings up your name and the
+# password box, with the keyboard layout written under it.
+#
+# Prefers gtklock (4 or later gets the full layout, older ones the same
+# colours on gtklock's own layout), then swaylock-effects (clock in the
+# ring), then plain swaylock. If one fails to start the next is tried, so
+# the screen always locks. Returns once the screen is locked, and does
+# nothing if it already is.
 PATH="$(dirname "$(readlink -f "$0")"):$PATH"  # find the other tube-* commands
 set -u
 CONFIG=${XDG_CONFIG_HOME:-$HOME/.config}
+RUN=${XDG_RUNTIME_DIR:-/tmp}
 
 # Already locked? Do nothing (swayidle can fire twice around suspend).
 if pgrep -x gtklock >/dev/null || pgrep -x swaylock >/dev/null; then exit 0; fi
 
+# The keyboard layout's human name, e.g. "English (UK)".
+keyboard_name() {
+    local name=""
+    if [ -n "${SWAYSOCK:-}" ] && command -v swaymsg >/dev/null && command -v jq >/dev/null; then
+        name=$(swaymsg -t get_inputs -r 2>/dev/null |
+            jq -r '[.[] | select(.type == "keyboard") | .xkb_active_layout_name // empty][0] // empty')
+    fi
+    if [ -z "$name" ]; then
+        local layout="" variant="" lst=/usr/share/X11/xkb/rules/evdev.lst
+        if [ -r "$CONFIG/tubewm/keyboard" ]; then
+            layout=$(sed -n 's/^XKB_LAYOUT=//p' "$CONFIG/tubewm/keyboard" | head -n1)
+            variant=$(sed -n 's/^XKB_VARIANT=//p' "$CONFIG/tubewm/keyboard" | head -n1)
+        fi
+        layout=${layout:-${XKB_DEFAULT_LAYOUT:-}}; layout=${layout%%,*}
+        variant=${variant:-${XKB_DEFAULT_VARIANT:-}}; variant=${variant%%,*}
+        if [ -n "$layout" ] && [ -r "$lst" ]; then
+            [ -n "$variant" ] && name=$(awk -v v="$variant" -v l="$layout:" \
+                '/^! variant/{s=1;next} /^!/{s=0} s && $1==v && $2==l {$1="";$2="";sub(/^ +/,"");print;exit}' "$lst")
+            [ -z "$name" ] && name=$(awk -v l="$layout" \
+                '/^! layout/{s=1;next} /^!/{s=0} s && $1==l {$1="";sub(/^ +/,"");print;exit}' "$lst")
+        fi
+        [ -z "$name" ] && name=$layout
+    fi
+    printf '%s' "$name"
+}
+
+xml_escape() { sed -e 's/&/\&amp;/g' -e 's/</\&lt;/g' -e 's/>/\&gt;/g' -e 's/"/\&quot;/g'; }
+
 if command -v gtklock >/dev/null; then
-    gtklock --daemonize --style "$CONFIG/gtklock/style.css" "$@" && exit 0
+    args=(--daemonize --style "$CONFIG/gtklock/style.css" --time-format '%H:%M'
+          --start-hidden --idle-hide --idle-timeout 20)
+    version=$(gtklock --version 2>&1 | grep -o '[0-9][0-9.]*' | head -n1)
+    if [ "${version%%.*}" -ge 4 ] 2>/dev/null && [ -r "$CONFIG/gtklock/layout.ui" ]; then
+        user=$(getent passwd "$(id -un)" | cut -d: -f5 | cut -d, -f1)
+        user=${user:-$(id -un)}
+        initial=${user:0:1}; initial=${initial^^}
+        layout_file=$RUN/tube-lock.ui
+        sed -e "s|@USERNAME@|$(printf '%s' "$user" | xml_escape | sed 's/[|&\\]/\\&/g')|" \
+            -e "s|@INITIAL@|$(printf '%s' "$initial" | xml_escape | sed 's/[|&\\]/\\&/g')|" \
+            -e "s|@KEYBOARD@|$(keyboard_name | xml_escape | sed 's/[|&\\]/\\&/g')|" \
+            "$CONFIG/gtklock/layout.ui" > "$layout_file"
+        gtklock "${args[@]}" --layout "$layout_file" --date-format '%A %-d %B' "$@" && exit 0
+    fi
+    gtklock "${args[@]}" "$@" && exit 0
 fi
 
 if swaylock --help 2>&1 | grep -q -- '--clock'; then

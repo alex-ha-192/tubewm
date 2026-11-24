@@ -67,13 +67,24 @@ menupopup, panel, #urlbar, #urlbar-background {
     border: 0 !important;
     outline: 0 !important;
 }
+/* close button: clearly visible, white when pointed at */
+.tabbrowser-tab .tab-close-button {
+    fill: var(--tubewm-subtle) !important;
+    fill-opacity: 1 !important;
+    opacity: 1 !important;
+}
+.tabbrowser-tab[selected] .tab-close-button,
+.tabbrowser-tab .tab-close-button:hover {
+    fill: var(--tubewm-fg) !important;
+    background: var(--tubewm-surface-hi) !important;
+}
 .tabbrowser-tab .tab-label {
     text-transform: lowercase;
     font-weight: 300;
-    color: var(--tubewm-dim);
+    color: var(--tubewm-subtle);
     transition: color 120ms var(--tubewm-ease);
 }
-.tabbrowser-tab:hover .tab-label { color: var(--tubewm-subtle); }
+.tabbrowser-tab:hover .tab-label { color: var(--tubewm-fg); }
 .tabbrowser-tab[selected] .tab-label,
 .tabbrowser-tab[visuallyselected] .tab-label {
     color: var(--tubewm-fg) !important;
@@ -85,7 +96,7 @@ menupopup, panel, #urlbar, #urlbar-background {
 }
 .tabbrowser-tab:not([selected], [visuallyselected]) .tab-icon-image {
     filter: grayscale(1);
-    opacity: 0.6;
+    opacity: 0.75;
 }
 
 /* address bar: flat field, accent border only while focused */

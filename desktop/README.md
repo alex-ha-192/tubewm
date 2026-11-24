@@ -26,8 +26,9 @@ artwork.
 | **Settings flyout** | Accent swatches, wallpapers, volume, brightness, do-not-disturb, wi-fi, and power (restart / shut down ask twice). | `tube-charms --settings` |
 | **Snap** | Dock the focused window as a 320 px column at either edge, press again for 500 px, then half. | `tube-snap` |
 | **Switcher** | Every open window on every workspace in one flat list. | `tube-switcher` (fuzzel) |
-| **Toasts** | Flat accent rectangles, top right, 380 px wide. Volume and brightness get their own small indicator, top left. | mako, `tube-osd` |
-| **Lock** | Big clock curtain with gtklock if you have it, otherwise swaylock(-effects) in the same colours. | `tube-lock` |
+| **Toasts** | Plain charcoal cards, top right under the bar: the app's icon, a title and the message. Click one to open the app. | mako |
+| **Volume and brightness** | A small bar at the bottom centre (glyph, level, number) that fades after 1.5 s. Clicks go through it. Scrolling on the bar's volume moves in small steps and ignores touchpad bursts. | `tube-osd` |
+| **Lock** | A big clock and the date. Any key or click brings up your name, the password box and your keyboard layout (e.g. English (UK)). gtklock 4 or later gets the full layout, older gtklock the same colours, and swaylock(-effects) is the fallback. | `tube-lock` |
 | **Apps** | GTK 3/4 squared off and accent-coloured, foot terminal on a full-bleed black canvas, no title-bar buttons. | gtk.css, gsettings, foot |
 | **Accent** | One command recolours everything above, plus any hooks in `~/.config/tubewm/accent.d/` (the VS Code and Vivaldi themes in `apps/` use this). | `tube-accent` |
 
@@ -76,15 +77,20 @@ asks), otherwise from the system.
 ```sh
 git clone https://github.com/alex-ha-192/tubewm
 cd tubewm
-desktop/install.sh --deps          # --deps installs packages with apt, pacman, dnf or zypper
+./install.sh
 ```
 
-Then log into a sway session (or `swaymsg reload` if you're already in one).
+The installer at the top of the repository sets up everything, including the
+packages, your keyboard layout and a **tubewm** entry on the sign-in screen;
+see the main [README](../README.md#installation). Underneath it runs
+`desktop/install.sh`, which only touches your home folder and can be used on
+its own (`--deps` fetches the packages too):
 
 * Everything goes into your home directory: the scripts to `~/.local/share/tubewm`
   with links in `~/.local/bin` (make sure that's on your `PATH`), configs to `~/.config`.
 * Every config file it replaces is copied to `~/.config/tubewm/backup/<date>/` first.
-* `desktop/install.sh --uninstall` removes it and restores the most recent backup.
+* `desktop/install.sh --uninstall` removes it and puts back the configs you had before tubewm
+  (kept in `~/.config/tubewm/backup/original/` by the first install).
 * `--no-gsettings` leaves your GTK settings alone; `--accent teal` picks an accent.
 * Re-run the installer after `git pull` to update. Your start tiles, accent and wallpaper are kept.
 
@@ -141,10 +147,12 @@ Start is a grid of tiles on the left and every installed app on the right.
   choose *pin to start*. Pinned apps have a small pin mark.
 * **Move a tile:** drag it. Dropping it on another tile takes that tile's place;
   dropping it in a gap puts it there. `Alt+Arrows` moves the focused tile.
-* **Change a tile:** right-click it, or press and hold on a touchscreen. The menu
-  has *size* (small, medium, wide, large, whichever the tile supports),
-  *colour* (accent, dark, or one of the palette accents), *set up…* for tiles
-  with options, *move earlier / later* and *unpin*.
+* **Open a live tile:** click it. Its detail panel slides in from the right
+  (music controls, the month, the forecast, your notifications, open windows…).
+  The back arrow, `Esc` or a click on the tiles closes it again.
+* **Change a tile:** right-click it. The menu has *size* (small, medium, wide,
+  large, whichever the tile supports), *colour* (accent, dark, or one of the
+  palette accents), *set up…* for tiles with options, and *unpin*.
 * **Add a live tile:** press the **+** under your tiles and pick one.
 * **Start over:** `tube-start --reset`, or the link in the settings flyout.
 
@@ -159,7 +167,7 @@ skipped. A `start.toml` from an older tubewm is converted the first time.
 | clock | the time and date | |
 | calendar | today, or the month at large size | |
 | weather | temperature and conditions from wttr.in, every 30 minutes | place |
-| music | what's playing, with album art (any MPRIS player); click to play / pause | |
+| music | what's playing, with album art (any MPRIS player); click for play, pause, skip | |
 | photos | random pictures from a folder, turning over | folder |
 | messages | your latest notifications | |
 | recent | files you opened recently | |
@@ -203,17 +211,20 @@ Generated files (the ones with colours in them) carry a "do not edit" header;
 
 ```
 desktop/
-  install.sh            installer / updater / uninstaller
+  install.sh            home-folder installer / updater / uninstaller (../install.sh wraps it)
   config/               installed once, then yours to edit
     sway/config
+    sway/config.d/20-tubewm-laptop.conf   managed: lid, power button, first-login welcome
     waybar/config.jsonc, waybar/style.css
+  session/              the tubewm-session launcher and the sign-in screen entries
   templates/            rendered with the palette into ~/.config on every accent change
     sway/tubewm-colors, waybar/tubewm.css, mako/config, fuzzel/fuzzel.ini,
     foot/foot.ini, swaylock/config, gtklock/style.css, gtk-3.0/gtk.css, gtk-4.0/gtk.css
   bin/                  tube-* commands (bash, plus two Python entry points)
   shell/                the start screen, charms and wallpapers (Python, GTK 3, gtk-layer-shell, cairo)
     style.css           their stylesheet; colours are filled in at start-up
-    tubewm_shell/       start.py, layout.py, tiles.py, charms.py, wallpaper.py, glyphs.py, common.py
+    tubewm_shell/       start.py, layout.py, tiles.py, charms.py, wallpaper.py, glyphs.py, common.py,
+                        welcome.py (first login), keyboard.py (tube-keyboard)
   start/default.toml    the start layout new users get
 ../palette/             shared colours (also read by the apps/ themes)
 ```
@@ -238,5 +249,6 @@ small tools instead, so a few things are approximated or left out:
 * **Background suspension, direct scanout, and the custom `zmetro_shell_surface_v1`
   protocol** are compositor internals and out of scope here (sway already does
   direct scanout for full-screen windows).
-* **Lock curtain:** a sliding curtain needs a lock client that supports it; gtklock
-  gets closest, and swaylock is the fallback.
+* **Lock curtain:** the clock shows alone until you press a key or click, then
+  the password box slides in under it (gtklock). It doesn't slide the whole
+  curtain up, and swaylock is the fallback.

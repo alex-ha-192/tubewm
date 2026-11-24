@@ -27,7 +27,7 @@ tab_title_template      "{title.lower()}"
 active_tab_foreground   @FG@
 active_tab_background   @BG@
 active_tab_font_style   bold
-inactive_tab_foreground @FG_DISABLED@
+inactive_tab_foreground @FG_SUBTLE@
 inactive_tab_background @BG@
 inactive_tab_font_style normal
 tab_bar_background      @BG@

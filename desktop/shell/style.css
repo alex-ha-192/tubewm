@@ -179,38 +179,85 @@ popover.tube-popover entry.field, popover.tube-popover combobox.field button {
 popover.tube-popover entry.field:focus { border-color: @tube_accent; }
 popover.tube-popover .caption { color: @tube_subtle; margin-top: 6px; }
 
-/* ── popups under the bar (desktop menu, flyouts) ───────────────────────── */
-.tube-popup {
+/* ── applets: the detail panel a live tile opens ─────────── */
+.applet-scrim { background-color: alpha(#000000, 0.6); }
+.applet-panel {
     background-color: @tube_surface;
-    min-width: 260px;
-    padding: 8px 0;
-    box-shadow: 0 16px 40px rgba(0, 0, 0, 0.6);
-}
-.tube-popup-entry {
-    margin: 4px 12px 8px;
-    padding: 6px 8px;
-    font-size: 18px;
-    font-weight: 300;
     color: @tube_fg;
-    background-color: @tube_shell;
-    border: 2px solid @tube_surface_hi;
-    border-radius: 0;
-    box-shadow: none;
+    padding: 40px 56px 32px 56px;
 }
-.tube-popup-entry:focus { border-color: @tube_accent; }
-.tube-popup-item {
-    min-height: 40px;
-    padding: 0 20px;
-    border-radius: 0;
-    font-size: 15px;
+.applet-title { font-size: 44px; font-weight: 300; color: @tube_fg; }
+button.applet-back {
+    border: 2px solid @tube_fg;
+    border-radius: 50%;
+    min-width: 40px; min-height: 40px;
+    padding: 0;
     color: @tube_fg;
-    background: none;
-    border: none;
-    box-shadow: none;
+    background: transparent;
 }
-.tube-popup-item:hover { background-color: @tube_accent; }
-.tube-popup-item:disabled label { color: @tube_subtle; }
-.tube-popup-rule { margin: 6px 0; background-color: @tube_surface_hi; min-height: 1px; }
-.tube-popup-hint { padding: 0 20px 6px; font-size: 12px; color: @tube_subtle; }
-.tube-flyout { min-width: 360px; padding: 22px 26px 24px; border-top: 3px solid @tube_accent; }
-.tube-flyout-title { font-size: 28px; font-weight: 300; color: @tube_fg; margin-bottom: 14px; }
+button.applet-back:hover, button.applet-back:focus { background: alpha(#FFFFFF, 0.12); }
+button.applet-back:active { background: @tube_fg; color: @tube_surface; }
+
+.applet { color: @tube_fg; }
+.applet-huge    { font-size: 72px; font-weight: 300; color: @tube_fg; }
+.applet-heading { font-size: 24px; font-weight: 300; color: @tube_fg; }
+.applet-strong  { font-size: 16px; font-weight: 400; color: @tube_fg; }
+.applet-text    { font-size: 15px; color: alpha(#FFFFFF, 0.85); }
+.applet-dim     { font-size: 14px; color: @tube_subtle; }
+.applet-mono    { font-family: monospace; font-size: 13px; color: alpha(#FFFFFF, 0.85); }
+.applet-section { font-size: 13px; font-weight: 600; color: @tube_subtle; margin-top: 10px; }
+.applet-card    { background-color: @tube_surface_hi; padding: 12px 14px; }
+
+button.applet-button {
+    background: transparent;
+    color: @tube_fg;
+    border: 2px solid @tube_subtle;
+    padding: 6px 14px;
+    min-height: 26px;
+}
+button.applet-button:hover, button.applet-button:focus { border-color: @tube_fg; background: @tube_surface_hi; }
+button.applet-button:active { background: @tube_accent; border-color: @tube_accent; }
+button.applet-button.icon-button { border: none; padding: 8px; min-width: 28px; }
+button.applet-button.icon-button:hover { background: @tube_surface_hi; }
+button.applet-button.icon-button.off { color: @tube_dim; }
+button.applet-button.applet-row { border: none; padding: 8px 10px; margin: 0 -10px; }
+button.applet-button.applet-row:hover, button.applet-button.applet-row:focus { background: @tube_surface_hi; }
+button.applet-button.applet-row.active { box-shadow: inset 3px 0 0 @tube_accent; }
+
+.applet-toggle, button.applet-toggle {
+    background: transparent; color: @tube_fg;
+    border: 2px solid @tube_subtle; padding: 6px 14px;
+}
+.applet-toggle:checked { background: @tube_accent; border-color: @tube_accent; color: #FFFFFF; }
+
+button.applet-tile { background: @tube_surface_hi; color: @tube_fg; border: none; padding: 16px 8px; }
+button.applet-tile:hover, button.applet-tile:focus { background: @tube_accent; color: #FFFFFF; }
+
+levelbar.applet-level trough { background: @tube_surface_hi; border: none; min-height: 6px; padding: 0; }
+levelbar.applet-level block { border: none; min-height: 6px; }
+levelbar.applet-level block.filled { background: @tube_accent; }
+levelbar.applet-level block.empty { background: transparent; }
+levelbar.applet-level.low block.filled { background: @tube_urgent; }
+
+.month { margin-top: 4px; }
+.month-dow { font-size: 13px; font-weight: 600; color: @tube_subtle; padding: 4px 0; }
+.month-day { font-size: 17px; font-weight: 300; color: @tube_fg; padding: 9px 0; }
+.month-day.other { color: @tube_dim; }
+.month-day.today { background: @tube_accent; color: #FFFFFF; font-weight: 400; }
+
+button.photo-thumb { border: none; padding: 0; background: transparent; }
+button.photo-thumb:hover { box-shadow: inset 0 0 0 3px #FFFFFF; }
+
+.applet radiobutton.applet-radio { color: @tube_fg; padding: 4px 0; }
+.applet switch { background: @tube_surface_hi; border: 2px solid @tube_subtle; border-radius: 0; }
+.applet switch:checked { background: @tube_accent; border-color: @tube_accent; }
+.applet switch slider { background: @tube_fg; border: none; border-radius: 0; min-width: 18px; min-height: 18px; }
+.applet entry.field { background: @tube_surface_hi; color: @tube_fg; border: 2px solid @tube_surface_hi; border-radius: 0; padding: 4px 8px; }
+.applet entry.field:focus { border-color: @tube_accent; }
+button.applet-button.icon-button.transport {
+    border: 2px solid @tube_fg; border-radius: 50%;
+    min-width: 36px; min-height: 36px; padding: 6px;
+}
+button.applet-button.icon-button.transport.main { min-width: 52px; min-height: 52px; background: @tube_fg; color: @tube_surface; }
+button.applet-button.icon-button.transport:hover { background: alpha(#FFFFFF, 0.15); }
+button.applet-button.icon-button.transport.main:hover { background: alpha(#FFFFFF, 0.85); }

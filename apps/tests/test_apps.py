@@ -73,6 +73,23 @@ def test_accent_matches_shell_resolution(tmp_path):
     assert P.load(env={"XDG_CONFIG_HOME": str(tmp_path)})["TUBEWM_ACCENT"] == out.upper()
 
 
+@pytest.mark.parametrize("mode", ["dark", "light"])
+def test_greys_stay_readable(mode):
+    """Inactive tabs and labels use fg_subtle; disabled text fg_disabled."""
+    c = P.polarity(P.load(env={"HOME": "/nonexistent"}), mode)
+    for ground in ("bg", "shell"):
+        assert P.contrast(c["fg_subtle"], c[ground]) >= 4.5, ground
+        assert P.contrast(c["fg_disabled"], c[ground]) >= 3.0, ground
+
+
+def test_vivaldi_close_button_is_visible(tmp_path):
+    vivaldi_build.build(tmp_path, None)
+    css = (tmp_path / "css" / "tubewm-metro.css").read_text()
+    rule = css[css.rindex(".tab.active .close {"):]
+    assert "color: var(--tubewm-fg)" in rule.split("}")[0]
+    assert "fill: currentColor" in css
+
+
 def test_unknown_accent_is_an_error():
     with pytest.raises(ValueError, match="unknown accent"):
         P.load(accent="chartreuse-ish")
