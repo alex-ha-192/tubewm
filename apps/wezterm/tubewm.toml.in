@@ -31,15 +31,15 @@ intensity = "Bold"
 
 [colors.tab_bar.inactive_tab]
 bg_color = "@BG@"
-fg_color = "@FG_DISABLED@"
+fg_color = "@FG_SUBTLE@"
 
 [colors.tab_bar.inactive_tab_hover]
 bg_color = "@BG@"
-fg_color = "@FG_SUBTLE@"
+fg_color = "@FG@"
 
 [colors.tab_bar.new_tab]
 bg_color = "@BG@"
-fg_color = "@FG_DISABLED@"
+fg_color = "@FG_SUBTLE@"
 
 [colors.tab_bar.new_tab_hover]
 bg_color = "@ACCENT@"
