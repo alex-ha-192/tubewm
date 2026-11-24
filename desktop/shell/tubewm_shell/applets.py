@@ -12,9 +12,14 @@ import os
 import re
 import urllib.parse
 
-from gi.repository import GLib, Gtk, Pango
+from . import common, glyphs, tiles, wm  # common picks the GTK version
 
-from . import common, glyphs, tiles, wm
+from gi.repository import GLib, Gtk, Pango  # noqa: E402
+
+
+def _net_text():
+    name, addr = tiles._network()
+    return " · ".join(x for x in (name, addr) if x)
 
 
 # ── building blocks ────────────────────────────────────────────────────────
@@ -487,8 +492,7 @@ class Windows(Applet):
         clear(self.list)
         if not wins:
             self.list.pack_start(label("no windows open", "applet-dim"), False, False, 0)
-        from . import pivots
-        names = pivots.load()
+        names = wm.desktop_names()
         for w in wins:
             row = Gtk.Box(spacing=6)
             go = button(cb=lambda w=w: (wm.focus(w["id"]), self.done()))
@@ -705,10 +709,10 @@ class Network(Applet):
     def update(self):
         clear(self.list)
         if not common.have("nmcli"):
-            self.now.set_text(tiles._network() or "no network tools (install NetworkManager)")
+            self.now.set_text(_net_text() or "no network tools (install NetworkManager)")
             self.toggle.set_sensitive(False)
             return
-        self.now.set_text(tiles._network() or "not connected")
+        self.now.set_text(_net_text() or "not connected")
         on = run(["nmcli", "radio", "wifi"]) == "enabled"
         self.toggle.handler_block_by_func(self.set_wifi)
         self.toggle.set_active(on)
@@ -894,8 +898,7 @@ class WindowMenu(Applet):
             b.connect("clicked", lambda _b, fn=fn: (fn(), self.done()))
             grid.attach(b, i % 3, i // 3, 1, 1)
         self.pack_start(grid, False, False, 0)
-        from . import pivots
-        names = pivots.load()
+        names = wm.desktop_names()
         here = self.win.get("workspace", 0)
         others = [(i, n) for i, n in enumerate(names) if i != here]
         if others:
@@ -906,96 +909,6 @@ class WindowMenu(Applet):
                 flow.add(button(n, lambda i=i: (wm.send_to_pivot(wid, i, names), self.done())))
             self.pack_start(flow, False, False, 0)
 
-
-# ── pivots manager ─────────────────────────────────────────────────────────
-
-class Pivots(Applet):
-    """Add, rename, reorder and remove pivots: the bar's + button."""
-    title = "pivots"
-
-    def build(self):
-        self.list = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=4)
-        self.pack_start(self.list, False, False, 0)
-        add = Gtk.Box(spacing=6)
-        self.entry = Gtk.Entry()
-        self.entry.set_placeholder_text("name a new pivot")
-        self.entry.get_style_context().add_class("field")
-        self.entry.connect("activate", lambda *_: self.add())
-        add.pack_start(self.entry, True, True, 0)
-        add.pack_start(button(glyph="plus", cb=self.add, tooltip="add"), False, False, 0)
-        self.pack_start(add, False, False, 4)
-        self.note = label("", "applet-dim", wrap=True)
-        self.pack_start(self.note, False, False, 0)
-
-    def names(self):
-        from . import pivots
-        return pivots.load()
-
-    def save(self, names):
-        from . import pivots
-        pivots.save(names)
-        self.update()
-
-    def add(self):
-        from . import pivots
-        text = self.entry.get_text().strip() or "new"
-        names = self.names()
-        if len(names) >= pivots.MAX:
-            self.note.set_text("ten pivots is the most")
-            return
-        self.entry.set_text("")
-        self.save(names + [text])
-
-    def update(self):
-        clear(self.list)
-        names = self.names()
-        cur = wm.current_pivot()
-        for i, n in enumerate(names):
-            row = Gtk.Box(spacing=4)
-            e = Gtk.Entry()
-            e.set_text(n)
-            e.get_style_context().add_class("pivot-name")
-            if i == cur:
-                e.get_style_context().add_class("current")
-            e.connect("activate", lambda e, i=i: self.rename(i, e.get_text()))
-            e.connect("focus-out-event", lambda e, _ev, i=i: self.rename(i, e.get_text()) or False)
-            row.pack_start(e, True, True, 0)
-            row.pack_start(button(glyph="left", cb=lambda i=i: self.move(i, -1), tooltip="move left"), False, False, 0)
-            row.pack_start(button(glyph="right", cb=lambda i=i: self.move(i, 1), tooltip="move right"), False, False, 0)
-            rm = button(glyph="close", cb=lambda i=i: self.remove(i), tooltip="remove")
-            rm.set_sensitive(len(names) > 1)
-            row.pack_start(rm, False, False, 0)
-            self.list.pack_start(row, False, False, 0)
-        self.list.show_all()
-
-    def rename(self, i, text):
-        names = self.names()
-        if i < len(names) and text.strip() and text.strip().lower() != names[i]:
-            names[i] = text
-            self.save(names)
-
-    def move(self, i, d):
-        names = self.names()
-        j = i + d
-        if 0 <= j < len(names):
-            # Windows follow their pivot.
-            if wm.WAYFIRE:
-                for w in wm.windows():
-                    if w.get("workspace") in (i, j):
-                        wm.send_to_pivot(w["id"], j if w["workspace"] == i else i)
-            names[i], names[j] = names[j], names[i]
-            self.save(names)
-
-    def remove(self, i):
-        names = self.names()
-        if len(names) <= 1:
-            return
-        n = len(wm.windows_on_pivot(i))
-        wm.shift_pivots_after_removal(i)
-        names.pop(i)
-        self.save(names)
-        if n:
-            self.note.set_text("its %d window%s moved to %s" % (n, "" if n == 1 else "s", names[max(0, i - 1)]))
 
 
 BUILDERS = {
@@ -1018,7 +931,6 @@ BUILDERS = {
     "sound": lambda spec: Volume(),
     "command": lambda spec: Command(spec.get("command", ""), spec.get("label") or "command"),
     "window": lambda spec: WindowMenu(),
-    "pivots": lambda spec: Pivots(),
 }
 
 

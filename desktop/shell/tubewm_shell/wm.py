@@ -258,6 +258,19 @@ def send_to_pivot(win_id, i, names=None):
         _sway("[con_id=%d] move container to workspace %s" % (win_id, target))
 
 
+def desktop_names():
+    """The names on the bar, left to right."""
+    if WAYFIRE:
+        try:
+            from . import desktops
+            return desktops.names()
+        except ImportError:
+            pass
+    if SWAY:
+        return [w["name"].split(":", 1)[-1] for w in (_sway("-t", "get_workspaces") or [])]
+    return ["home"]
+
+
 def windows_on_pivot(i):
     return [w for w in windows() if w.get("workspace") == i]
 
