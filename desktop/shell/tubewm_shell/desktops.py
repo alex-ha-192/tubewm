@@ -3,7 +3,8 @@
 There is always one spare desktop at the end of the bar, shown as "+". Open
 something there and it becomes a desktop, named after what you opened: a
 browser makes "web", an editor "code", a second browser desktop "web 2".
-Leave a desktop empty and it goes away. Right-click a name to rename it,
+Leave a desktop empty and it goes away. Snap a window to half the screen
+and the one you used before it takes the other half. Right-click a name to rename it,
 keep it even when empty, move it, or close it. Renamed desktops are kept.
 
 Each desktop is a column of Wayfire's workspace grid. A small daemon watches
@@ -17,7 +18,7 @@ desktop from $XDG_RUNTIME_DIR/tubewm-desktops.bar.
     tube-desktops keep N          keep desktop N even when empty (again: let go)
     tube-desktops move N left|right
     tube-desktops close N         close desktop N; its windows move next door
-    tube-desktops menu N          the right-click menu for desktop N
+    tube-desktops menu N [X]      the right-click menu for desktop N (at X px)
     tube-desktops list            print the desktops
 """
 
@@ -329,7 +330,8 @@ def close(i):
 # ── the daemon ─────────────────────────────────────────────────────────────
 
 EVENTS = ["view-mapped", "view-unmapped", "view-workspace-changed",
-          "wset-workspace-changed", "output-wset-changed", "view-wset-changed"]
+          "wset-workspace-changed", "output-wset-changed", "view-wset-changed",
+          "view-tiled"]
 
 
 def daemon():
@@ -339,7 +341,14 @@ def daemon():
         reconcile()
     while True:
         try:
-            for _ev in wm.wf_watch(EVENTS):
+            for ev in wm.wf_watch(EVENTS):
+                if ev.get("event") == "view-tiled":
+                    # Snapping one window to half the screen sends the one
+                    # you used before it to the other half.
+                    if ev.get("new-edges") != ev.get("old-edges"):
+                        view = dict(ev.get("view") or {}, **{"tiled-edges": ev.get("new-edges")})
+                        wm.pair(view)
+                    continue
                 with locked():
                     reconcile()
         except (OSError, wm.WayfireError, ValueError):
@@ -350,7 +359,7 @@ def daemon():
 
 # ── the right-click menu ───────────────────────────────────────────────────
 
-def menu(i):
+def menu(i, x=None):
     from . import common  # GTK, only when a menu is shown
     from gi.repository import Gtk
 
@@ -359,7 +368,7 @@ def menu(i):
         return
     d = state[i]
     common.apply_css()
-    win, box = common.popup_window("desktop-menu", "left", _label_x(state, i))
+    win, box = common.popup_window("desktop-menu", "left", x if x is not None else _label_x(state, i))
 
     entry = Gtk.Entry(text=d.get("name") or "")
     entry.set_placeholder_text("name this desktop")
@@ -392,13 +401,13 @@ def menu(i):
         sep.get_style_context().add_class("tube-popup-rule")
         box.pack_start(sep, False, False, 0)
 
-    item("let go when empty" if d.get("kept") else "keep, even when empty", lambda: keep(i))
+    item("let go when empty" if d.get("kept") else "keep", lambda: keep(i))
     rule()
     item("move left", lambda: move(i, "left"), i > 0)
     item("move right", lambda: move(i, "right"), i < len(state) - 1)
     rule()
     neighbour = state[i - 1 if i > 0 else 1].get("name") if len(state) > 1 else None
-    item("close desktop", lambda: close(i), len(state) > 1)
+    item("close", lambda: close(i), len(state) > 1)
     if neighbour:
         hint = Gtk.Label(label="its windows move to %s" % neighbour, xalign=0)
         hint.get_style_context().add_class("tube-popup-hint")
@@ -412,22 +421,23 @@ def menu(i):
 
 def _label_x(state, i):
     """Where desktop i's name starts on the bar, so the menu opens under it.
-    Measured with the bar's own font: start tile 68 px, then each name at
-    30 px Open Sans Light with 9 px either side."""
+    Measured with the strip's own font: the start square takes 52 px, then
+    each name is 20 px Open Sans Light with 11 px either side. (The strip
+    passes the real position; this is for running it by hand.)"""
     try:
         import gi
         gi.require_version("PangoCairo", "1.0")
         from gi.repository import Pango, PangoCairo
         layout = PangoCairo.FontMap.get_default().create_context()
         lay = Pango.Layout.new(layout)
-        lay.set_font_description(Pango.FontDescription.from_string("Open Sans Light 30px"))
-        x = 68
+        lay.set_font_description(Pango.FontDescription.from_string("Open Sans Light 20px"))
+        x = 52
         for d in state[:i]:
             lay.set_text(d.get("name") or "new", -1)
-            x += lay.get_pixel_size()[0] + 18
+            x += lay.get_pixel_size()[0] + 22
         return x
     except (ImportError, ValueError):
-        return 68 + 90 * i
+        return 52 + 70 * i
 
 
 # ── command line ───────────────────────────────────────────────────────────
@@ -460,7 +470,8 @@ def main(argv=None):
     elif a.action == "close":
         close(n())
     elif a.action == "menu":
-        menu(n())
+        x = int(a.args[1]) if len(a.args) > 1 and a.args[1].lstrip("-").isdigit() else None
+        menu(n(), x)
     else:
         for i, d in enumerate(load(), 1):
             print("%2d  %s%s" % (i, d.get("name") or "(new)", "  · kept" if d.get("kept") else ""))

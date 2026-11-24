@@ -37,23 +37,31 @@ artwork.
 If Wayfire is installed, tubewm also runs on it, and that is the one to use
 day to day. Everything is a click away; keys are extras.
 
-* **Windows** have title bars with minimise, maximise and close. Drag one by
-  its title bar to the left or right edge for half the screen, into a corner
-  for a quarter, to the top to fill it. An accent outline shows where it will
-  land. Drag it away again to restore it.
+* **Windows** open filling the screen, with no title bar. The strip along the
+  top is everything else: the accent square for start, your desktops, the
+  time on the right, and in between the handle for the window you're in.
+  Point at it for the window's name and `close`. Drag it down to a side of
+  the screen for half, into a corner for a quarter, or let go in the middle
+  to fill the screen; an accent outline shows where it will go. Snap one
+  window to half the screen and the one you used before it takes the other
+  half.
 * **Desktops** look after themselves. There is always a spare `+` at the end
-  of the bar. Open something there and it becomes a desktop named after it
+  of the strip. Open something there and it becomes a desktop named after it
   (`web`, `code`, `music`, `web 2`…). Leave a desktop empty and it goes away.
   Right-click a name to rename it, keep it, move it or close it. Three
   fingers sideways on the touchpad slide between desktops.
-* **The bar**: click the volume, brightness, battery, network, date or clock
-  for a panel that drops down under it; click the window title for what you
-  can do with that window. The tray is on the right.
+* **The time**: click it for everything that isn't an app, in one panel on
+  the right: sound and brightness, wi-fi, battery, quiet hours, your
+  notifications, and lock, sleep, sign out, restart and shut down.
 * **Start**: tap the Windows key on its own, or click the accent square.
+  Start is one wide page you scroll sideways: pinned, recent, then every app
+  as plain text. Just type to search.
+* **High-density screens**: a built-in screen is scaled to a comfortable size
+  by itself (2 on a Framework 13 with the 2.8K screen, 1.5 on the
+  2256 x 1504 one). Apps that can draw for Wayland stay sharp.
 * **Away from the laptop**: after 4 minutes the screen dims, at 5 it locks,
   at 10 it turns off. Closing the lid locks, then sleeps.
-* **Motion**: windows zoom open and fade closed, minimise into place, and
-  desktops slide.
+* **Motion**: windows zoom open and fade closed, and desktops slide.
 
 | Keys (optional) | |
 |---|---|
@@ -62,6 +70,7 @@ day to day. Everything is a click away; keys are extras.
 | Super+1…0 | go to that desktop (Shift: take the window) |
 | Super+Tab | every desktop side by side; drag windows between them |
 | Alt+Tab | switch windows |
+| Super+C | the panel under the time |
 | Super+W / Alt+F4 | close the window |
 | Super+Enter, Super+E | terminal, files |
 | Super+L | lock |

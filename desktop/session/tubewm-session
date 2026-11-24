@@ -34,6 +34,9 @@ export MOZ_ENABLE_WAYLAND=1
 export QT_QPA_PLATFORM="wayland;xcb"
 export ELECTRON_OZONE_PLATFORM_HINT=auto
 export _JAVA_AWT_WM_NONREPARENTING=1
+# Native Wayland where apps can, so they stay sharp on a scaled screen.
+export SDL_VIDEODRIVER="wayland,x11"
+export XCURSOR_SIZE=24
 if [ -z "${QT_QPA_PLATFORMTHEME:-}" ]; then
     if command -v qt6ct >/dev/null 2>&1 || command -v qt5ct >/dev/null 2>&1; then
         export QT_QPA_PLATFORMTHEME=qt5ct

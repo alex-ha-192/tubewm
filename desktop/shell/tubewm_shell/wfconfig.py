@@ -59,6 +59,64 @@ def _desktop_bindings():
     return "\n".join(lines)
 
 
+DRM = "/sys/class/drm"
+
+
+def _edid_cm(path):
+    """The panel's width in cm, from its EDID, or None."""
+    try:
+        with open(path, "rb") as fh:
+            edid = fh.read(128)
+    except OSError:
+        return None
+    return edid[21] if len(edid) >= 22 and edid[21] else None
+
+
+def scale_for(width_px, width_cm=None):
+    """How much to scale a built-in screen so things are a comfortable size.
+
+    About 96 dots per inch at arm's length is what everything is drawn for.
+    A Framework 13 with the 2.8K screen (2880 px across 28.5 cm, ~256 dpi)
+    gets 2; the 2256 x 1504 screen (~200 dpi) gets 1.5.
+    """
+    if width_cm:
+        dpi = width_px / (width_cm / 2.54)
+        if dpi >= 230:
+            return 2
+        if dpi >= 170:
+            return 1.5
+        if dpi >= 140:
+            return 1.25
+        return 1
+    return 2 if width_px >= 2560 else 1
+
+
+def outputs(drm=DRM):
+    """[output:NAME] sections giving built-in high-density screens a scale.
+    Plug-in monitors are left at 1 (set yours in ~/.config/tubewm/wayfire.ini)."""
+    sections = []
+    try:
+        names = sorted(os.listdir(drm))
+    except OSError:
+        return ""
+    for card in names:
+        m = re.match(r"card\d+-((?:eDP|LVDS|DSI)-.+)$", card)
+        if not m:
+            continue
+        try:
+            with open(os.path.join(drm, card, "modes")) as fh:
+                first = fh.readline().strip()
+        except OSError:
+            continue
+        size = re.match(r"(\d+)x(\d+)", first)
+        if not size:
+            continue
+        scale = scale_for(int(size.group(1)), _edid_cm(os.path.join(drm, card, "edid")))
+        if scale != 1:
+            sections.append("[output:%s]\nscale = %g\n" % (m.group(1), scale))
+    return "\n".join(sections)
+
+
 def build(pal=None):
     """The text of wayfire.ini: the template, filled in, with the user's own
     ~/.config/tubewm/wayfire.ini merged on top."""
@@ -67,6 +125,7 @@ def build(pal=None):
     values = {
         "COLUMNS": str(COLUMNS),
         "DESKTOP_BINDINGS": _desktop_bindings(),
+        "OUTPUTS": outputs(),
         "XKB_LAYOUT": kb.get("layout", ""),
         "XKB_VARIANT": kb.get("variant", ""),
         "XKB_OPTIONS": kb.get("options", ""),

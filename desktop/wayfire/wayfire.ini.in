@@ -9,7 +9,7 @@
 
 [core]
 plugins = \
-  alpha animate autostart command decoration expo fast-switcher foreign-toplevel \
+  alpha animate autostart command expo fast-switcher foreign-toplevel \
   grid gtk-shell idle ipc ipc-rules move place resize session-lock \
   shortcuts-inhibit vswipe vswitch wayfire-shell window-rules wm-actions \
   xdg-activation
@@ -17,7 +17,8 @@ plugins = \
 vwidth = @COLUMNS@
 vheight = 1
 background_color = @SHELL_RGBA@
-# Title bars on every app that will take them: something to grab with the mouse.
+# No title bars: an app that would draw its own is asked not to, and nothing
+# draws one for it. Windows are moved and closed from the strip at the top.
 preferred_decoration_mode = server
 close_top_view = <super> KEY_W | <alt> KEY_F4
 xwayland = true
@@ -42,17 +43,9 @@ cursor_size = 24
 
 # ── windows ────────────────────────────────────────────────────────────────
 
-[decoration]
-font = Open Sans
-font_color = @FG_RGBA@
-title_height = 32
-border_size = 2
-button_order = minimize maximize close
-active_color = @ACCENT_RGBA@
-inactive_color = @SURFACE_RGBA@
-
 [move]
-# Drag a window by its title bar (or Super + drag anywhere in it).
+# Drag a window by the strip at the top of the screen (or Super + drag
+# anywhere in it, or by an app's own header).
 activate = <super> BTN_LEFT
 # Drop it on the left or right edge for half the screen, on a corner for a
 # quarter, on the top edge to fill the screen. Drag it off again to restore.
@@ -85,12 +78,12 @@ slot_t = none
 slot_b = none
 
 [place]
-mode = center
+# Every app opens filling the screen. Snap it to a side to share.
+mode = maximize
 
 [wm-actions]
 toggle_fullscreen = <super> KEY_F
 toggle_maximize = <super> KEY_M
-minimize = <super> KEY_H
 toggle_always_on_top = <super> KEY_T
 toggle_showdesktop = <super> KEY_D
 
@@ -99,12 +92,10 @@ toggle_showdesktop = <super> KEY_D
 [animate]
 open_animation = zoom
 close_animation = fade
-minimize_animation = squeezimize
 duration = 220ms circle
 startup_duration = 400ms circle
 zoom_duration = 240ms circle
 fade_duration = 180ms linear
-squeezimize_duration = 260ms circle
 # The bar, start and charms animate themselves.
 enabled_for = (type equals "toplevel" | (type equals "x-or" & focusable equals true))
 fade_enabled_for = type equals "overlay"
@@ -168,7 +159,7 @@ command_apps = ~/.local/bin/tube-start --apps
 binding_search = <super> KEY_Q
 command_search = ~/.local/bin/tube-start --search
 binding_charms = <super> KEY_C
-command_charms = ~/.local/bin/tube-charms
+command_charms = ~/.local/bin/tube-status
 binding_settings = <super> KEY_I
 command_settings = ~/.local/bin/tube-charms --settings
 binding_power = <super> <shift> KEY_E
@@ -218,9 +209,17 @@ disable_on_fullscreen = true
 autostart_wf_shell = false
 0_env = dbus-update-activation-environment --systemd WAYLAND_DISPLAY XDG_CURRENT_DESKTOP=wayfire XDG_SESSION_TYPE=wayland WAYFIRE_SOCKET
 desktops = ~/.local/bin/tube-desktops daemon
-# The Wayfire bar layout ships with tubewm; its look is the same style.css.
-bar = waybar -c ~/.local/share/tubewm/desktop/config/waybar/wayfire.jsonc -s ~/.config/waybar/style.css
+# The strip along the top: start, desktops, the window handle and the time.
+bar = ~/.local/bin/tube-strip
 notifications = mako
 wallpaper = ~/.local/bin/tube-wallpaper show
 idle = ~/.local/bin/tube-idle
 start = ~/.local/bin/tube-start
+
+# ── screens ────────────────────────────────────────────────────────────────
+# A built-in high-density screen is scaled so text and controls are a
+# comfortable size: 2 on a Framework 13 with the 2.8K screen, 1.5 on the
+# 2256 x 1504 one. Everything is drawn sharp at that size; only old X11 apps
+# are drawn at 1 and enlarged. Set your own under [output:NAME] in
+# ~/.config/tubewm/wayfire.ini (wlr-randr lists the names).
+@OUTPUTS@
