@@ -42,7 +42,10 @@ What it does:
 
 Then log out, pick **tubewm** on the sign-in screen and sign in. (No sign-in
 screen? Log in on a console and type `tubewm-session`.) The first time, a short
-welcome lets you pick your colour and check your keyboard.
+welcome lets you pick your colour and check your keyboard. After that, start
+opens when you log in: `Super+S` brings it back, `Super+C` opens the charms and
+`Super+I` settings. The full key list is in
+[desktop/docs/keys.html](desktop/docs/keys.html) ([view it rendered](https://htmlpreview.github.io/?https://github.com/alex-ha-192/tubewm/blob/main/desktop/docs/keys.html)).
 
 Other ways to run it:
 
@@ -189,7 +192,11 @@ keyboard layout on the sign-in screen is left as it is.
   the values they suggest in `/etc/libinput/local-overrides.quirks`, as
   described in the libinput "Device quirks" documentation.
 * **`Super+S` does nothing:** run `~/.local/bin/tube-start` from a terminal
-  (`Super+Return`) to see the error.
+  (`Super+Return`) to see the error. A missing GtkLayerShell or Open Sans is
+  the usual cause.
+* **Stuck with no way out:** `Super+Return` opens a terminal and
+  `Super+Shift+E` has sign out. From any text console (`Ctrl+Alt+F3`),
+  `./install.sh --uninstall` in the tubewm folder puts your old desktop back.
 * **"GtkLayerShell not found" or start won't open:** install gtk-layer-shell's
   GObject bindings (`gir1.2-gtklayershell-0.1` on Debian/Ubuntu,
   `gtk-layer-shell` elsewhere).

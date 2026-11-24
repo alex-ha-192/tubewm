@@ -2,6 +2,7 @@
 # tube-share: the "share" charm. Takes a screenshot, copies it to the
 # clipboard and saves it to ~/Pictures/Screenshots.
 #   tube-share screen | region | window
+PATH="$(dirname "$(readlink -f "$0")"):$PATH"  # find the other tube-* commands
 set -euo pipefail
 mode=${1:-screen}
 dir=${XDG_PICTURES_DIR:-$HOME/Pictures}/Screenshots
