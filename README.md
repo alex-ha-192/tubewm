@@ -74,6 +74,11 @@ Other ways to run it:
   sign-in screen and the consoles. Change it any time with
   `tube-keyboard set gb`, and `tube-keyboard system` to copy it to the sign-in
   screen.
+* **The lock screen** shows your wallpaper, the time and the password box, with
+  sleep, restart and shut down along the bottom. The people icon opens the
+  sign-in screen so you can start another desktop while this one keeps running
+  (Ctrl+Alt+F1 to F7 switches back). The buttons need
+  `gtklock-powerbar-module`, which the installer adds on Arch.
 
 ### App themes
 
