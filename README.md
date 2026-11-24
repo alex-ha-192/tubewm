@@ -99,7 +99,7 @@ export PATH="$HOME/.local/bin:$PATH"
 * **Already inside Sway:** run `swaymsg reload`.
 
 Start opens when you log in. Press `Super+S` to bring it back, `Super+C` for charms and `Super+I` for settings.
-The full key list is in [desktop/README.md](desktop/README.md#keys).
+The full key list is in [desktop/docs/keys.html](desktop/docs/keys.html) ([view it rendered](https://htmlpreview.github.io/?https://github.com/alex-ha-192/tubewm/blob/main/desktop/docs/keys.html)) and [desktop/README.md](desktop/README.md#keys).
 
 ### 6. Theme your apps (optional)
 
