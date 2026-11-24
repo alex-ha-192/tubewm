@@ -75,6 +75,7 @@ cat > "$PROBE.sh" <<PROBE_EOF
 while IFS= read -r p; do
     if command -v "\$p" >/dev/null 2>&1; then echo "found \$p"; else echo "missing \$p"; fi
 done < "$PROBE.names" > "$PROBE.tmp"
+echo "path \$PATH" >> "$PROBE.tmp"
 mv "$PROBE.tmp" "$PROBE"
 PROBE_EOF
 chown "$SANDBOX_USER:" "$PROBE.names" "$PROBE.sh" 2>/dev/null
@@ -88,7 +89,7 @@ for p in "${progs[@]}"; do
     elif [[ $OPTIONAL == *" $p "* ]]; then warn "$p not found (optional)"
     else fail "$p is not on the session's PATH"; fi
 done
-spath=$(tr '\0' '\n' < "/proc/$(pgrep -u "$SANDBOX_USER" -x sway | head -n1)/environ" 2>/dev/null | sed -n 's/^PATH=//p')
+spath=$(sed -n 's/^path //p' "$PROBE" 2>/dev/null)
 echo "        sway's PATH: ${spath:-unknown}"
 
 section "open things the way the key bindings do"
