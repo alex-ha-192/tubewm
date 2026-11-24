@@ -336,7 +336,7 @@ ACTIONS = {
     "charms": ("charms", "start", "tube-charms"),
     "switcher": ("switch", "apps", "tube-switcher"),
     "devices": ("devices", "devices", "tube-charms --devices"),
-    "screenshot": ("screenshot", "share", "sleep 0.3; tube-share region"),
+    "screenshot": ("screenshot", "share", "sleep 0.3; tube-share"),
 }
 
 

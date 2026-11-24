@@ -1,21 +1,16 @@
-#!/usr/bin/env bash
-# tube-share: the "share" charm. Takes a screenshot, copies it to the
-# clipboard and saves it to ~/Pictures/Screenshots.
-#   tube-share screen | region | window
-PATH="$(dirname "$(readlink -f "$0")"):$PATH"  # find the other tube-* commands
-set -euo pipefail
-mode=${1:-screen}
-dir=${XDG_PICTURES_DIR:-$HOME/Pictures}/Screenshots
-mkdir -p "$dir"
-file=$dir/$(date +%Y-%m-%d_%H-%M-%S).png
+#!/usr/bin/env python3
+"""tube-share: see desktop/shell/tubewm_shell/shot.py."""
+import os
+import sys
 
-case $mode in
-    screen) grim "$file" ;;
-    region) geom=$(slurp -b 00000088 -c ffffffff -w 2) || exit 0; grim -g "$geom" "$file" ;;
-    window) geom=$(swaymsg -t get_tree | jq -r '.. | objects | select(.focused? == true) | .rect | "\(.x),\(.y) \(.width)x\(.height)"' | head -n1)
-            grim -g "$geom" "$file" ;;
-    *) sed -n '2,5p' "$0" | sed 's/^# \{0,1\}//'; exit 2 ;;
-esac
+here = os.path.dirname(os.path.realpath(__file__))
+for path in (os.path.join(here, "..", "shell"),
+             os.path.join(os.environ.get("XDG_DATA_HOME", os.path.expanduser("~/.local/share")),
+                          "tubewm", "desktop", "shell")):
+    if os.path.isdir(os.path.join(path, "tubewm_shell")):
+        sys.path.insert(0, os.path.abspath(path))
+        break
 
-command -v wl-copy >/dev/null && wl-copy --type image/png < "$file"
-notify-send -a share -i "$file" "screenshot" "copied, and saved to $(basename "$file")" 2>/dev/null || true
+from tubewm_shell.shot import main  # noqa: E402
+
+sys.exit(main())

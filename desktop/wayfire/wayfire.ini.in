@@ -191,10 +191,11 @@ binding_files = <super> KEY_E | <super> KEY_F2
 command_files = xdg-open ~
 binding_lock = <super> KEY_L
 command_lock = loginctl lock-session
-binding_shot = KEY_SYSRQ
-command_shot = ~/.local/bin/tube-share screen
-binding_shot_region = <shift> KEY_SYSRQ | <super> <shift> KEY_S
-command_shot_region = ~/.local/bin/tube-share region
+# Print: dim the screen and choose an area, a window or a screen.
+binding_shot = KEY_SYSRQ | <super> <shift> KEY_S
+command_shot = ~/.local/bin/tube-share
+binding_shot_screen = <shift> KEY_SYSRQ
+command_shot_screen = ~/.local/bin/tube-share screen
 
 repeatable_binding_volup = KEY_VOLUMEUP
 command_volup = ~/.local/bin/tube-osd volume up

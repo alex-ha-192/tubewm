@@ -123,6 +123,49 @@ def windows():
     return out
 
 
+def window_rects():
+    """The windows you can see right now, as (x, y, width, height) in screen
+    coordinates (the same ones grim takes), with whether each is focused.
+    The most recently used come first, so the one on top wins a tie."""
+    found = []
+    if WAYFIRE:
+        try:
+            views = _wf("window-rules/list-views")
+        except (OSError, WayfireError):
+            return []
+        outs = {o["id"]: o.get("geometry") or {} for o in _wf_outputs()}
+        for v in sorted(views, key=lambda v: -v.get("last-focus-timestamp", 0)):
+            og = outs.get(v.get("output-id"))
+            if v.get("role") != "toplevel" or not v.get("mapped") or v.get("minimized") or not og:
+                continue
+            g = v.get("geometry") or {}
+            r = (g.get("x", 0), g.get("y", 0), g.get("width", 0), g.get("height", 0))
+            # Positions are relative to the desktop on screen: anything
+            # outside it is on another desktop.
+            if _overlap(r, (0, 0, og.get("width", 0), og.get("height", 0))):
+                found.append(((r[0] + og.get("x", 0), r[1] + og.get("y", 0), r[2], r[3]),
+                              bool(v.get("activated"))))
+    elif SWAY:
+        tree = _sway("-t", "get_tree") or {}
+        shown = {w["name"] for w in (_sway("-t", "get_workspaces") or []) if w.get("visible")}
+
+        def walk(node, ws=None, floating=False):
+            if node.get("type") == "workspace":
+                ws = node.get("name")
+            for c in node.get("floating_nodes", []):
+                walk(c, ws, True)
+            for c in node.get("nodes", []):
+                walk(c, ws, floating)
+            if node.get("pid") and ws in shown:
+                r = node.get("rect") or {}
+                found.append(((r.get("x", 0), r.get("y", 0), r.get("width", 0), r.get("height", 0)),
+                              bool(node.get("focused")), floating))
+        walk(tree)
+        found.sort(key=lambda f: (not f[2], not f[1]))  # floating ones sit on top
+        found = [f[:2] for f in found]
+    return found
+
+
 def wf_views():
     """Every view Wayfire knows about, as it describes them."""
     return _wf("window-rules/list-views")
