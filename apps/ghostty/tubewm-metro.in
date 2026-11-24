@@ -1,0 +1,27 @@
+# tubewm Metro for Ghostty (generated, accent @ACCENT@). Do not edit: re-run apps/install.sh.
+# Selected with  theme = tubewm-metro  in ~/.config/ghostty/config
+
+background = @BG@
+foreground = @FG@
+cursor-color = @ACCENT@
+cursor-text = @ON_ACCENT@
+selection-background = @SELECTION@
+selection-foreground = @FG@
+split-divider-color = @SURFACE_ALT@
+unfocused-split-fill = @BG@
+palette = 0=@ANSI0@
+palette = 1=@ANSI1@
+palette = 2=@ANSI2@
+palette = 3=@ANSI3@
+palette = 4=@ANSI4@
+palette = 5=@ANSI5@
+palette = 6=@ANSI6@
+palette = 7=@ANSI7@
+palette = 8=@ANSI8@
+palette = 9=@ANSI9@
+palette = 10=@ANSI10@
+palette = 11=@ANSI11@
+palette = 12=@ANSI12@
+palette = 13=@ANSI13@
+palette = 14=@ANSI14@
+palette = 15=@ANSI15@

@@ -1,0 +1,94 @@
+# tubewm Metro for qutebrowser (generated, accent @ACCENT@). Do not edit: re-run apps/install.sh.
+# Loaded from config.py with  config.source("tubewm.py")
+# pylint: disable=undefined-variable  (qutebrowser injects `c` and `config`)
+
+bg, surface, hover = "@BG@", "@SURFACE@", "@SURFACE_ALT@"
+fg, subtle, quiet = "@FG@", "@FG_SUBTLE@", "@FG_DISABLED@"
+accent, on_accent, accent_text = "@ACCENT@", "@ON_ACCENT@", "@ACCENT_TEXT@"
+error, warning, success = "@SYN_ERROR@", "@WARNING@", "@SUCCESS@"
+
+c.fonts.default_family = ["@FONT_UI@", "Noto Sans", "sans-serif"]
+c.fonts.default_size = "11pt"
+c.fonts.statusbar = "default_size @FONT_MONO@"
+
+# tabs: plain names in readable grey; the current tab is white on charcoal
+c.tabs.padding = {"top": 6, "bottom": 6, "left": 12, "right": 12}
+c.tabs.indicator.width = 0
+c.tabs.favicons.scale = 1.0
+c.tabs.title.format = "{audio}{current_title}"
+c.colors.tabs.bar.bg = bg
+c.colors.tabs.odd.bg = c.colors.tabs.even.bg = bg
+c.colors.tabs.odd.fg = c.colors.tabs.even.fg = subtle
+c.colors.tabs.selected.odd.bg = c.colors.tabs.selected.even.bg = surface
+c.colors.tabs.selected.odd.fg = c.colors.tabs.selected.even.fg = fg
+c.colors.tabs.pinned.odd.bg = c.colors.tabs.pinned.even.bg = bg
+c.colors.tabs.pinned.odd.fg = c.colors.tabs.pinned.even.fg = subtle
+c.colors.tabs.pinned.selected.odd.bg = c.colors.tabs.pinned.selected.even.bg = surface
+c.colors.tabs.pinned.selected.odd.fg = c.colors.tabs.pinned.selected.even.fg = fg
+c.colors.tabs.indicator.start = accent
+c.colors.tabs.indicator.stop = accent
+c.colors.tabs.indicator.error = error
+
+# status bar: quiet; the address and the mode are the only bright things
+c.colors.statusbar.normal.bg = "@STATUS_BG@"
+c.colors.statusbar.normal.fg = "@STATUS_FG@"
+c.colors.statusbar.insert.bg = "@STATUS_BG@"
+c.colors.statusbar.insert.fg = "@STATUS_EMPHASIS@"
+c.colors.statusbar.passthrough.bg = "@STATUS_BG@"
+c.colors.statusbar.passthrough.fg = warning
+c.colors.statusbar.command.bg = surface
+c.colors.statusbar.command.fg = fg
+c.colors.statusbar.caret.bg = "@STATUS_BG@"
+c.colors.statusbar.caret.fg = "@STATUS_EMPHASIS@"
+c.colors.statusbar.progress.bg = accent
+c.colors.statusbar.url.fg = fg
+c.colors.statusbar.url.success.https.fg = fg
+c.colors.statusbar.url.success.http.fg = subtle
+c.colors.statusbar.url.hover.fg = accent_text
+c.colors.statusbar.url.error.fg = error
+c.colors.statusbar.url.warn.fg = warning
+
+# completion: a flat charcoal sheet, the chosen row filled with the accent
+c.colors.completion.fg = fg
+c.colors.completion.odd.bg = c.colors.completion.even.bg = surface
+c.colors.completion.category.bg = surface
+c.colors.completion.category.fg = subtle
+c.colors.completion.category.border.top = surface
+c.colors.completion.category.border.bottom = surface
+c.colors.completion.item.selected.bg = accent
+c.colors.completion.item.selected.fg = on_accent
+c.colors.completion.item.selected.border.top = accent
+c.colors.completion.item.selected.border.bottom = accent
+c.colors.completion.item.selected.match.fg = on_accent
+c.colors.completion.match.fg = accent_text
+c.colors.completion.scrollbar.bg = surface
+c.colors.completion.scrollbar.fg = hover
+
+c.colors.hints.bg = accent
+c.colors.hints.fg = on_accent
+c.colors.hints.match.fg = on_accent  # white would vanish on light accents such as lime
+c.hints.border = "0px"
+c.colors.keyhint.bg = surface
+c.colors.keyhint.fg = fg
+c.colors.keyhint.suffix.fg = accent_text
+c.colors.messages.info.bg = c.colors.messages.info.border = surface
+c.colors.messages.info.fg = fg
+c.colors.messages.warning.bg = c.colors.messages.warning.border = warning
+c.colors.messages.warning.fg = "#000000"
+c.colors.messages.error.bg = c.colors.messages.error.border = error
+c.colors.messages.error.fg = "#FFFFFF"
+c.colors.prompts.bg = surface
+c.colors.prompts.fg = fg
+c.colors.prompts.border = "0px"
+c.colors.prompts.selected.bg = accent
+c.colors.prompts.selected.fg = on_accent
+c.colors.downloads.bar.bg = bg
+c.colors.downloads.start.bg = surface
+c.colors.downloads.stop.bg = accent
+c.colors.downloads.error.bg = error
+c.colors.contextmenu.menu.bg = surface
+c.colors.contextmenu.menu.fg = fg
+c.colors.contextmenu.selected.bg = accent
+c.colors.contextmenu.selected.fg = on_accent
+c.colors.webpage.bg = bg
+c.colors.webpage.preferred_color_scheme = "@MODE@"
