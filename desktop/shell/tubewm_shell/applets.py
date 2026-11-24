@@ -282,10 +282,12 @@ class Music(Applet):
 
     def build(self):
         self.art = Gtk.Image()
-        self.art.set_halign(Gtk.Align.START)
+        self.art.set_halign(Gtk.Align.CENTER)
         self.pack_start(self.art, False, False, 0)
-        self.song = label("", "applet-heading", wrap=True)
-        self.artist = label("", "applet-dim", wrap=True)
+        self.song = label("", "applet-heading", xalign=0.5, wrap=True)
+        self.artist = label("", "applet-dim", xalign=0.5, wrap=True)
+        for lab in (self.song, self.artist):
+            lab.set_justify(Gtk.Justification.CENTER)
         self.pack_start(self.song, False, False, 0)
         self.pack_start(self.artist, False, False, 0)
         self.pos = bar(0)
@@ -299,6 +301,7 @@ class Music(Applet):
             b.set_valign(Gtk.Align.CENTER)
             row.pack_start(b, False, False, 0)
         self.play.get_style_context().add_class("main")
+        row.set_halign(Gtk.Align.CENTER)
         self.controls = row
         self.pack_start(row, False, False, 0)
         self.controls.set_no_show_all(True)
@@ -602,7 +605,7 @@ class Power(Applet):
     def update(self):
         pct, state, t = battery_info()
         if pct is None:
-            self.pct.set_text("ac")
+            self.pct.set_text("plugged in")
             self.state.set_text("no battery: running on mains power")
             self.time.set_text("")
             self.level.hide()
@@ -842,11 +845,11 @@ class System(Applet):
         try:
             with open("/proc/uptime") as fh:
                 secs = int(float(fh.read().split()[0]))
-            self.up.set_text("up %dh %02dm" % (secs // 3600, secs % 3600 // 60))
+            self.up.set_text("up %d hours %d minutes" % (secs // 3600, secs % 3600 // 60))
         except (OSError, ValueError):
             pass
         out = run(["ps", "-eo", "comm,%cpu,%mem", "--sort=-%cpu", "--no-headers"])
-        rows = ["%-18s %5s%% cpu %5s%% mem" % tuple((l.split() + ["", "", ""])[:3])
+        rows = ["%-18s %5s%% processor %5s%% memory" % tuple((l.split() + ["", "", ""])[:3])
                 for l in out.splitlines()[:6]]
         self.procs.set_text("\n".join(rows))
 

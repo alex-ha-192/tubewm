@@ -7,20 +7,15 @@ the best match first (press Enter to open it), then the rest, apps before
 web apps. Esc goes back to the list, and again closes start, as does a
 click on empty space.
 
-On the right, always, is the glance: what's playing, what's next today,
-the weather and the apps you have open, with settings, lock and power below.
+On the right, always, is the glance: live tiles you can move, resize and add
+to (see glance.py), the apps you have open, and settings, lock and power.
 """
 
 import argparse
-import datetime
-import json
 import os
 import re
-import threading
-import time
-import urllib.parse
 
-from . import common, layout, wm
+from . import common, glance, layout, wm
 
 from gi.repository import Gdk, Gio, GLib, Gtk, Pango  # noqa: E402
 
@@ -38,8 +33,6 @@ MARGIN = 72          # around everything
 GLANCE_W = 400
 COLUMN_GAP = 56
 RESULTS = 8
-WEATHER_CACHE = os.path.join(common.RUNTIME, "tubewm-weather")
-WEATHER_EVERY = 1800  # seconds
 
 # Browsers that install web apps as their own entries.
 BROWSERS = {"vivaldi": "vivaldi", "chromium": "chromium", "chrome": "chrome",
@@ -110,57 +103,6 @@ def search(apps, query):
     scored = sorted((s, len(a[0]), a[0], i) for i, a in enumerate(apps)
                     for s in [score(a[2], a[0], query, a[3])] if s is not None)
     return [apps[i] for *_rest, i in scored]
-
-
-# ── what the glance shows ──────────────────────────────────────────────────
-
-def now_playing():
-    """(status, title, artist, where) of whatever is playing, or None."""
-    fmt = "{{status}}\t{{title}}\t{{artist}}\t{{duration(position)}}\t{{duration(mpris:length)}}"
-    parts = common.sh(["playerctl", "metadata", "--format", fmt]).split("\t")
-    if len(parts) == 5 and parts[0] in ("Playing", "Paused") and parts[1]:
-        where = "%s of %s" % (parts[3], parts[4]) if parts[3] and parts[4] else ""
-        return parts[0].lower(), parts[1], parts[2], where
-    return None
-
-
-def next_event():
-    """(time, what) of your next event today, from khal, or None."""
-    if not common.have("khal"):
-        return None
-    out = common.sh(["khal", "list", "now", "eod", "--format", "{start-time}\t{title}",
-                     "--day-format", ""], timeout=4)
-    for line in out.splitlines():
-        when, _tab, what = line.partition("\t")
-        if what.strip():
-            return when.strip() or "all day", what.strip()
-    return None
-
-
-def weather(allow_fetch=True):
-    """(temperature, conditions) from wttr.in, remembered for half an hour."""
-    try:
-        with open(WEATHER_CACHE) as fh:
-            cached = json.load(fh)
-        if time.time() - cached.get("at", 0) < WEATHER_EVERY:
-            return cached.get("temp"), cached.get("cond")
-    except (OSError, ValueError):
-        cached = {}
-    if not allow_fetch or not common.have("curl"):
-        return cached.get("temp"), cached.get("cond")
-    loc = urllib.parse.quote(os.environ.get("TUBEWM_WEATHER", "").strip())
-    out = common.sh(["curl", "-fsS", "--max-time", "8",
-                     "https://wttr.in/%s?format=%%t%%09%%C&m" % loc], timeout=10)
-    parts = out.split("\t")
-    if len(parts) == 2 and "unknown" not in out.lower() and "<" not in out:
-        temp, cond = parts[0].replace("+", "").strip(), parts[1].strip().lower()
-        try:
-            with open(WEATHER_CACHE, "w") as fh:
-                json.dump({"at": time.time(), "temp": temp, "cond": cond}, fh)
-        except OSError:
-            pass
-        return temp, cond
-    return cached.get("temp"), cached.get("cond")
 
 
 # ── building blocks ────────────────────────────────────────────────────────
@@ -251,7 +193,6 @@ class Start:
         self.results.hide()
         self.fill_columns()
         self.refresh_glance()
-        GLib.timeout_add_seconds(2, self.refresh_playing)
         win.set_opacity(0.0)
         self._fade(1.0, None)
         if mode == "search":
@@ -406,44 +347,18 @@ class Start:
 
     # ── the glance ───────────────────────────────────────────────────
     def build_glance(self):
+        """Live tiles you arrange (glance.py), what's open now, and settings,
+        lock and power."""
         col = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=16)
         col.set_size_request(GLANCE_W, -1)
-        col.pack_start(word("glance", "start-hint"), False, False, 0)
-
-        def tile(accent=False):
-            parts = [word("", "glance-label"), word("", "glance-big", ellipsize=True),
-                     word("", "glance-sub", ellipsize=True)]
-            box = Gtk.Box(orientation=Gtk.Orientation.VERTICAL)
-            for p in parts:
-                box.pack_start(p, False, False, 0)
-            b = Gtk.Button()
-            b.set_relief(Gtk.ReliefStyle.NONE)
-            b.get_style_context().add_class("glance-tile")
-            if accent:
-                b.get_style_context().add_class("glance-accent")
-            b.add(box)
-            return b, parts
-
-        self.playing, self.playing_parts = tile(accent=True)
-        self.playing.set_size_request(GLANCE_W, 200)
-        self.playing.connect("clicked", lambda *_: (common.sh(["playerctl", "play-pause"]), self.refresh_playing()))
-        col.pack_start(self.playing, False, False, 0)
-
-        pair = Gtk.Box(spacing=16, homogeneous=True)
-        self.next, self.next_parts = tile()
-        self.next.connect("clicked", lambda *_: self.open_calendar())
-        self.weather, self.weather_parts = tile()
-        self.weather.connect("clicked", lambda *_: self.refresh_weather(fetch=True))
-        for t in (self.next, self.weather):
-            t.set_size_request(-1, 192)
-            pair.pack_start(t, True, True, 0)
-        col.pack_start(pair, False, False, 0)
+        self.glance = glance.Glance(GLANCE_W, closes=self.quit)
+        col.pack_start(self.glance, True, True, 0)
 
         self.open_head = word("open now", "start-hint")
         self.open_head.get_style_context().add_class("start-open-head")
-        col.pack_start(self.open_head, False, False, 0)
+        self.glance.below.pack_start(self.open_head, False, False, 0)
         self.open_box = Gtk.Box(orientation=Gtk.Orientation.VERTICAL)
-        col.pack_start(self.open_box, False, False, 0)
+        self.glance.below.pack_start(self.open_box, False, False, 0)
 
         links = Gtk.Box(spacing=40)
         links.set_halign(Gtk.Align.END)
@@ -483,58 +398,8 @@ class Start:
         common.run_detached(" ".join([os.path.join(common.BIN_DIR, argv[0])] + argv[1:]))
         self.quit()
 
-    @staticmethod
-    def _set(parts, label, big, sub):
-        for p, text in zip(parts, (label, big, sub)):
-            p.set_text(text or "")
-            p.set_visible(bool(text))
-
     def refresh_glance(self):
-        self.refresh_playing()
-        self.fill_open()
-        ev = next_event()
-        if ev:
-            self._set(self.next_parts, "next", ev[0], ev[1].lower())
-        else:
-            today = datetime.date.today()
-            self._set(self.next_parts, "today", str(today.day), today.strftime("%A %B").lower())
-        self.refresh_weather(fetch=False)
-        threading.Thread(target=lambda: GLib.idle_add(self._show_weather, weather()), daemon=True).start()
-
-    def refresh_playing(self):
-        p = now_playing() if common.have("playerctl") else None
-        if p:
-            status, title, artist, where = p
-            sub = " · ".join(x for x in (artist, where) if x)
-            self._set(self.playing_parts, "now playing" if status == "playing" else "paused", title, sub)
-        else:
-            self._set(self.playing_parts, "music", "nothing playing", "")
-        return True
-
-    def refresh_weather(self, fetch):
-        if fetch:
-            try:
-                os.remove(WEATHER_CACHE)
-            except OSError:
-                pass
-            threading.Thread(target=lambda: GLib.idle_add(self._show_weather, weather()), daemon=True).start()
-        else:
-            self._show_weather(weather(allow_fetch=False))
-
-    def _show_weather(self, w):
-        temp, cond = w if w else (None, None)
-        if temp:
-            self._set(self.weather_parts, "weather", temp, cond)
-        else:
-            self._set(self.weather_parts, "weather", "…", "no forecast yet")
-        return False
-
-    def open_calendar(self):
-        for app_id in ("org.gnome.Calendar", "gnome-calendar", "org.kde.merkuro.calendar", "khal"):
-            info = common.find_app(app_id)
-            if info:
-                self.launch(info)
-                return
+        self.fill_open()   # the tiles keep themselves up to date
 
     # ── doing things ─────────────────────────────────────────────────
     def launch(self, app):
@@ -563,13 +428,15 @@ class Start:
     def on_key(self, _win, event):
         key = event.keyval
         if key == Gdk.KEY_Escape:
+            if self.glance.back():
+                return True
             if self.searching or self.entry.get_text():
                 self.show_apps()
             else:
                 self.quit()
             return True
-        if self.entry.has_focus():
-            return False
+        if self.entry.has_focus() or isinstance(self.win.get_focus(), (Gtk.Entry, Gtk.TextView)):
+            return False   # typing into search, a tile's note or its settings
         # From the key itself: event.string is often empty under Wayland.
         code = Gdk.keyval_to_unicode(event.keyval)
         text = chr(code) if code else ""
