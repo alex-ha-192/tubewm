@@ -1,0 +1,35 @@
+#!/usr/bin/env bash
+# tube-other-desktop: open the sign-in screen alongside this session, so you
+# can sign in to another desktop (Plasma, plain Sway, tubewm on Wayfire…)
+# while everything here keeps running. Switch back with Ctrl+Alt+F1…F7, or
+# by signing in again as yourself.
+#
+#   tube-other-desktop          do it
+#   tube-other-desktop --can    exit 0 if the login screen supports it
+set -u
+
+how() {
+    # SDDM and LightDM: the seat this session runs on.
+    if [ -n "${XDG_SEAT_PATH:-}" ] && command -v busctl >/dev/null; then
+        echo seat; return 0
+    fi
+    # GDM.
+    if command -v gdbus >/dev/null && busctl --system status org.gnome.DisplayManager >/dev/null 2>&1; then
+        echo gdm; return 0
+    fi
+    return 1
+}
+
+case ${1:-} in
+    --can) how >/dev/null; exit ;;
+    -h|--help) sed -n '2,9p' "$0" | sed 's/^# \{0,1\}//'; exit 0 ;;
+esac
+
+case $(how) in
+    seat) exec busctl --system call org.freedesktop.DisplayManager "$XDG_SEAT_PATH" \
+              org.freedesktop.DisplayManager.Seat SwitchToGreeter ;;
+    gdm) exec gdbus call --system --dest org.gnome.DisplayManager \
+              --object-path /org/gnome/DisplayManager/LocalDisplayFactory \
+              --method org.gnome.DisplayManager.LocalDisplayFactory.CreateTransientDisplay ;;
+    *) echo "tube-other-desktop: this login screen can't open alongside a session" >&2; exit 1 ;;
+esac

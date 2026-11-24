@@ -47,7 +47,7 @@ PACKAGES = {
         "sway swaybg swayidle swaylock waybar fuzzel mako foot grim slurp wl-clipboard jq "
         "playerctl brightnessctl libnotify wireplumber python-gobject python-cairo gtk3 "
         "gtk-layer-shell ttf-opensans",
-        "gtklock pavucontrol blueman curl ttf-jetbrains-mono xdg-desktop-portal-wlr "
+        "gtklock gtklock-powerbar-module pavucontrol blueman curl ttf-jetbrains-mono xdg-desktop-portal-wlr "
         "xdg-desktop-portal-gtk power-profiles-daemon upower wayfire",
     ),
     "debian": (
@@ -76,8 +76,8 @@ PACKAGES = {
 # What it takes to build the Wayfire plugins in desktop/wayfire/plugins.
 BUILD_DEPS = {
     "arch": "meson ninja gcc pkgconf",
-    "debian": "meson ninja-build g++ pkg-config wayfire-dev",
-    "fedora": "meson ninja-build gcc-c++ pkgconf-pkg-config wayfire-devel",
+    "debian": "meson ninja-build g++ pkg-config wayfire-dev libdrm-dev",
+    "fedora": "meson ninja-build gcc-c++ pkgconf-pkg-config wayfire-devel libdrm-devel",
     "suse": "meson ninja gcc-c++ pkgconf wayfire-devel",
 }
 PLUGIN_BUILD = os.path.join(REPO, "desktop", "wayfire", "plugins", "build.sh")

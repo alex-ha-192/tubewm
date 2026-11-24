@@ -1,7 +1,9 @@
 #!/usr/bin/env bash
 # tube-lock: lock the session.
-# A big clock and the date; any key or click brings up your name and the
-# password box, with the keyboard layout written under it.
+# Like the sign-in screen: your wallpaper, dimmed, with a big clock, the
+# date, your name and the password box in the bottom-left corner and the
+# keyboard layout under it. With gtklock-powerbar-module installed, sleep,
+# restart, shut down and "another desktop" sit along the bottom.
 #
 # Prefers gtklock (4 or later gets the full layout, older ones the same
 # colours on gtklock's own layout), then swaylock-effects (clock in the
@@ -45,8 +47,26 @@ keyboard_name() {
 xml_escape() { sed -e 's/&/\&amp;/g' -e 's/</\&lt;/g' -e 's/>/\&gt;/g' -e 's/"/\&quot;/g'; }
 
 if command -v gtklock >/dev/null; then
-    args=(--daemonize --style "$CONFIG/gtklock/style.css" --time-format '%H:%M'
-          --start-hidden --idle-hide --idle-timeout 20)
+    # The rendered style, plus the wallpaper under a dark veil when there is one.
+    style=$RUN/tube-lock.css
+    cp "$CONFIG/gtklock/style.css" "$style" 2>/dev/null || : > "$style"
+    wall=${XDG_CACHE_HOME:-$HOME/.cache}/tubewm/wallpaper.png
+    if [ -r "$wall" ] && [ ! -e "$CONFIG/tubewm/wallpaper-off" ]; then
+        printf '\nwindow { background-image: linear-gradient(alpha(black, 0.45), alpha(black, 0.65)), url("%s"); background-size: cover, cover; background-position: center; }\n' \
+            "$wall" >> "$style"
+    fi
+    args=(--daemonize --style "$style" --time-format '%H:%M' --idle-hide --idle-timeout 30)
+    # Power choices and "another desktop", when the module is there.
+    for m in /usr/lib/gtklock/powerbar-module.so /usr/lib64/gtklock/powerbar-module.so \
+             /usr/local/lib/gtklock/powerbar-module.so /usr/lib/*/gtklock/powerbar-module.so; do
+        [ -r "$m" ] || continue
+        args+=(-m "$m" --logout-command= --suspend-command="systemctl suspend"
+               --reboot-command="systemctl reboot" --poweroff-command="systemctl poweroff")
+        if tube-other-desktop --can; then
+            args+=(--userswitch-command="$(command -v tube-other-desktop)")
+        fi
+        break
+    done
     version=$(gtklock --version 2>&1 | grep -o '[0-9][0-9.]*' | head -n1)
     if [ "${version%%.*}" -ge 4 ] 2>/dev/null && [ -r "$CONFIG/gtklock/layout.ui" ]; then
         user=$(getent passwd "$(id -un)" | cut -d: -f5 | cut -d, -f1)
