@@ -46,11 +46,9 @@ titlebar_border_thickness 0
 titlebar_padding 1
 hide_edge_borders --i3 smart
 
-# 10 px gutters, the same as the gap between tiles on the start screen.
-# A window on its own fills the screen edge to edge.
-gaps inner 10
+# Windows meet edge to edge, with no gaps between them.
+gaps inner 0
 gaps outer 0
-smart_gaps on
 
 # Obsidian backdrop. Put `output * bg /path/to/image fill` in config.d to
 # use a picture instead.
@@ -61,11 +59,18 @@ output * bg $tube_shell solid_color
 input type:touchpad {
     tap enabled
     natural_scroll enabled
+    # Ignore the touchpad while typing, and while the trackpoint is in use,
+    # so a palm resting on it doesn't move the pointer or click.
     dwt enabled
+    dwtp enabled
+    # Two fingers pressed down is a right click, wherever they are.
+    click_method clickfinger
     middle_emulation enabled
 }
 
 input type:keyboard {
+    # British English. Change to us, de, fr... to suit your keyboard.
+    xkb_layout gb
     repeat_delay 300
     repeat_rate 40
 }

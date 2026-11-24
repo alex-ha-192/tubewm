@@ -40,7 +40,7 @@ PALETTE_DEFAULTS = {
     "SURFACE_HI": "#2B2B2B",
     "FG": "#FFFFFF",
     "SUBTLE": "#8A8A8A",
-    "DIM": "#4A4A4A",
+    "DIM": "#656565",
     "URGENT": "#E81123",
     "ACCENT": "#E3008C",
 }
