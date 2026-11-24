@@ -1,0 +1,47 @@
+#!/usr/bin/env bash
+# tube-lid: what happens when you close the laptop lid (called by sway).
+#
+#   tube-lid close          lock, or with another monitor in use, just turn
+#                           the laptop screen off
+#   tube-lid open           turn the laptop screen back on
+#   tube-lid power-button   hold logind's power-button handling for this
+#                           session, so the button can open the power menu
+#
+# Sleeping is left to logind (HandleLidSwitch, normally "suspend"), which
+# already stays awake while an external monitor is connected.
+set -u
+PATH="$(dirname "$(readlink -f "$0")"):$PATH"
+
+internal() {
+    swaymsg -t get_outputs -r 2>/dev/null \
+        | jq -r '.[] | select(.name | test("^(eDP|LVDS|DSI)")) | .name' | head -n1
+}
+
+others_active() {
+    swaymsg -t get_outputs -r 2>/dev/null \
+        | jq '[.[] | select(.active and (.name | test("^(eDP|LVDS|DSI)") | not))] | length'
+}
+
+case ${1:-} in
+    close)
+        panel=$(internal)
+        if [ -n "$panel" ] && [ "$(others_active)" -gt 0 ] 2>/dev/null; then
+            swaymsg -q output "$panel" disable
+        else
+            # Lock before logind suspends, so the desktop never shows on wake.
+            tube-lock
+        fi ;;
+    open)
+        panel=$(internal)
+        [ -n "$panel" ] && swaymsg -q output "$panel" enable ;;
+    power-button)
+        command -v systemd-inhibit >/dev/null || exit 0
+        # swaymsg returns when sway shuts down, which drops the inhibitor.
+        exec systemd-inhibit --what=handle-power-key --who=tubewm \
+            --why="The power button opens the power menu" --mode=block \
+            swaymsg -t subscribe '["shutdown"]' >/dev/null ;;
+    -h|--help|"")
+        sed -n '2,12p' "$0" | sed 's/^# \{0,1\}//' ;;
+    *)
+        echo "tube-lid: unknown action '$1'" >&2; exit 2 ;;
+esac

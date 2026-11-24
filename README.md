@@ -15,94 +15,67 @@ and artwork are drawn for this project.
 
 ## Installation
 
-Everything installs into your home directory. Nothing is written system-wide
-except the packages you ask for with `--deps`, and every config file that
-would be replaced is backed up first.
-
-### 1. What you need
-
-* A Linux system that can run **Sway 1.9 or newer** (any GPU that works with
-  wlroots; NVIDIA needs the proprietary driver and `sway --unsupported-gpu`).
-* `git`, `python3` 3.11 or newer (3.9 and 3.10 work if you also install the
-  `tomli` package), and `sudo` if you want the installer to fetch packages.
-* A supported package manager for `--deps`: `apt` (Debian, Ubuntu), `pacman`
-  (Arch), `dnf` (Fedora) or `zypper` (openSUSE). On anything else, install the
-  packages listed in step 3 yourself.
-
-### 2. Get the code
-
 ```sh
 git clone https://github.com/alex-ha-192/tubewm
 cd tubewm
+./install.sh
 ```
 
-### 3. Install the desktop
+That's all. The installer is a few screens in your terminal:
 
-```sh
-desktop/install.sh --deps
-```
+1. **your keyboard.** It starts on the layout your system already uses
+   (English (UK) on a British machine). Type to search if it's wrong.
+2. **ready to install.** A list of what it will do, all ticked. Press Enter.
+   Space turns a step off.
+3. **your password**, once, if any ticked step needs it.
+4. **installing**, with each step ticked off as it finishes.
 
-`--deps` installs these packages with your package manager (it asks for your
-sudo password):
+What it does:
 
-| | Packages |
+| | |
 |---|---|
-| Compositor and session | sway, swaybg, swayidle, swaylock |
-| Bar, launcher, toasts, terminal | waybar, fuzzel, mako, foot |
-| Screenshots and clipboard | grim, slurp, wl-clipboard |
-| Media keys and helpers | playerctl, brightnessctl, wireplumber, libnotify, jq |
-| Start screen and charms | python3-gobject, pycairo, GTK 3, gtk-layer-shell |
-| Font | Open Sans |
+| In your home folder | The desktop, start screen and charms in `~/.local/share/tubewm`, the `tube-*` commands in `~/.local/bin`, and configs for Sway, Waybar, mako, fuzzel, foot, the lock screen and GTK. Anything it replaces is backed up first. |
+| App themes | Themes every supported app it finds (see below), in the same colour. |
+| Packages (password) | Only the ones that are missing. On Arch and CachyOS this is a full `pacman -Syu`, which is the supported way to install and also fixes "failed retrieving file" mirror errors. Supports pacman, apt, dnf and zypper. |
+| Keyboard (password) | Uses your layout on the sign-in screen and the text consoles too (`localectl set-x11-keymap`). |
+| Sign-in screen (password) | Adds **tubewm** to the session menu of SDDM, GDM, LightDM or greetd. |
 
-Optional extras it will use when present: **gtklock** (a nicer lock screen),
-**NetworkManager** (`nmcli`, for the wi-fi toggle and network tile),
-**pavucontrol** and **blueman** (opened from the settings flyout), and
-**curl** (for the weather tile).
+Then log out, pick **tubewm** on the sign-in screen and sign in. (No sign-in
+screen? Log in on a console and type `tubewm-session`.) The first time, a short
+welcome lets you pick your colour and check your keyboard.
 
-Then the installer:
-
-1. copies the desktop to `~/.local/share/tubewm` and links the `tube-*`
-   commands into `~/.local/bin`;
-2. writes the Sway, Waybar, mako, fuzzel, foot, swaylock and GTK configs to
-   `~/.config`, copying anything it replaces to
-   `~/.config/tubewm/backup/<date>/`;
-3. renders every colour for the current accent (magenta unless you pick one);
-4. draws the default **fade** wallpaper from the accent;
-5. sets GTK to dark, Open Sans and no title-bar buttons, unless you pass
-   `--no-gsettings`.
-
-Other options:
+Other ways to run it:
 
 ```sh
-desktop/install.sh --accent teal      # pick the accent now (a name from palette/accents, or '#RRGGBB')
-desktop/install.sh --no-gsettings     # leave GTK / GNOME settings alone
-desktop/install.sh --help
+./install.sh --home-only    # nothing that needs a password
+./install.sh --yes          # no questions, take the defaults (e.g. over ssh)
+./install.sh --keyboard us:intl --yes
+./install.sh --uninstall    # take it all out again
 ```
 
-### 4. Make sure `~/.local/bin` is on your PATH
+### What you need
 
-Sway runs the `tube-*` commands from `~/.local/bin`. The installer warns if it
-isn't on your `PATH`. Most distros add it already; if yours doesn't, add this
-to `~/.profile` and log out and back in:
+* A Linux system that can run **Sway 1.9 or newer** (any GPU that works with
+  wlroots; the session launcher adds `--unsupported-gpu` for NVIDIA itself).
+* `git` and `python3` 3.9 or newer. Everything else the installer fetches.
 
-```sh
-export PATH="$HOME/.local/bin:$PATH"
-```
+### Laptops
 
-### 5. Start the desktop
+* **Closing the lid** locks the screen, then the laptop sleeps. Opening it
+  shows the lock screen, in your keyboard layout. With another monitor plugged
+  in, closing the lid just turns the laptop screen off.
+* **The power button** opens the power choices (sleep, sign out, restart, shut
+  down) instead of switching off straight away. Holding it still forces power
+  off.
+* Your keyboard layout is the same on the desktop, the lock screen, the
+  sign-in screen and the consoles. Change it any time with
+  `tube-keyboard set gb`, and `tube-keyboard system` to copy it to the sign-in
+  screen.
 
-* **From a display manager** (GDM, SDDM, LightDM, greetd): log out, choose
-  **Sway** in the session menu, and log in.
-* **From a text console:** log in on a TTY and run `sway`.
-* **Already inside Sway:** run `swaymsg reload`.
+### App themes
 
-Press `Super+S` for start, `Super+C` for charms and `Super+I` for settings.
-The full key list is in [desktop/docs/keys.html](desktop/docs/keys.html) ([view it rendered](https://htmlpreview.github.io/?https://github.com/alex-ha-192/tubewm/blob/main/desktop/docs/keys.html)) and [desktop/README.md](desktop/README.md#keys).
-
-### 6. Theme your apps (optional)
-
-`apps/install.sh` themes every supported app it finds installed, in the same
-accent as the desktop. It needs only `python3`.
+The installer runs `apps/install.sh` for you. Run it again yourself after
+installing a new app, or to choose which apps:
 
 ```sh
 apps/install.sh --list               # which apps are supported, found and themed
@@ -186,8 +159,7 @@ a live tile; right-click an app in the list to pin it. See
 ```sh
 cd tubewm
 git pull
-desktop/install.sh
-apps/install.sh             # if you use the app themes; close Vivaldi first
+./install.sh                # close Vivaldi first if you use its theme
 ```
 
 Your start layout, accent, wallpaper choice and any config files you've edited
@@ -196,27 +168,34 @@ Your start layout, accent, wallpaper choice and any config files you've edited
 ## Uninstalling
 
 ```sh
-apps/install.sh --uninstall     # with Vivaldi closed
-desktop/install.sh --uninstall
+./install.sh --uninstall
 ```
 
-The desktop uninstaller removes the `tube-*` commands and
-`~/.local/share/tubewm`, then restores your configs and GTK settings from the
-most recent backup. The app uninstaller puts back each setting it changed,
-unless you've changed it again since. `~/.config/tubewm` (backups, accent,
-start layout) is kept; delete it yourself if you want a clean slate. The
-packages installed with `--deps` are left installed.
+It removes the desktop and the app themes and puts back the configs and GTK
+settings you had before tubewm. It also offers, unticked, to delete your
+tubewm settings (colour, tiles, backups) and the packages it installed. Your
+keyboard layout on the sign-in screen is left as it is.
 
 ## Troubleshooting
 
-* **`Super+S` does nothing:** `~/.local/bin` probably isn't on Sway's `PATH`
-  (step 4). Run `tube-start` from a terminal to see any error.
+* **Something went wrong while installing:** the installer says what failed
+  and how to fix it, and `r` tries again. The whole log is in
+  `~/.local/state/tubewm/install.log`.
+* **The session drops straight back to the sign-in screen:** the reason is at
+  the end of `~/.local/state/tubewm/session.log`.
+* **The touchpad still picks up your palm:** libinput's palm detection can be
+  tuned per touchpad. Run `sudo libinput measure touch-size` and
+  `sudo libinput measure touchpad-pressure` (from `libinput-tools`), then put
+  the values they suggest in `/etc/libinput/local-overrides.quirks`, as
+  described in the libinput "Device quirks" documentation.
+* **`Super+S` does nothing:** run `~/.local/bin/tube-start` from a terminal
+  (`Super+Return`) to see the error.
 * **"GtkLayerShell not found" or start won't open:** install gtk-layer-shell's
   GObject bindings (`gir1.2-gtklayershell-0.1` on Debian/Ubuntu,
   `gtk-layer-shell` elsewhere).
 * **Text looks wrong:** check that Open Sans is installed with
   `fc-list | grep -i "open sans"`.
-* **Vivaldi looks half-styled:** the experiments checkbox in step 6 isn't
+* **Vivaldi looks half-styled:** the experiments checkbox (see App themes) isn't
   ticked yet, or Vivaldi needs a restart.
 * **Start looks wrong after an update:** `tube-start --reset` puts back the
   default tiles.
