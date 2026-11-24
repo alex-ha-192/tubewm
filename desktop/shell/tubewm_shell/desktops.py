@@ -3,9 +3,13 @@
 There is always one spare desktop at the end of the bar, shown as "+". Open
 something there and it becomes a desktop, named after what you opened: a
 browser makes "web", an editor "code", a second browser desktop "web 2".
-Leave a desktop empty and it goes away. Snap a window to half the screen
-and the one you used before it takes the other half. Right-click a name to rename it,
+Leave a desktop empty and it goes away. Right-click a name to rename it,
 keep it even when empty, move it, or close it. Renamed desktops are kept.
+
+Windows share a desktop without covering each other. A new window takes a
+free half or quarter, or the desktop is retiled to make room, up to four;
+a fifth gets a desktop of its own. Snap a window to half the screen and the
+one you used before it takes the other half.
 
 Each desktop is a column of Wayfire's workspace grid. A small daemon watches
 Wayfire and keeps the columns packed to the left; the bar reads one line per
@@ -341,14 +345,23 @@ def daemon():
         reconcile()
     while True:
         try:
+            arranged = {}   # windows we just moved ourselves: id -> when
             for ev in wm.wf_watch(EVENTS):
-                if ev.get("event") == "view-tiled":
+                kind, view = ev.get("event"), ev.get("view") or {}
+                now = time.monotonic()
+                if kind == "view-tiled":
                     # Snapping one window to half the screen sends the one
                     # you used before it to the other half.
+                    if now - arranged.get(view.get("id"), -9) < 2:
+                        continue
                     if ev.get("new-edges") != ev.get("old-edges"):
-                        view = dict(ev.get("view") or {}, **{"tiled-edges": ev.get("new-edges")})
-                        wm.pair(view)
+                        wm.pair(dict(view, **{"tiled-edges": ev.get("new-edges")}))
                     continue
+                if kind == "view-mapped":
+                    # A new window takes free space, or the desktop is
+                    # retiled so nothing is covered.
+                    for vid in wm.place(view):
+                        arranged[vid] = now
                 with locked():
                     reconcile()
         except (OSError, wm.WayfireError, ValueError):

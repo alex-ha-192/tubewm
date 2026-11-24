@@ -44,18 +44,24 @@ day to day. Everything is a click away; keys are extras.
   the screen for half, into a corner for a quarter, or let go in the middle
   to fill the screen; an accent outline shows where it will go. Snap one
   window to half the screen and the one you used before it takes the other
-  half.
+  half. A new window takes free space if there is some; otherwise the
+  desktop is retiled so nothing is covered (up to four; a fifth gets a
+  desktop of its own). Dragging a window to the screen's edge never sends
+  it to another desktop: use Super+Tab for that.
 * **Desktops** look after themselves. There is always a spare `+` at the end
   of the strip. Open something there and it becomes a desktop named after it
   (`web`, `code`, `music`, `web 2`…). Leave a desktop empty and it goes away.
   Right-click a name to rename it, keep it, move it or close it. Three
   fingers sideways on the touchpad slide between desktops.
-* **The time**: click it for everything that isn't an app, in one panel on
-  the right: sound and brightness, wi-fi, battery, quiet hours, your
+* **The strip is always there**, above start and the panel. Sound, network
+  and battery sit beside the time; click any of them for everything that
+  isn't an app, in one panel on the right: sound and brightness, wi-fi, battery, quiet hours, your
   notifications, and lock, sleep, sign out, restart and shut down.
 * **Start**: tap the Windows key on its own, or click the accent square.
-  Start is one wide page you scroll sideways: pinned, recent, then every app
-  as plain text. Just type to search.
+  It opens on every app from a to z in columns, nothing cut off. Just type:
+  the list slides away and the best match comes up first (Enter opens it),
+  apps before web apps. On the right, always: what's playing, what's next
+  today, the weather, the apps you have open, and settings, lock and power.
 * **High-density screens**: a built-in screen is scaled to a comfortable size
   by itself (2 on a Framework 13 with the 2.8K screen, 1.5 on the
   2256 x 1504 one). Apps that can draw for Wayland stay sharp.

@@ -239,6 +239,124 @@ def pair(view):
     return partner["id"]
 
 
+# ── new windows find room ──────────────────────────────────────────────────
+
+# Where each window goes when a desktop has 1, 2, 3 or 4 of them.
+LAYOUTS = {1: ["max"], 2: ["left", "right"], 3: ["left", "top-right", "bottom-right"],
+           4: ["top-left", "top-right", "bottom-left", "bottom-right"]}
+# Free space a new window may take, best first.
+FREE_ORDER = ["right", "left", "bottom-right", "top-right", "bottom-left", "top-left"]
+MOST_PER_DESKTOP = 4
+
+
+def zone_rect(zone, area):
+    """(x, y, w, h) of a zone inside a work area {x, y, width, height}."""
+    x, y, w, h = area["x"], area["y"], area["width"], area["height"]
+    hw, hh = w // 2, h // 2
+    return {
+        "max": (x, y, w, h),
+        "left": (x, y, hw, h), "right": (x + hw, y, w - hw, h),
+        "top-left": (x, y, hw, hh), "top-right": (x + hw, y, w - hw, hh),
+        "bottom-left": (x, y + hh, hw, h - hh), "bottom-right": (x + hw, y + hh, w - hw, h - hh),
+    }[zone]
+
+
+def _rect(v, out):
+    """A view's rectangle, folded onto the output (Wayfire gives positions
+    relative to the desktop on screen)."""
+    g = v.get("geometry") or {}
+    ow = ((out or {}).get("geometry") or {}).get("width") or 1
+    return (g.get("x", 0) % ow, g.get("y", 0), g.get("width", 0), g.get("height", 0))
+
+
+def _overlap(a, b):
+    w = min(a[0] + a[2], b[0] + b[2]) - max(a[0], b[0])
+    h = min(a[1] + a[3], b[1] + b[3]) - max(a[1], b[1])
+    return max(0, w) * max(0, h)
+
+
+def _centre(r):
+    return (r[0] + r[2] / 2, r[1] + r[3] / 2)
+
+
+def _tileable(v):
+    mn, mx = v.get("min-size") or {}, v.get("max-size") or {}
+    fixed = mx.get("width") and mx.get("width") == mn.get("width") and mx.get("height") == mn.get("height")
+    return (v.get("role") == "toplevel" and v.get("type", "toplevel") == "toplevel"
+            and v.get("mapped") and v.get("parent", -1) == -1
+            and v.get("layer") in ("workspace", None)
+            and not v.get("minimized") and not v.get("fullscreen") and not fixed)
+
+
+def arrange(view, views, out):
+    """Where everything on a desktop should go now that `view` has opened.
+
+    Returns ([(window id, zone), ...], overflow). The new window takes free
+    space if there is a half or a quarter nobody is using; otherwise the
+    desktop is retiled, up to four windows, so nothing is covered. A fifth
+    window sets overflow, meaning it should go to a desktop of its own."""
+    area = out.get("workarea") or out.get("geometry")
+    here = _wf_view_workspace(view, out)
+    others = [v for v in views if v.get("id") != view.get("id") and _tileable(v)
+              and v.get("output-id") == view.get("output-id")
+              and _wf_view_workspace(v, out) == here]
+    if not others:
+        return [], False
+    rects = {v["id"]: _rect(v, out) for v in others}
+    for zone in FREE_ORDER:
+        z = zone_rect(zone, area)
+        if all(_overlap(z, r) < 0.1 * z[2] * z[3] for r in rects.values()):
+            return [(view["id"], zone)], False
+    if len(others) >= MOST_PER_DESKTOP:
+        return [], True
+    slots = list(LAYOUTS[len(others) + 1])
+    # Each window goes to the nearest place; on a tie, the earlier one, so
+    # the newcomer ends up last (to the right and below).
+    pairs = sorted(((_dist(_centre(rects[v["id"]]), _centre(zone_rect(z, area))), n, v["id"], z)
+                    for v in others for n, z in enumerate(slots)))
+    plan, placed = [], set()
+    for _d, _n, vid, z in pairs:
+        if vid in placed or z not in slots:
+            continue
+        placed.add(vid)
+        slots.remove(z)
+        if not _same(rects[vid], zone_rect(z, area)):
+            plan.append((vid, z))
+    plan.append((view["id"], slots[0]))
+    return plan, False
+
+
+def _dist(a, b):
+    return (a[0] - b[0]) ** 2 + (a[1] - b[1]) ** 2
+
+
+def _same(a, b, slack=8):
+    return all(abs(p - q) <= slack for p, q in zip(a, b))
+
+
+def place(view):
+    """Give a window that has just opened room of its own (Wayfire)."""
+    if not WAYFIRE or not _tileable(view):
+        return []
+    try:
+        views = _wf("window-rules/list-views")
+    except (OSError, WayfireError):
+        return []
+    out = {o["id"]: o for o in _wf_outputs()}.get(view.get("output-id"))
+    if not out:
+        return []
+    plan, overflow = arrange(view, views, out)
+    if overflow:
+        used = {_wf_view_workspace(v, out) for v in views if _tileable(v) and v.get("id") != view.get("id")}
+        free = next(i for i in range(len(used) + 1) if i not in used)
+        send_to_pivot(view["id"], free)
+        go_to_pivot(free)
+        return [view["id"]]
+    for vid, zone in plan:
+        snap(vid, zone)
+    return [vid for vid, _z in plan]
+
+
 # ── pivots (workspaces) ────────────────────────────────────────────────────
 
 def _focused_output():

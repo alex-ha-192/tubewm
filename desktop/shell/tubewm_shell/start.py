@@ -1,17 +1,26 @@
-"""tube-start: start, as a panorama of words.
+"""tube-start: every app at once, and type to find one.
 
-A huge "start" runs off the top-left corner. Below it, side by side, are
-your pinned apps in big light type (with what's playing, if anything), the
-things you opened recently, and every app from a to z. Scroll sideways (the
-wheel works too) to see more. Type anything to search. Right-click an app to
-pin or unpin it. Esc, or a click on the empty space, closes start.
+Start opens on all your apps from a to z, in columns that fit the screen, so
+nothing is cut off; scroll sideways if there are more. Start typing and what
+you type grows huge while the list slides away and the results slide in:
+the best match first (press Enter to open it), then the rest, apps before
+web apps. Esc goes back to the list, and again closes start, as does a
+click on empty space.
+
+On the right, always, is the glance: what's playing, what's next today,
+the weather and the apps you have open, with settings, lock and power below.
 """
 
 import argparse
+import datetime
+import json
 import os
 import re
+import threading
+import time
+import urllib.parse
 
-from . import common, layout
+from . import common, layout, wm
 
 from gi.repository import Gdk, Gio, GLib, Gtk, Pango  # noqa: E402
 
@@ -21,6 +30,20 @@ HIDDEN = {"uxterm", "xterm", "avahi-discover", "bssh", "bvnc", "qv4l2", "qvidcap
           "org.freedesktop.ibus.setup", "electron", "jconsole-java-openjdk"}
 
 FADE_MS = 160
+SLIDE_MS = 420
+APPS_SHIFT = 120     # px the list moves left as it goes
+RESULTS_SHIFT = 160  # px the results travel in from the right
+SEARCH_SMALL, SEARCH_BIG = 30, 160   # px: the search text, idle and typing
+MARGIN = 72          # around everything
+GLANCE_W = 400
+COLUMN_GAP = 56
+RESULTS = 8
+WEATHER_CACHE = os.path.join(common.RUNTIME, "tubewm-weather")
+WEATHER_EVERY = 1800  # seconds
+
+# Browsers that install web apps as their own entries.
+BROWSERS = {"vivaldi": "vivaldi", "chromium": "chromium", "chrome": "chrome",
+            "brave": "brave", "msedge": "edge", "microsoft-edge": "edge", "firefoxpwa": "firefox"}
 
 
 def _clean_name(app):
@@ -29,8 +52,20 @@ def _clean_name(app):
     return name.lower()
 
 
+def web_app_of(app):
+    """The browser a web app was installed through ("vivaldi"), or None."""
+    cmd = (app.get_commandline() or "").lower()
+    if "--app-id=" not in cmd and "firefoxpwa" not in cmd:
+        return None
+    exe = os.path.basename(cmd.split()[0]) if cmd.split() else ""
+    for key, name in BROWSERS.items():
+        if key in exe or key in cmd:
+            return name
+    return "your browser"
+
+
 def all_apps():
-    """Installed apps worth listing, sorted by name."""
+    """Installed apps worth listing, sorted by name: (name, id, info, web app of)."""
     out = []
     for app in Gio.AppInfo.get_all():
         if not app.should_show() or not isinstance(app, Gio.DesktopAppInfo):
@@ -42,59 +77,124 @@ def all_apps():
             continue
         name = _clean_name(app)
         if name:
-            out.append((name, app_id, app))
+            out.append((name, app_id, app, web_app_of(app)))
     out.sort(key=lambda a: a[0])
     return out
 
 
+def score(app, name, query, web=None):
+    """How well an app matches what you typed: lower is better, None is no
+    match. The name counts most, and a web app comes after a real app that
+    matches as well, so "vivaldi" finds Vivaldi before the web apps installed
+    through it."""
+    name = name.lower()
+    if name == query:
+        s = 0
+    elif name.startswith(query):
+        s = 1
+    elif any(w.startswith(query) for w in name.split()):
+        s = 2
+    elif query in name:
+        s = 3
+    else:
+        words = [app.get_name(), app.get_executable(), app.get_description(), web]
+        words += app.get_keywords() or []
+        hay = " ".join([name] + [w for w in words if w]).lower()
+        if not all(w in hay for w in query.split()):
+            return None
+        s = 4
+    return s * 2 + (1 if web else 0)
+
+
+def search(apps, query):
+    scored = sorted((s, len(a[0]), a[0], i) for i, a in enumerate(apps)
+                    for s in [score(a[2], a[0], query, a[3])] if s is not None)
+    return [apps[i] for *_rest, i in scored]
+
+
+# ── what the glance shows ──────────────────────────────────────────────────
+
 def now_playing():
-    text = common.sh(["playerctl", "metadata", "--format", "{{status}}\t{{title}}\t{{artist}}"])
-    parts = text.split("\t")
-    if len(parts) == 3 and parts[0] in ("Playing", "Paused") and parts[1]:
-        return parts
+    """(status, title, artist, where) of whatever is playing, or None."""
+    fmt = "{{status}}\t{{title}}\t{{artist}}\t{{duration(position)}}\t{{duration(mpris:length)}}"
+    parts = common.sh(["playerctl", "metadata", "--format", fmt]).split("\t")
+    if len(parts) == 5 and parts[0] in ("Playing", "Paused") and parts[1]:
+        where = "%s of %s" % (parts[3], parts[4]) if parts[3] and parts[4] else ""
+        return parts[0].lower(), parts[1], parts[2], where
     return None
 
 
-def recent_files(limit=5):
-    try:
-        from .tiles import _recent_files
-        return _recent_files(limit)
-    except ImportError:
-        return []
+def next_event():
+    """(time, what) of your next event today, from khal, or None."""
+    if not common.have("khal"):
+        return None
+    out = common.sh(["khal", "list", "now", "eod", "--format", "{start-time}\t{title}",
+                     "--day-format", ""], timeout=4)
+    for line in out.splitlines():
+        when, _tab, what = line.partition("\t")
+        if what.strip():
+            return when.strip() or "all day", what.strip()
+    return None
 
+
+def weather(allow_fetch=True):
+    """(temperature, conditions) from wttr.in, remembered for half an hour."""
+    try:
+        with open(WEATHER_CACHE) as fh:
+            cached = json.load(fh)
+        if time.time() - cached.get("at", 0) < WEATHER_EVERY:
+            return cached.get("temp"), cached.get("cond")
+    except (OSError, ValueError):
+        cached = {}
+    if not allow_fetch or not common.have("curl"):
+        return cached.get("temp"), cached.get("cond")
+    loc = urllib.parse.quote(os.environ.get("TUBEWM_WEATHER", "").strip())
+    out = common.sh(["curl", "-fsS", "--max-time", "8",
+                     "https://wttr.in/%s?format=%%t%%09%%C&m" % loc], timeout=10)
+    parts = out.split("\t")
+    if len(parts) == 2 and "unknown" not in out.lower() and "<" not in out:
+        temp, cond = parts[0].replace("+", "").strip(), parts[1].strip().lower()
+        try:
+            with open(WEATHER_CACHE, "w") as fh:
+                json.dump({"at": time.time(), "temp": temp, "cond": cond}, fh)
+        except OSError:
+            pass
+        return temp, cond
+    return cached.get("temp"), cached.get("cond")
+
+
+# ── building blocks ────────────────────────────────────────────────────────
 
 def word(text, *classes, xalign=0.0, ellipsize=False):
     lab = Gtk.Label(label=text, xalign=xalign)
     if ellipsize:
         lab.set_ellipsize(Pango.EllipsizeMode.END)
-        lab.set_max_width_chars(28)
     for c in classes:
         lab.get_style_context().add_class(c)
     return lab
 
 
-def link(text, on_click, *classes, on_right=None, ellipsize=False):
-    """A word you can click: a flat button whose only look is its type."""
+def link(child, on_click, *classes):
+    """Something you can click whose only look is its type."""
     b = Gtk.Button()
     b.set_relief(Gtk.ReliefStyle.NONE)
-    b.get_style_context().add_class("pano-link")
-    b.add(word(text, *classes, ellipsize=ellipsize))
+    b.get_style_context().add_class("start-link")
+    for c in classes:
+        b.get_style_context().add_class(c)
+    b.add(child if isinstance(child, Gtk.Widget) else word(child))
     b.connect("clicked", lambda *_: on_click())
-    if on_right:
-        b.connect("button-press-event",
-                  lambda _b, ev: (on_right(ev), True)[1] if ev.button == 3 else False)
     return b
 
 
 class Start:
     def __init__(self, mode):
         common.apply_css()
-        self.data = layout.load()
         self.apps = all_apps()
-        self.by_id = {a[1]: a for a in self.apps}
+        self.hits = []
 
         win = common.make_layer_window("start")
-        win.get_style_context().add_class("pano")
+        common.below_strip(win)
+        win.get_style_context().add_class("start")
         win.connect("key-press-event", self.on_key)
         self.win = win
 
@@ -105,205 +205,348 @@ class Start:
         back.connect("button-press-event", lambda _w, ev: self.quit() if ev.button == 1 else False)
         over.add(back)
 
-        # The title is bigger than the space it's given: it runs off the top.
-        title_box = Gtk.Fixed()
-        title_box.put(word("start", "pano-title"), 52, -64)
-        over.add_overlay(title_box)
-        over.set_overlay_pass_through(title_box, True)
+        body = Gtk.Box(spacing=48)
+        for side in ("top", "bottom", "start", "end"):
+            getattr(body, "set_margin_" + side)(MARGIN if side in ("start", "end") else 48)
+        over.add_overlay(body)
+        over.set_overlay_pass_through(body, False)
 
-        self.scroll = Gtk.ScrolledWindow()
-        self.scroll.set_policy(Gtk.PolicyType.AUTOMATIC, Gtk.PolicyType.NEVER)
-        self.scroll.set_overlay_scrolling(True)
-        self.scroll.get_style_context().add_class("pano-scroll")
-        self.scroll.connect("scroll-event", self.on_scroll)
-        over.add_overlay(self.scroll)
-
-        self.row = Gtk.Box(spacing=72)
-        self.row.get_style_context().add_class("pano-row")
-        self.row.set_valign(Gtk.Align.START)
-        self.row.set_margin_top(230)
-        self.row.set_margin_start(64)
-        self.row.set_margin_end(64)
-        self.scroll.add(self.row)
-
-        # Search: hidden until you type.
+        # Left: the search field, and under it all apps or the results,
+        # one sliding away as the other slides in.
+        left = Gtk.Box(orientation=Gtk.Orientation.VERTICAL)
+        left.set_hexpand(True)
+        self.hint = word("all apps · type to search", "start-hint")
+        left.pack_start(self.hint, False, False, 0)
         self.entry = Gtk.Entry()
-        self.entry.get_style_context().add_class("pano-search")
-        self.entry.set_no_show_all(True)
-        self.entry.connect("changed", lambda *_: self.fill())
+        self.entry.get_style_context().add_class("start-search")
+        self.entry.set_has_frame(False)
+        self.entry.set_placeholder_text("start typing")
+        self.entry_css = Gtk.CssProvider()
+        self.entry.get_style_context().add_provider(self.entry_css, Gtk.STYLE_PROVIDER_PRIORITY_USER + 10)
+        self.entry.connect("changed", self.on_changed)
         self.entry.connect("activate", self.launch_first)
+        left.pack_start(self.entry, False, False, 0)
+        self.stage = Gtk.Layout()
+        self.stage.set_vexpand(True)
+        self.stage.connect("size-allocate", self.on_stage_size)
+        self.apps_page = self.build_apps()
+        self.results = Gtk.Box(orientation=Gtk.Orientation.VERTICAL)
+        self.results.get_style_context().add_class("start-results")
+        self.stage.put(self.apps_page, 0, 0)
+        self.stage.put(self.results, RESULTS_SHIFT, 0)
+        left.pack_start(self.stage, True, True, 0)
+        body.pack_start(left, True, True, 0)
+        self.searching = False
+        self.slide_t = 0.0   # 0: all apps, 1: results
+        self.slide_tick = None
 
-        self.fill()
+        line = Gtk.Box()
+        line.get_style_context().add_class("start-divider")
+        body.pack_start(line, False, False, 0)
+
+        body.pack_start(self.build_glance(), False, False, 0)
+
         win.show_all()
+        self.results.set_opacity(0.0)
+        self.results.hide()
+        self.fill_columns()
+        self.refresh_glance()
+        GLib.timeout_add_seconds(2, self.refresh_playing)
         win.set_opacity(0.0)
         self._fade(1.0, None)
         if mode == "search":
             self.start_search("")
-        elif mode == "apps":
-            GLib.idle_add(self.scroll_to_apps)
 
-    # ── content ──────────────────────────────────────────────────────
-    def pinned_ids(self):
-        return [t.get("app") for t in self.data["tiles"]
-                if t.get("type", "app") == "app" and t.get("app")]
+    # ── all apps ─────────────────────────────────────────────────────
+    def build_apps(self):
+        self.scroll = Gtk.ScrolledWindow()
+        self.scroll.set_policy(Gtk.PolicyType.AUTOMATIC, Gtk.PolicyType.NEVER)
+        self.scroll.set_overlay_scrolling(True)
+        self.scroll.connect("scroll-event", self.on_scroll)
+        self.columns = Gtk.Box(spacing=COLUMN_GAP)
+        self.columns.set_valign(Gtk.Align.START)
+        self.columns.get_style_context().add_class("start-columns")
+        self.scroll.add(self.columns)
+        return self.scroll
 
-    def section(self, title, width=None):
-        col = Gtk.Box(orientation=Gtk.Orientation.VERTICAL)
-        col.get_style_context().add_class("pano-section")
-        if width:
-            col.set_size_request(width, -1)
-        col.pack_start(word(title, "pano-header"), False, False, 0)
-        self.row.pack_start(col, False, False, 0)
-        return col
+    def on_stage_size(self, _w, alloc):
+        size = (alloc.width, alloc.height)
+        if getattr(self, "_stage_size", None) != size:
+            self._stage_size = size
 
-    def fill(self):
-        for child in self.row.get_children():
-            self.row.remove(child)
+            def fit():
+                self.apps_page.set_size_request(alloc.width, alloc.height)
+                self.results.set_size_request(alloc.width, alloc.height)
+                return False
+            GLib.idle_add(fit)   # not from inside an allocation
+
+    def group(self, letter, apps):
+        box = Gtk.Box(orientation=Gtk.Orientation.VERTICAL)
+        box.get_style_context().add_class("start-group")
+        box.pack_start(word(letter, "start-letter"), False, False, 0)
+        for name, _id, app, _web in apps:
+            box.pack_start(link(word(name, "start-item"), lambda a=app: self.launch(a)),
+                           False, False, 0)
+        return box
+
+    def fill_columns(self):
+        """Lay the letters out in columns as tall as the screen allows. A
+        letter is never split from its apps, and nothing runs off the bottom."""
+        groups, cur = [], None
+        for app in self.apps:
+            first = app[0][:1] if app[0][:1].isalpha() else "#"
+            if first != cur:
+                cur = first
+                groups.append((first, []))
+            groups[-1][1].append(app)
+        _w, h = common.monitor_size(self.win)
+        above = sum(w.get_preferred_height()[1] for w in (self.hint, self.entry))
+        room = h - common.STRIP_HEIGHT - 96 - above - 24   # 96: margins; 24: air
+        col, used = None, 0
+        for letter, apps in groups:
+            g = self.group(letter, apps)
+            g.show_all()
+            gh = g.get_preferred_height()[1]
+            if col is None or (used + gh > room and used > 0):
+                col = Gtk.Box(orientation=Gtk.Orientation.VERTICAL)
+                self.columns.pack_start(col, False, False, 0)
+                used = 0
+            col.pack_start(g, False, False, 0)
+            used += gh
+        self.columns.show_all()
+
+    # ── search ───────────────────────────────────────────────────────
+    def result(self, app, big=False):
+        name, _id, info, web = app
+        row = Gtk.Box(spacing=20)
+        row.pack_start(word(name, "start-best" if big else "start-result"), False, False, 0)
+        kind = ("%s web app" % web) if web else "app"
+        kind_label = word(kind, "start-kind")
+        kind_label.set_valign(Gtk.Align.BASELINE)
+        row.pack_start(kind_label, False, False, 0)
+        return link(row, lambda: self.launch(info))
+
+    def fill_results(self, query):
+        for child in self.results.get_children():
+            self.results.remove(child)
+        self.hits = search(self.apps, query)
+        if not self.hits:
+            self.results.pack_start(word("nothing matches", "start-none"), False, False, 0)
+        else:
+            self.results.pack_start(word("best match · press enter", "start-dim"), False, False, 0)
+            self.results.pack_start(self.result(self.hits[0], big=True), False, False, 0)
+            if len(self.hits) > 1:
+                more = word("more results", "start-dim")
+                more.get_style_context().add_class("start-also")
+                self.results.pack_start(more, False, False, 0)
+            for app in self.hits[1:RESULTS]:
+                self.results.pack_start(self.result(app), False, False, 0)
+        self.results.show_all()
+
+    def on_changed(self, *_):
         query = self.entry.get_text().strip().lower()
         if query:
-            self.fill_search(query)
-        else:
-            self.fill_pinned()
-            self.fill_recent()
-            self.fill_apps()
-        self.row.show_all()
+            self.fill_results(query)
+            if not self.searching:
+                self.slide(True)
+        elif self.searching:
+            self.slide(False)
 
-    def fill_pinned(self):
-        col = self.section("pinned", 460)
-        col.get_style_context().add_class("pano-first")
-        ids = [i for i in self.pinned_ids() if i in self.by_id]
-        if not ids:
-            col.pack_start(word("right-click an app to pin it here", "pano-dim"), False, False, 0)
-        for app_id in ids[:9]:
-            name, _id, app = self.by_id[app_id]
-            col.pack_start(link(name, lambda a=app: self.launch(a), "pano-big",
-                                on_right=lambda ev, i=app_id: self.app_menu(ev, i)),
-                           False, False, 0)
-        playing = now_playing()
-        if playing:
-            status, track, artist = playing
+    def start_search(self, text):
+        self.entry.grab_focus_without_selecting()
+        self.entry.set_text(text)
+        self.entry.set_position(-1)
+
+    def show_apps(self):
+        self.entry.set_text("")
+        self.win.set_focus(None)
+
+    def grow(self, t):
+        """What you type grows from 30 px to 160 px as the search comes in."""
+        size = SEARCH_SMALL + (SEARCH_BIG - SEARCH_SMALL) * t
+        spacing = -7 * t
+        self.entry_css.load_from_data(
+            (".start-search { font-size: %.1fpx; letter-spacing: %.2fpx; }" % (size, spacing)).encode())
+
+    def slide(self, searching):
+        """The list slides left and fades as the results slide in from the
+        right (a moment behind), and the other way back."""
+        self.searching = searching
+        self.hint.set_text("search apps · esc to go back" if searching else "all apps · type to search")
+        self.results.show()
+        self.apps_page.show()
+        start_t, goal = self.slide_t, 1.0 if searching else 0.0
+        t0 = GLib.get_monotonic_time()
+        span = SLIDE_MS * abs(goal - start_t) or 1
+
+        def ease(x):
+            x = min(1.0, max(0.0, x))
+            return 1 - (1 - x) ** 3
+
+        def tick(*_):
+            k = min(1.0, (GLib.get_monotonic_time() - t0) / 1000.0 / span)
+            t = start_t + (goal - start_t) * k
+            self.slide_t = t
+            out = ease(t)
+            inn = ease((t - 0.2) / 0.8)   # the results start a little later
+            self.grow(out)
+            self.apps_page.set_opacity(1 - out)
+            self.stage.move(self.apps_page, -int(APPS_SHIFT * out), 0)
+            self.results.set_opacity(inn)
+            self.stage.move(self.results, int(RESULTS_SHIFT * (1 - inn)), 0)
+            if k >= 1.0:
+                (self.apps_page if searching else self.results).hide()
+                self.slide_tick = None
+                return False
+            return True
+
+        if self.slide_tick:
+            GLib.source_remove(self.slide_tick)
+        self.slide_tick = GLib.timeout_add(16, tick)
+
+    # ── the glance ───────────────────────────────────────────────────
+    def build_glance(self):
+        col = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=16)
+        col.set_size_request(GLANCE_W, -1)
+        col.pack_start(word("glance", "start-hint"), False, False, 0)
+
+        def tile(accent=False):
+            parts = [word("", "glance-label"), word("", "glance-big", ellipsize=True),
+                     word("", "glance-sub", ellipsize=True)]
             box = Gtk.Box(orientation=Gtk.Orientation.VERTICAL)
-            box.get_style_context().add_class("pano-playing")
-            box.pack_start(word("now playing" if status == "Playing" else "paused", "pano-dim"),
-                           False, False, 0)
-            box.pack_start(link(track.lower(), lambda: common.sh(["playerctl", "play-pause"]),
-                                "pano-medium"), False, False, 0)
-            if artist:
-                box.pack_start(word(artist.lower(), "pano-subtle"), False, False, 0)
-            col.pack_start(box, False, False, 0)
+            for p in parts:
+                box.pack_start(p, False, False, 0)
+            b = Gtk.Button()
+            b.set_relief(Gtk.ReliefStyle.NONE)
+            b.get_style_context().add_class("glance-tile")
+            if accent:
+                b.get_style_context().add_class("glance-accent")
+            b.add(box)
+            return b, parts
 
-    def fill_recent(self):
-        files = recent_files()
-        if not files:
-            return
-        col = self.section("recent", 380)
-        for path in files:
-            name = os.path.basename(path).lower()
-            col.pack_start(link(name, lambda p=path: self.open_file(p), "pano-item", ellipsize=True),
-                           False, False, 0)
+        self.playing, self.playing_parts = tile(accent=True)
+        self.playing.set_size_request(GLANCE_W, 200)
+        self.playing.connect("clicked", lambda *_: (common.sh(["playerctl", "play-pause"]), self.refresh_playing()))
+        col.pack_start(self.playing, False, False, 0)
 
-    def fill_apps(self):
-        col = self.section("apps")
-        self.apps_col = col
-        # Letters and names flow down, then into the next column.
-        flow = Gtk.FlowBox(orientation=Gtk.Orientation.VERTICAL)
-        flow.set_selection_mode(Gtk.SelectionMode.NONE)
-        flow.set_homogeneous(False)
-        rows = self._rows_fit()
-        flow.set_min_children_per_line(rows)
-        flow.set_max_children_per_line(rows)
-        flow.set_column_spacing(48)
-        flow.get_style_context().add_class("pano-apps")
-        letter = None
-        pinned = set(self.pinned_ids())
-        for name, app_id, app in self.apps:
-            first = name[:1] if name[:1].isalpha() else "#"
-            if first != letter:
-                letter = first
-                flow.add(word(letter, "pano-letter"))
-            cls = ("pano-item", "pinned") if app_id in pinned else ("pano-item",)
-            flow.add(link(name, lambda a=app: self.launch(a), *cls,
-                          on_right=lambda ev, i=app_id: self.app_menu(ev, i)))
-        col.pack_start(flow, False, False, 0)
+        pair = Gtk.Box(spacing=16, homogeneous=True)
+        self.next, self.next_parts = tile()
+        self.next.connect("clicked", lambda *_: self.open_calendar())
+        self.weather, self.weather_parts = tile()
+        self.weather.connect("clicked", lambda *_: self.refresh_weather(fetch=True))
+        for t in (self.next, self.weather):
+            t.set_size_request(-1, 192)
+            pair.pack_start(t, True, True, 0)
+        col.pack_start(pair, False, False, 0)
 
-    def fill_search(self, query):
-        col = self.section("search", 900)
-        col.pack_start(self.entry, False, False, 0)
-        hits = [a for a in self.apps if self._matches(a[2], a[0], query)]
-        if not hits:
-            col.pack_start(word("nothing called that", "pano-dim"), False, False, 0)
-        for name, app_id, app in hits[:8]:
-            col.pack_start(link(name, lambda a=app: self.launch(a), "pano-big",
-                                on_right=lambda ev, i=app_id: self.app_menu(ev, i)),
-                           False, False, 0)
-        self.hits = hits
+        self.open_head = word("open now", "start-hint")
+        self.open_head.get_style_context().add_class("start-open-head")
+        col.pack_start(self.open_head, False, False, 0)
+        self.open_box = Gtk.Box(orientation=Gtk.Orientation.VERTICAL)
+        col.pack_start(self.open_box, False, False, 0)
+
+        links = Gtk.Box(spacing=40)
+        links.set_halign(Gtk.Align.END)
+        for text, cmd in (("settings", "tube-charms --settings"), ("lock", "tube-lock"),
+                          ("power", "tube-status")):
+            links.pack_start(link(word(text, "start-foot"), lambda c=cmd: self.run(c)), False, False, 0)
+        col.pack_end(links, False, False, 0)
+        return col
+
+    def fill_open(self):
+        for child in self.open_box.get_children():
+            self.open_box.remove(child)
+        try:
+            wins = wm.windows()[:5]
+            names = wm.desktop_names()
+        except Exception:  # noqa: BLE001 - no compositor to ask
+            wins, names = [], []
+        for w in wins:
+            row = Gtk.Box(spacing=16)
+            title = (common.find_app(w.get("app_id", "")) or None)
+            name = _clean_name(title) if title else (w.get("app_id") or w.get("title") or "").lower()
+            row.pack_start(word(name, "start-open", ellipsize=True), False, False, 0)
+            ws = w.get("workspace", 0)
+            where = word(names[ws] if ws < len(names) and names[ws] else "desktop %d" % (ws + 1), "start-kind")
+            row.pack_start(where, False, False, 0)
+            self.open_box.pack_start(link(row, lambda i=w["id"], n=ws: self.go_to(i, n)), False, False, 0)
+        self.open_head.set_visible(bool(wins))
+        self.open_box.show_all()
+
+    def go_to(self, win_id, desk):
+        wm.go_to_pivot(desk)
+        wm.focus(win_id)
+        self.quit()
+
+    def run(self, cmd):
+        argv = cmd.split()
+        common.run_detached(" ".join([os.path.join(common.BIN_DIR, argv[0])] + argv[1:]))
+        self.quit()
 
     @staticmethod
-    def _matches(app, name, query):
-        words = [name, app.get_name(), app.get_executable(), app.get_description()]
-        words += app.get_keywords() or []
-        hay = " ".join(w for w in words if w).lower()
-        return all(w in hay for w in query.split())
+    def _set(parts, label, big, sub):
+        for p, text in zip(parts, (label, big, sub)):
+            p.set_text(text or "")
+            p.set_visible(bool(text))
 
-    def _rows_fit(self):
-        _w, h = common.monitor_size(self.win)
-        return max(6, int((h - 330) / 36))
+    def refresh_glance(self):
+        self.refresh_playing()
+        self.fill_open()
+        ev = next_event()
+        if ev:
+            self._set(self.next_parts, "next", ev[0], ev[1].lower())
+        else:
+            today = datetime.date.today()
+            self._set(self.next_parts, "today", str(today.day), today.strftime("%A %B").lower())
+        self.refresh_weather(fetch=False)
+        threading.Thread(target=lambda: GLib.idle_add(self._show_weather, weather()), daemon=True).start()
 
-    def scroll_to_apps(self):
-        col = getattr(self, "apps_col", None)
-        if col is not None:
-            alloc = col.get_allocation()
-            self.scroll.get_hadjustment().set_value(alloc.x - 64)
+    def refresh_playing(self):
+        p = now_playing() if common.have("playerctl") else None
+        if p:
+            status, title, artist, where = p
+            sub = " · ".join(x for x in (artist, where) if x)
+            self._set(self.playing_parts, "now playing" if status == "playing" else "paused", title, sub)
+        else:
+            self._set(self.playing_parts, "music", "nothing playing", "")
+        return True
+
+    def refresh_weather(self, fetch):
+        if fetch:
+            try:
+                os.remove(WEATHER_CACHE)
+            except OSError:
+                pass
+            threading.Thread(target=lambda: GLib.idle_add(self._show_weather, weather()), daemon=True).start()
+        else:
+            self._show_weather(weather(allow_fetch=False))
+
+    def _show_weather(self, w):
+        temp, cond = w if w else (None, None)
+        if temp:
+            self._set(self.weather_parts, "weather", temp, cond)
+        else:
+            self._set(self.weather_parts, "weather", "…", "no forecast yet")
         return False
 
-    # ── pinning ──────────────────────────────────────────────────────
-    def app_menu(self, event, app_id):
-        menu = Gtk.Menu()
-        menu.get_style_context().add_class("tube-menu")
-        if app_id in self.pinned_ids():
-            item = Gtk.MenuItem(label="unpin")
-            item.connect("activate", lambda *_: self.set_pinned(app_id, False))
-        else:
-            item = Gtk.MenuItem(label="pin")
-            item.connect("activate", lambda *_: self.set_pinned(app_id, True))
-        menu.append(item)
-        menu.show_all()
-        menu.attach_to_widget(self.win, None)
-        menu.popup_at_pointer(event)
-        self._menu = menu
-
-    def set_pinned(self, app_id, pinned):
-        tiles = [t for t in self.data["tiles"]
-                 if not (t.get("type", "app") == "app" and t.get("app") == app_id)]
-        if pinned:
-            tiles.append({"type": "app", "app": app_id, "size": "medium"})
-        self.data["tiles"] = tiles
-        layout.save(self.data)
-        self.fill()
+    def open_calendar(self):
+        for app_id in ("org.gnome.Calendar", "gnome-calendar", "org.kde.merkuro.calendar", "khal"):
+            info = common.find_app(app_id)
+            if info:
+                self.launch(info)
+                return
 
     # ── doing things ─────────────────────────────────────────────────
     def launch(self, app):
         common.launch_app(app)
         self.quit()
 
-    def open_file(self, path):
-        common.run_detached("xdg-open %s" % GLib.shell_quote(path))
-        self.quit()
-
     def launch_first(self, *_):
-        hits = getattr(self, "hits", [])
-        if hits:
-            self.launch(hits[0][2])
-
-    def start_search(self, text):
-        self.entry.show()
-        self.entry.set_text(text)
-        self.fill()
-        self.entry.grab_focus_without_selecting()
-        self.entry.set_position(-1)
+        if self.hits:
+            self.launch(self.hits[0][2])
 
     def on_scroll(self, _w, event):
-        # The wheel scrolls the panorama sideways.
+        # The wheel scrolls the columns sideways.
         adj = self.scroll.get_hadjustment()
         ok, dx, dy = event.get_scroll_deltas()
         if ok:
@@ -320,16 +563,16 @@ class Start:
     def on_key(self, _win, event):
         key = event.keyval
         if key == Gdk.KEY_Escape:
-            if self.entry.get_text():
-                self.entry.set_text("")
-                self.entry.hide()
-                self.fill()
+            if self.searching or self.entry.get_text():
+                self.show_apps()
             else:
                 self.quit()
             return True
         if self.entry.has_focus():
             return False
-        text = event.string
+        # From the key itself: event.string is often empty under Wayland.
+        code = Gdk.keyval_to_unicode(event.keyval)
+        text = chr(code) if code else ""
         mods = event.state & (Gdk.ModifierType.CONTROL_MASK | Gdk.ModifierType.MOD1_MASK)
         if not mods and text and text.isprintable() and not text.isspace():
             self.start_search(text)
@@ -359,16 +602,16 @@ class Start:
 def main(argv=None):
     parser = argparse.ArgumentParser(prog="tube-start", description=__doc__.splitlines()[0])
     group = parser.add_mutually_exclusive_group()
-    group.add_argument("--apps", action="store_true", help="open at the list of apps")
+    group.add_argument("--apps", action="store_true", help="open at the list of apps (the default)")
     group.add_argument("--search", action="store_true", help="open ready to search")
     parser.add_argument("--close", action="store_true", help="close start if it is open")
-    parser.add_argument("--reset", action="store_true", help="forget your pinned apps")
+    parser.add_argument("--reset", action="store_true", help="forget start's saved layout")
     args = parser.parse_args(argv)
 
     if args.reset:
         layout.reset()
     if not common.toggle_instance("start", close_only=args.close):
         return 0
-    Start("apps" if args.apps else "search" if args.search else "pinned")
+    Start("search" if args.search else "apps")
     Gtk.main()
     return 0
