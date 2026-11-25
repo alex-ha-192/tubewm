@@ -2,10 +2,11 @@
 
 Click the time on the strip to open it. A big clock and the date, sound and
 brightness as thin lines you drag, which speakers and microphone to use,
-wi-fi, bluetooth, battery and quiet hours, your
+wi-fi, bluetooth, battery, quiet hours and caffeine, your
 notifications, and lock / sleep / sign out / restart / shut down as words.
 Click network, bluetooth or battery to open it up: the wi-fi networks around
 you, your bluetooth devices and pairing new ones, the power mode.
+Click caffeine to keep the screen on and the desktop awake (tube-caffeine).
 Click outside it, or press Escape, to close it.
 """
 
@@ -13,7 +14,7 @@ import os
 import sys
 import time
 
-from . import applets, bluetooth, common, levels
+from . import applets, bluetooth, caffeine, common, levels
 
 from gi.repository import GLib, Gtk, Pango  # noqa: E402
 
@@ -131,6 +132,12 @@ class Status:
             rows.pack_start(self.pair("battery", detail), False, False, 0)
         self.quiet = self.pair("quiet hours", "on" if self.dnd() else "off", self.toggle_dnd)
         rows.pack_start(self.quiet, False, False, 0)
+        # Settings can take caffeine out of the panel; it still shows while on,
+        # so it can always be switched off from here.
+        if caffeine.shown() or caffeine.active():
+            self.caffeine = self.pair("caffeine", "on" if caffeine.active() else "off",
+                                      self.toggle_caffeine)
+            rows.pack_start(self.caffeine, False, False, 0)
         updates = pending_updates()
         if updates:
             rows.pack_start(self.pair(
@@ -364,6 +371,10 @@ class Status:
     def toggle_dnd(self):
         applets.run(["makoctl", "mode", "-t", DND_MODE])
         self.quiet.value.set_text("on" if self.dnd() else "off")
+
+    def toggle_caffeine(self):
+        on = caffeine.set_active(not caffeine.active())
+        self.caffeine.value.set_text("on" if on else "off")
 
     def clear_notes(self):
         applets.run(["makoctl", "dismiss", "--all"])

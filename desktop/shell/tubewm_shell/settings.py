@@ -281,6 +281,16 @@ class Settings:
             box.pack_start(_label("Install wlr-randr to see your displays here.",
                                   "settings-text"), False, False, 0)
 
+        from . import caffeine
+        self.section(box, "caffeine", "Keep the screen on and the computer awake while you "
+                                      "aren't using it: nothing dims, locks, turns off or "
+                                      "sleeps by itself. Locking, sleep and closing the lid "
+                                      "still work. It's off again when you sign in.")
+        box.pack_start(self.switch(caffeine.active(), caffeine.set_active), False, False, 0)
+        self.section(box, "caffeine in the side panel", "Show caffeine under the time, "
+                                                         "beside quiet hours.")
+        box.pack_start(self.switch(caffeine.shown(), caffeine.set_shown), False, False, 0)
+
         from . import bluetooth
         if bluetooth.available():
             self.section(box, "bluetooth", "Connect your devices, or pair a new one, from "

@@ -67,12 +67,15 @@ day to day. Everything is a click away; keys are extras.
   panel; its start mark is a little cluster of tiles in your accent colour. Sound, network,
   bluetooth (while it's on) and battery sit beside the time; click any of them for everything that
   isn't an app, in one panel on the right: sound and brightness, which
-  speakers and microphone to use, wi-fi, bluetooth, battery, quiet hours, your
-  notifications, and lock, sleep, sign out, restart and shut down. Click
+  speakers and microphone to use, wi-fi, bluetooth, battery, quiet hours,
+  caffeine, your notifications, and lock, sleep, sign out, restart and shut down. Click
   network to see the wi-fi networks around you and switch to one; bluetooth
   to turn it on or off, connect a device you've paired or pair a new one
   (a headset shows up under output once it connects); battery to pick
-  battery saver, balanced or performance.
+  battery saver, balanced or performance; caffeine to stop the screen
+  dimming, locking or turning off and the computer sleeping by itself until
+  you click it again (`tube-caffeine on|off|toggle`; settings, under
+  devices, can hide the row).
 * **Start**: tap the Windows key on its own, or click the start mark.
   It stays ready in the background, so it opens at once. It opens on every app from a to z in columns, nothing cut off. Just type:
   the list slides away and the best match comes up first (Enter opens it),

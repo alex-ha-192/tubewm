@@ -52,11 +52,13 @@ and artwork are drawn for this project.
 * **The panel under the time.** Sound, network, bluetooth (while it's on) and
   battery sit beside the time; click any of them for one panel with volume
   and brightness, speakers and microphones, network, bluetooth, battery,
-  quiet hours, your last notifications, and lock, sleep, sign out, restart
-  and shut down. Click **network** for the wi-fi networks around you, to
+  quiet hours, caffeine, your last notifications, and lock, sleep, sign out,
+  restart and shut down. Click **network** for the wi-fi networks around you, to
   switch or join one. Click **bluetooth** to turn it on or off, connect a
   device you've paired or pair a new one. Click **battery** to pick battery
-  saver, balanced or performance.
+  saver, balanced or performance. Click **caffeine** to keep the screen on
+  and the computer awake while you watch or read something; it's off until
+  you turn it on, and settings (devices) can take it out of the panel.
 * **Settings** is one app, full screen on true black: personalise (accent
   and wallpaper), start, notifications, network and devices. `Super+I`,
   start's settings, the settings tile and the charms all open it.
