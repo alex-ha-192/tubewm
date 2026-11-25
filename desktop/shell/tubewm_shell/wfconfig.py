@@ -12,7 +12,7 @@ import os
 import re
 import sys
 
-from . import common
+from . import caffeine, common
 
 KEYBOARD = os.path.join(common.CONFIG, "tubewm", "keyboard")
 USER_INI = os.path.join(common.CONFIG, "tubewm", "wayfire.ini")
@@ -151,7 +151,28 @@ def build(pal=None):
     missing = re.findall(r"@([A-Z0-9_]+)@", text)
     if missing:
         raise SystemExit("tube-wayfire-config: template has unknown fields: %s" % ", ".join(sorted(set(missing))))
-    return _merge_user(text)
+    text = _merge_user(text)
+    return keep_screen_on(text) if caffeine.active() else text
+
+
+def keep_screen_on(text):
+    """Caffeine is on: the screen never turns off by itself. Done after the
+    user's file is merged, so it wins over their own dpms_timeout too."""
+    out, section, done = [], None, False
+    for line in text.splitlines():
+        m = re.match(r"\[(.+)\]\s*$", line)
+        if m:
+            if section == "idle" and not done:
+                out.insert(len(out) - (1 if out and not out[-1].strip() else 0),
+                           "dpms_timeout = -1  # caffeine is on")
+                done = True
+            section = m.group(1)
+        elif section == "idle" and re.match(r"dpms_timeout\s*=", line):
+            line, done = "dpms_timeout = -1  # caffeine is on", True
+        out.append(line)
+    if section == "idle" and not done:
+        out.append("dpms_timeout = -1  # caffeine is on")
+    return "\n".join(out) + "\n"
 
 
 def _merge_user(text):

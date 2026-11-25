@@ -10,22 +10,40 @@
 #
 # The screen turning off is the compositor's job (Wayfire: [idle]
 # dpms_timeout; Sway: its own config). Apps playing video keep all of
-# this away through the idle-inhibit protocol.
+# this away through the idle-inhibit protocol. On Sway this also turns the
+# screen off after 10 minutes.
+#
+# While caffeine is on (tube-caffeine), swayidle runs without its timeouts:
+# nothing dims, locks or turns off, but the lid and sleep still lock first.
+# tube-caffeine runs this again whenever caffeine is switched.
 PATH="$(dirname "$(readlink -f "$0")"):$PATH"  # find the other tube-* commands
 set -u
 
 command -v swayidle >/dev/null || { echo "tube-idle: swayidle is not installed" >&2; exit 1; }
 pkill -x -u "$(id -u)" swayidle 2>/dev/null
 
-dim=()
-if command -v brightnessctl >/dev/null && brightnessctl -l -c backlight 2>/dev/null | grep -q backlight; then
-    # Half the current brightness, never brighter; put back as it was.
-    # shellcheck disable=SC2016 # swayidle runs it with sh, later
-    dim=(timeout 240 'brightnessctl -q -s set $(( $(brightnessctl get) / 2 ))' resume 'brightnessctl -q -r')
+caffeine() {
+    local pid
+    pid=$(cat "${XDG_RUNTIME_DIR:-/tmp}/tubewm-caffeine.pid" 2>/dev/null) || return 1
+    [ -n "$pid" ] && grep -qa tubewm-caffeine "/proc/$pid/cmdline" 2>/dev/null
+}
+
+timeouts=()
+if caffeine; then
+    :   # stay awake
+else
+    if command -v brightnessctl >/dev/null && brightnessctl -l -c backlight 2>/dev/null | grep -q backlight; then
+        # Half the current brightness, never brighter; put back as it was.
+        # shellcheck disable=SC2016 # swayidle runs it with sh, later
+        timeouts+=(timeout 240 'brightnessctl -q -s set $(( $(brightnessctl get) / 2 ))' resume 'brightnessctl -q -r')
+    fi
+    timeouts+=(timeout 300 'loginctl lock-session')
+    if [ -n "${SWAYSOCK:-}" ]; then
+        timeouts+=(timeout 600 'swaymsg "output * power off"' resume 'swaymsg "output * power on"')
+    fi
 fi
 
 exec swayidle -w \
-    "${dim[@]}" \
-    timeout 300 'loginctl lock-session' \
+    "${timeouts[@]}" \
     lock 'tube-lock' \
     before-sleep 'tube-lock --before-sleep'
