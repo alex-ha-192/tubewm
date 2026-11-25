@@ -37,7 +37,7 @@ fi
 # What the build depends on: every source file, and the Wayfire and wlroots
 # versions the plugins are compiled against (plugins must match exactly).
 want=$( {
-    pkg-config --modversion wayfire wlroots-0.19 2>/dev/null
+    pkg-config --modversion wayfire 2>/dev/null; pkg-config --print-requires wayfire 2>/dev/null
     cd "$here" && find . -type f ! -name '*.md' | LC_ALL=C sort | xargs cat
 } | cksum)
 

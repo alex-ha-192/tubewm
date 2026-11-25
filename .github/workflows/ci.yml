@@ -73,3 +73,21 @@ jobs:
           name: session-log
           path: ${{ runner.temp }}/session.log
           if-no-files-found: ignore
+
+  wayfire-plugins:
+    name: title bars build on current Arch Wayfire
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    container:
+      image: archlinux:latest
+    steps:
+      - name: git (so checkout keeps .git)
+        run: pacman -Syu --noconfirm --needed git
+
+      - uses: actions/checkout@v4
+
+      - name: packages (what the installer adds on Arch / CachyOS)
+        run: pacman -S --noconfirm --needed wayfire meson ninja gcc pkgconf mesa
+
+      - name: build and load the plugins
+        run: tests/ci/check-plugins.sh
