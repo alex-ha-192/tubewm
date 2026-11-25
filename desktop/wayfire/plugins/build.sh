@@ -10,7 +10,8 @@
 # plugin could not be built.
 #
 # Needs meson, ninja, a C++ compiler, pkg-config and Wayfire's headers
-# plus glm and wayland-protocols (Arch/CachyOS: wayfire glm wayland-protocols; Debian: wayfire-dev;
+# plus glm and wayland-protocols and vulkan-headers (Arch/CachyOS: wayfire glm wayland-protocols vulkan-headers;
+# Debian: wayfire-dev;
 # Fedora: wayfire-devel).
 set -u
 
