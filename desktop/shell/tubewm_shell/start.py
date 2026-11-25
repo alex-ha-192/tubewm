@@ -26,6 +26,11 @@ from . import common, glance, layout, resident, wm
 
 from gi.repository import Gdk, Gio, GLib, Gtk, Pango  # noqa: E402
 
+try:
+    import cairo   # for an empty input region while start is away
+except ImportError:  # pragma: no cover - comes with python-gobject on most systems
+    cairo = None
+
 # Entries that are in every menu and that nobody means to open from start.
 HIDDEN = {"uxterm", "xterm", "avahi-discover", "bssh", "bvnc", "qv4l2", "qvidcap",
           "lstopo", "cmake-gui", "foot-server", "footclient", "foot --server", "nm-connection-editor",
@@ -148,6 +153,7 @@ class Start:
         self.rows = []   # the result buttons shown, best match first
         self.sel = 0     # which of them Enter opens
         self.shown = False
+        self.away = False
         self.fade_tick = None
         self.apps_stale = False
         # New or removed apps: list them again the next time start opens.
@@ -244,10 +250,15 @@ class Start:
             argv = [sys.executable, os.path.abspath(sys.argv[0])] + (["--search"] if mode == "search" else [])
             os.execv(sys.executable, argv)
         self.shown = True
-        if not self.win.get_visible():
+        if self.away:
             self.sheet.set_opacity(0.0)
-            self.win.show()
-        self.win.present()
+            self.set_away(False)
+        if not common.layer_shell():
+            # Not on a layer surface: ask for focus. On one, keyboard
+            # interactivity already gives us the keys, and present() asks
+            # the compositor for an activation token and waits for it, which
+            # can block start for good once another app has the focus.
+            self.win.present()
         if self.apps_stale or common.monitor_size(self.win) != self.columns_for:
             self.apps_stale = False
             self.apps = all_apps()
@@ -264,10 +275,31 @@ class Start:
         if mode == "search":
             self.start_search("")
 
+    def set_away(self, away):
+        """Put start out of the way, or bring it back, without ever unmapping
+        the window. Hiding and showing a layer-shell window again can leave
+        GTK stuck for good inside show() (seen on Wayfire), and start with
+        it, deaf to the Windows key. So, when away, the window stays mapped
+        but drops below everything, transparent (the sheet has faded out),
+        taking no clicks and no keys."""
+        self.away = away
+        self.glance.awake = not away
+        if not common.layer_shell():
+            self.win.hide() if away else self.win.show()   # nested/X11 for development
+            return
+        GtkLayerShell = common.GtkLayerShell
+        GtkLayerShell.set_keyboard_interactivity(self.win, not away)
+        GtkLayerShell.set_layer(self.win, GtkLayerShell.Layer.BACKGROUND if away
+                                else GtkLayerShell.Layer.OVERLAY)
+        gdk_win = self.win.get_window()
+        if gdk_win is not None and cairo is not None:
+            gdk_win.input_shape_combine_region(
+                cairo.Region() if away else cairo.Region(cairo.RectangleInt(0, 0, 1 << 15, 1 << 15)), 0, 0)
+
     def hidden(self):
         """Out of sight, and back to how start opens: the list, scrolled to
         the start, tiles showing."""
-        self.win.hide()
+        self.set_away(True)
         self.glance.back()
         if self.slide_tick:
             GLib.source_remove(self.slide_tick)
