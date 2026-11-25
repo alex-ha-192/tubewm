@@ -20,7 +20,9 @@ args = sys.argv[1:]
 if set(args) <= {"--apps", "--search", "--close"} and len(args) <= 1:
     sig = (signal.SIGHUP if "--close" in args else
            signal.SIGUSR2 if "--search" in args else signal.SIGUSR1)
-    if resident.send("start", sig) or "--close" in args:
+    # Wait up to a second for it to say it heard; if it doesn't, send()
+    # puts it out of its misery and we start a fresh one below.
+    if resident.send("start", sig, answer_within=1.0) or "--close" in args:
         sys.exit(0)
 
 from tubewm_shell.start import main  # noqa: E402
