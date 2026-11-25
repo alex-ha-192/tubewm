@@ -221,6 +221,7 @@ class Start:
 
     # ── shown and hidden ─────────────────────────────────────────────
     def on_signal(self, mode):
+        resident.heard("start", mode)   # before anything slow: tube-start is waiting
         if mode == "close":
             self.quit()
         elif self.shown:
@@ -607,7 +608,7 @@ def main(argv=None):
         # The running copy still has the old tiles; let it go and start over.
         wait = 3.0 if resident.send("start", signal.SIGTERM) else 0.0
     elif resident.send("start", signal.SIGHUP if args.close else
-                       signal.SIGUSR2 if args.search else signal.SIGUSR1):
+                       signal.SIGUSR2 if args.search else signal.SIGUSR1, answer_within=1.0):
         return 0
     if args.close:
         return 0
@@ -616,6 +617,16 @@ def main(argv=None):
         return 0   # another copy is starting up right now
     # Before Start() starts the tile threads, so they inherit it too.
     resident.unblock(set(SIGNALS) | {signal.SIGTERM})
+    if not sys.stderr.isatty():
+        # Started by the compositor, which throws our output away: keep
+        # warnings and tracebacks where someone can find them.
+        try:
+            fd = os.open(resident.log_path("start"), os.O_WRONLY | os.O_CREAT | os.O_APPEND, 0o600)
+            os.dup2(fd, 2)
+            os.close(fd)
+        except OSError:
+            pass
+    resident.log("start", "starting (%s)" % mode)
     start = Start(mode)
     for sig, what in SIGNALS.items():
         GLib.unix_signal_add(GLib.PRIORITY_HIGH, sig, lambda *_a, w=what: start.on_signal(w))

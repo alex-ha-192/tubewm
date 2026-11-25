@@ -36,16 +36,79 @@ def running(name):
         return None
 
 
-def send(name, sig):
-    """Signal the running tube-NAME. False if there isn't one."""
+def send(name, sig, answer_within=None):
+    """Signal the running tube-NAME. False if there isn't one.
+
+    With ANSWER_WITHIN (seconds), also wait for it to say it heard (see
+    heard()). If it doesn't, it is stuck or can't hear us: it is logged and
+    killed, and False tells the caller to start a fresh copy, so the key
+    never just does nothing."""
     pid = running(name)
     if pid is None:
         return False
+    before = _heard_stamp(name)
     try:
         os.kill(pid, sig)
-        return True
     except OSError:
         return False
+    if answer_within is None:
+        return True
+    give_up = time.monotonic() + answer_within
+    while time.monotonic() < give_up:
+        if _heard_stamp(name) != before:
+            return True
+        time.sleep(0.01)
+    log(name, "pid %d didn't answer %s within %.1fs; starting a fresh copy. %s"
+        % (pid, signal.Signals(sig).name, answer_within, _proc_state(pid)))
+    try:
+        os.kill(pid, signal.SIGKILL)
+    except OSError:
+        pass
+    for _ in range(100):   # until it's gone, and with it the lock
+        if not os.path.exists("/proc/%d" % pid):
+            break
+        time.sleep(0.01)
+    return False
+
+
+def heard(name, what):
+    """Tell send() that we heard it; call first thing in the signal handler."""
+    try:
+        with open(_pidfile(name) + ".heard", "w") as fh:
+            fh.write("%d %s\n" % (time.time_ns(), what))
+    except OSError:
+        pass
+
+
+def _heard_stamp(name):
+    try:
+        with open(_pidfile(name) + ".heard") as fh:
+            return fh.read()
+    except OSError:
+        return None
+
+
+def _proc_state(pid):
+    try:
+        with open("/proc/%d/status" % pid) as fh:
+            keep = [ln.strip() for ln in fh if ln.startswith(("State", "SigBlk", "SigIgn", "SigCgt"))]
+        with open("/proc/%d/wchan" % pid) as fh:
+            keep.append("wchan: " + fh.read().strip())
+        return "; ".join(keep)
+    except OSError:
+        return ""
+
+
+def log_path(name):
+    return os.path.join(RUNTIME, "tubewm-%s.log" % name)
+
+
+def log(name, msg):
+    try:
+        with open(log_path(name), "a") as fh:
+            fh.write("%s [%d] %s\n" % (time.strftime("%H:%M:%S"), os.getpid(), msg))
+    except OSError:
+        pass
 
 
 def claim(name, wait=0.0):
