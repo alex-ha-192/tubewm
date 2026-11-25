@@ -245,6 +245,8 @@ notifications = mako
 wallpaper = ~/.local/bin/tube-wallpaper show
 idle = ~/.local/bin/tube-idle
 start = ~/.local/bin/tube-start
+# The side panel under the time, built now so the first click is quick.
+status = ~/.local/bin/tube-status --background
 
 # ── screens ────────────────────────────────────────────────────────────────
 # A built-in high-density screen is scaled so text and controls are a
