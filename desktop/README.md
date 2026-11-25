@@ -1,19 +1,18 @@
 # tubewm desktop
 
-A Sway desktop that borrows the *ideas* of Metro and the Zune player (big
-lowercase type, pivots, flat colour tiles, one accent colour, content over
-chrome) with its own glyphs, the open Open Sans font, and no borrowed
-artwork.
+A Wayland desktop for Wayfire (and Sway) that borrows the *ideas* of Metro
+and the Zune player (big lowercase type, pivots, flat colour tiles, one
+accent colour, content over chrome) with its own glyphs, the open Open Sans
+font, and no borrowed artwork.
 
-![start screen](docs/screenshots/start.png)
+![start: every app from a to z, and the glance of live tiles](docs/screenshots/start.png)
 
 | | |
 |---|---|
-| ![desktop with a snapped window and a toast](docs/screenshots/desktop.png) | ![the tile menu](docs/screenshots/tile-menu.png) |
-| ![charms and clock card](docs/screenshots/charms.png) | ![settings, full screen on black](docs/screenshots/settings.png) |
-| ![adding a live tile](docs/screenshots/add-tile.png) | ![start with the orange accent](docs/screenshots/start-orange.png) |
-
-![the eight wallpaper styles](docs/screenshots/wallpapers.png)
+| ![the panel under the time, with power modes open](docs/screenshots/panel.png) | ![settings, full screen on true black](docs/screenshots/settings.png) |
+| ![searching start; Down has moved to the second result](docs/screenshots/start-search.png) | ![the now playing applet with its controls](docs/screenshots/now-playing.png) |
+| ![add a tile: the live tile library](docs/screenshots/add-tile.png) | ![start in cobalt, searching](docs/screenshots/start-cobalt.png) |
+| ![a notification band on the bands wallpaper](docs/screenshots/desktop.png) | ![the eight wallpaper styles](docs/screenshots/wallpapers.png) |
 
 ## What's in it
 
@@ -27,7 +26,7 @@ artwork.
 | **Snap** | Dock the focused window as a 320 px column at either edge, press again for 500 px, then half. | `tube-snap` |
 | **Switcher** | Every open window on every workspace in one flat list. | `tube-switcher` (fuzzel) |
 | **Toasts** | Plain charcoal cards, top right under the bar: the app's icon, a title and the message. Click one to open the app. | mako |
-| **Volume and brightness** | A small bar at the bottom centre (glyph, level, number) that fades after 1.5 s. Clicks go through it. Scrolling on the bar's volume moves in small steps and ignores touchpad bursts. | `tube-osd` |
+| **Volume and brightness** | A small bar at the bottom centre (glyph, level, number) that fades after 1.5 s, whatever changed the level (the Fn keys, a headset, an app). Clicks go through it. Scrolling on the bar's volume moves in small steps and ignores touchpad bursts. | `tube-osd` |
 | **Lock** | A big clock and the date. Any key or click brings up your name, the password box and your keyboard layout (e.g. English (UK)). gtklock 4 or later gets the full layout, older gtklock the same colours, and swaylock(-effects) is the fallback. | `tube-lock` |
 | **Apps** | GTK 3/4 squared off and accent-coloured, foot terminal on a full-bleed black canvas, no title-bar buttons. | gtk.css, gsettings, foot |
 | **Accent** | One command recolours everything above, plus any hooks in `~/.config/tubewm/accent.d/` (the VS Code and Vivaldi themes in `apps/` use this). | `tube-accent` |
@@ -72,8 +71,8 @@ day to day. Everything is a click away; keys are extras.
   to turn it on or off, connect a device you've paired or pair a new one
   (a headset shows up under output once it connects); battery to pick
   battery saver, balanced or performance.
-* **Start**: tap the Windows key on its own, or click the accent square.
-  It opens on every app from a to z in columns, nothing cut off. Just type:
+* **Start**: tap the Windows key on its own, or click the start mark.
+  It stays ready in the background, so it opens at once. It opens on every app from a to z in columns, nothing cut off. Just type:
   the list slides away and the best match comes up first (Enter opens it),
   apps before web apps. Up and Down move through the results. On the right, always: the glance, live tiles you
   arrange yourself. Drag one to move it, drag its corner to make it any
