@@ -63,7 +63,7 @@ day to day. Everything is a click away; keys are extras.
   Right-click a name to rename it, keep it, move it or close it. Three
   fingers sideways on the touchpad slide between desktops.
 * **The strip is always there** (but for full screen), above start and the
-  panel; its start mark is nine squares in your accent colour. Sound, network
+  panel; its start mark is a little cluster of tiles in your accent colour. Sound, network
   and battery sit beside the time; click any of them for everything that
   isn't an app, in one panel on the right: sound and brightness, which
   speakers and microphone to use, wi-fi, battery, quiet hours, your

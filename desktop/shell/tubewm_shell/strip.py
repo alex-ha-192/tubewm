@@ -35,7 +35,7 @@ from gi.repository import Gdk, GdkPixbuf, Gio, GLib, Gtk  # noqa: E402
 
 HEIGHT = 40
 ICON = 18            # logical px; drawn at the screen's scale so it stays sharp
-START_ICON = 18      # px: the start mark, nine squares in the accent colour
+START_ICON = 18      # px: the start mark, a little cluster of tiles in the accent colour
 HIDE_MS = 220       # the slide out of the way for full screen
 STATUS_EVERY = 5     # seconds between looks at sound, network and battery
 ICON_DIR = os.path.normpath(os.path.join(common.SHELL_DIR, "..", "templates", "waybar", "icons"))
@@ -187,7 +187,7 @@ class Strip:
         glyph.connect("draw", self.draw_start)
         start.add(glyph)
         start.connect("state-flags-changed", lambda *_: glyph.queue_draw())
-        self.start = start
+        self.start, self.start_glyph = start, glyph
         row.pack_start(start, False, False, 0)
 
         self.desks = Gtk.Box()
@@ -236,6 +236,7 @@ class Strip:
         row.pack_end(right, False, False, 0)
         self.pal = common.load_palette()
         self.icons = {}
+        self.accent_stamp = self._accent_stamp()
 
         self.window = None   # the focused window while the handle is in use
         self.drag = None
@@ -251,14 +252,19 @@ class Strip:
         win.connect("notify::scale-factor", lambda *_: (self.icons.clear(), self.look()))
         self.look()
         GLib.timeout_add_seconds(STATUS_EVERY, self.look)
+        self.watch_accent()
         self.shown = 1.0        # 1: on screen, 0: slid up out of the way
         self.slide_tick = None
         if wm.WAYFIRE:
             threading.Thread(target=self._watch_fullscreen, daemon=True).start()
 
     # ── the start mark ───────────────────────────────────────────────
+    # A small Start screen on an 18-unit square: one wide tile over a medium
+    # one, a short wide one and two small ones (x, y, w, h).
+    START_TILES = ((0, 0, 18, 8), (0, 10, 8, 8), (10, 10, 8, 3), (10, 15, 3, 3), (15, 15, 3, 3))
+
     def draw_start(self, area, cr):
-        """Nine small squares, three by three, in the accent colour."""
+        """The start cluster: a tiny tile layout in the accent colour."""
         hover = self.start.get_state_flags() & (Gtk.StateFlags.PRELIGHT | Gtk.StateFlags.ACTIVE)
         hexcol = self.pal.get("ACCENT", "#E3008C")
         r, g, b = (int(hexcol[i:i + 2], 16) / 255 for i in (1, 3, 5))
@@ -266,13 +272,49 @@ class Strip:
             r, g, b = (c + (1 - c) * 0.3 for c in (r, g, b))
         cr.set_source_rgb(r, g, b)
         size = min(area.get_allocated_width(), area.get_allocated_height())
-        gap = size / 9.0
-        cell = (size - 2 * gap) / 3.0
-        for i in range(3):
-            for j in range(3):
-                cr.rectangle(i * (cell + gap), j * (cell + gap), cell, cell)
+        k = size / 18.0
+        for x, y, w, h in self.START_TILES:
+            cr.rectangle(x * k, y * k, w * k, h * k)
         cr.fill()
         return False
+
+    # ── a new accent ─────────────────────────────────────────────────
+    ACCENT_FILE = os.path.join(common.CONFIG, "tubewm", "accent")
+
+    def _accent_stamp(self):
+        try:
+            st = os.stat(self.ACCENT_FILE)
+            return (st.st_mtime_ns, st.st_size)
+        except OSError:
+            return None
+
+    def watch_accent(self):
+        """tube-accent rewrites ~/.config/tubewm/accent; when it does, take
+        the new colour. The strip lives for the whole session, so without
+        this the start mark keeps the accent it was started with."""
+        try:
+            os.makedirs(os.path.dirname(self.ACCENT_FILE), exist_ok=True)
+            f = Gio.File.new_for_path(self.ACCENT_FILE)
+            self.accent_monitor = f.monitor_file(Gio.FileMonitorFlags.WATCH_MOVES, None)
+            self.accent_monitor.connect("changed", lambda *_: GLib.idle_add(self.check_accent))
+        except (OSError, GLib.Error):
+            self.accent_monitor = None   # look() still checks now and then
+
+    def check_accent(self):
+        stamp = self._accent_stamp()
+        if stamp != self.accent_stamp:
+            self.accent_stamp = stamp
+            self.recolour()
+        return False
+
+    def recolour(self):
+        """Redraw everything that carries the accent."""
+        self.pal = common.apply_css()
+        self.icons.clear()
+        if self.preview is not None:
+            self.preview.pal = self.pal
+        self.start_glyph.queue_draw()
+        self.look()
 
     # ── out of the way for full screen ───────────────────────────────
     FULLSCREEN_EVENTS = ["view-fullscreen", "view-focused", "view-unmapped", "view-mapped",
@@ -353,6 +395,7 @@ class Strip:
     # ── sound, network, battery ──────────────────────────────────────
     def look(self):
         """Ask how things are, off the main loop (the tools can be slow)."""
+        self.check_accent()   # in case the file watch missed it
         threading.Thread(target=self._gather, daemon=True).start()
         return True
 
