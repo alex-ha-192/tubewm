@@ -199,6 +199,11 @@ Your layout is saved to `~/.config/tubewm/start.json` as you go. New installs
 start from `desktop/start/default.toml`; tiles for apps you don't have are
 skipped. A `start.toml` from an older tubewm is converted the first time.
 
+Start opens with the session and then stays running in the background, so
+the Windows key only has to show it. After installing or removing an app it
+lists them again the next time it opens; after a new accent it starts afresh
+the next time. `pkill -f tube-start` makes it start from scratch.
+
 ### Live tiles
 
 | Tile | Shows | Set up |

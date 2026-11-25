@@ -8,6 +8,9 @@ web apps. Up and Down move through the results, and Enter opens the one
 you are on. Esc goes back to the list, and again closes start, as does a
 click on empty space.
 
+Start is built once and then stays running, hidden, so the Windows key only
+has to show it (see resident.py); it opens on the list again each time.
+
 On the right, always, is the glance: live tiles you can move, resize and add
 to (see glance.py), the apps you have open, and settings, lock and power.
 """
@@ -15,8 +18,10 @@ to (see glance.py), the apps you have open, and settings, lock and power.
 import argparse
 import os
 import re
+import signal
+import sys
 
-from . import common, glance, layout, wm
+from . import common, glance, layout, resident, wm
 
 from gi.repository import Gdk, Gio, GLib, Gtk, Pango  # noqa: E402
 
@@ -25,7 +30,8 @@ HIDDEN = {"uxterm", "xterm", "avahi-discover", "bssh", "bvnc", "qv4l2", "qvidcap
           "lstopo", "cmake-gui", "foot-server", "footclient", "foot --server", "nm-connection-editor",
           "org.freedesktop.ibus.setup", "electron", "jconsole-java-openjdk"}
 
-FADE_MS = 160
+FADE_MS = 160        # going away
+FADE_IN_MS = 90      # coming in: quick, it's what the Windows key waits for
 SLIDE_MS = 420
 APPS_SHIFT = 120     # px the list moves left as it goes
 RESULTS_SHIFT = 160  # px the results travel in from the right
@@ -34,6 +40,10 @@ MARGIN = 72          # around everything
 GLANCE_W = 400
 COLUMN_GAP = 56
 RESULTS = 8
+
+# What a later `tube-start` sends the one already running (bin/tube-start
+# sends these too, before it loads GTK).
+SIGNALS = {signal.SIGUSR1: "apps", signal.SIGUSR2: "search", signal.SIGHUP: "close"}
 
 # Browsers that install web apps as their own entries.
 BROWSERS = {"vivaldi": "vivaldi", "chromium": "chromium", "chrome": "chrome",
@@ -136,6 +146,13 @@ class Start:
         self.hits = []
         self.rows = []   # the result buttons shown, best match first
         self.sel = 0     # which of them Enter opens
+        self.shown = False
+        self.fade_tick = None
+        self.apps_stale = False
+        # New or removed apps: list them again the next time start opens.
+        self.app_monitor = Gio.AppInfoMonitor.get()
+        self.app_monitor.connect("changed", lambda *_: setattr(self, "apps_stale", True))
+        self.look = look_stamp()
 
         win = common.make_layer_window("start")
         common.below_strip(win)
@@ -197,9 +214,71 @@ class Start:
         self.fill_columns()
         self.refresh_glance()
         win.set_opacity(0.0)
-        self._fade(1.0, None)
+        self.shown = True
+        self._fade(1.0, None, FADE_IN_MS)
         if mode == "search":
             self.start_search("")
+
+    # ── shown and hidden ─────────────────────────────────────────────
+    def on_signal(self, mode):
+        if mode == "close":
+            self.quit()
+        elif self.shown:
+            self.quit()   # the key again closes start, as it always has
+        else:
+            self.show(mode)
+        return True       # keep listening
+
+    def show(self, mode="apps"):
+        if look_stamp() != self.look and os.path.basename(sys.argv[0]) == "tube-start":
+            # The accent or the stylesheet changed while we were hidden:
+            # come back as a fresh copy, so every colour is the new one.
+            argv = [sys.executable, os.path.abspath(sys.argv[0])] + (["--search"] if mode == "search" else [])
+            os.execv(sys.executable, argv)
+        self.shown = True
+        if not self.win.get_visible():
+            self.win.set_opacity(0.0)
+            self.win.show()
+        self.win.present()
+        if self.apps_stale or common.monitor_size(self.win) != self.columns_for:
+            self.apps_stale = False
+            self.apps = all_apps()
+            for child in self.columns.get_children():
+                self.columns.remove(child)
+                child.destroy()
+            self.fill_columns()
+        self.refresh_glance()
+        # The tiles slept while start was hidden: bring them up to date.
+        for t in self.glance.tiles:
+            t.next_read = 0
+        GLib.idle_add(lambda: self.glance.tick() and False)
+        self._fade(1.0, None, FADE_IN_MS)
+        if mode == "search":
+            self.start_search("")
+
+    def hidden(self):
+        """Out of sight, and back to how start opens: the list, scrolled to
+        the start, tiles showing."""
+        self.win.hide()
+        self.glance.back()
+        if self.slide_tick:
+            GLib.source_remove(self.slide_tick)
+            self.slide_tick = None
+        self.entry.handler_block_by_func(self.on_changed)
+        self.entry.set_text("")
+        self.entry.handler_unblock_by_func(self.on_changed)
+        self.win.set_focus(None)
+        self.searching, self.slide_t = False, 0.0
+        self.hits, self.rows, self.sel = [], [], 0
+        self.hint.set_text("all apps · type to search")
+        self.grow(0.0)
+        self.apps_page.set_opacity(1.0)
+        self.apps_page.show()
+        self.stage.move(self.apps_page, 0, 0)
+        self.results.set_opacity(0.0)
+        self.results.hide()
+        self.stage.move(self.results, RESULTS_SHIFT, 0)
+        self.scroll.get_hadjustment().set_value(0)
 
     # ── all apps ─────────────────────────────────────────────────────
     def build_apps(self):
@@ -243,7 +322,8 @@ class Start:
                 cur = first
                 groups.append((first, []))
             groups[-1][1].append(app)
-        _w, h = common.monitor_size(self.win)
+        self.columns_for = common.monitor_size(self.win)
+        _w, h = self.columns_for
         above = sum(w.get_preferred_height()[1] for w in (self.hint, self.entry))
         room = h - common.STRIP_HEIGHT - 96 - above - 24   # 96: margins; 24: air
         col, used = None, 0
@@ -470,24 +550,45 @@ class Start:
             return True
         return False
 
-    def _fade(self, target, then):
+    def _fade(self, target, then, ms=FADE_MS):
+        if self.fade_tick:
+            GLib.source_remove(self.fade_tick)   # turned round half way
         start = self.win.get_opacity()
         t0 = GLib.get_monotonic_time()
 
         def tick():
-            t = min(1.0, (GLib.get_monotonic_time() - t0) / 1000.0 / FADE_MS)
+            t = min(1.0, (GLib.get_monotonic_time() - t0) / 1000.0 / ms)
             ease = 1 - (1 - t) ** 3
             self.win.set_opacity(start + (target - start) * ease)
             if t >= 1.0:
+                self.fade_tick = None
                 if then:
                     then()
                 return False
             return True
-        GLib.timeout_add(16, tick)
+        self.fade_tick = GLib.timeout_add(16, tick)
 
     def quit(self):
-        self._fade(0.0, Gtk.main_quit)
+        """Close start: it fades out and waits, hidden, for the next time."""
+        if self.shown:
+            self.shown = False
+            self._fade(0.0, self.hidden)
         return True
+
+
+def look_stamp():
+    """When the accent, the palette or the stylesheets last changed."""
+    stamps = []
+    for path in (os.path.join(common.CONFIG, "tubewm", "accent"),
+                 os.path.join(common.CONFIG, "tubewm", "user.css"),
+                 os.path.join(common.SHELL_DIR, "style.css"),
+                 common._palette_file() or ""):
+        try:
+            st = os.stat(path)
+            stamps.append((st.st_mtime_ns, st.st_size))
+        except OSError:
+            stamps.append(None)
+    return stamps
 
 
 def main(argv=None):
@@ -499,10 +600,23 @@ def main(argv=None):
     parser.add_argument("--reset", action="store_true", help="forget start's saved layout")
     args = parser.parse_args(argv)
 
+    mode = "search" if args.search else "apps"
+    wait = 0.0
     if args.reset:
         layout.reset()
-    if not common.toggle_instance("start", close_only=args.close):
+        # The running copy still has the old tiles; let it go and start over.
+        wait = 3.0 if resident.send("start", signal.SIGTERM) else 0.0
+    elif resident.send("start", signal.SIGHUP if args.close else
+                       signal.SIGUSR2 if args.search else signal.SIGUSR1):
         return 0
-    Start("search" if args.search else "apps")
+    if args.close:
+        return 0
+    lock = resident.claim("start", wait=wait)
+    if lock is None:
+        return 0   # another copy is starting up right now
+    start = Start(mode)
+    for sig, what in SIGNALS.items():
+        GLib.unix_signal_add(GLib.PRIORITY_HIGH, sig, lambda *_a, w=what: start.on_signal(w))
+    resident.announce("start")
     Gtk.main()
     return 0

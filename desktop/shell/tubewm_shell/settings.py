@@ -218,8 +218,12 @@ class Settings:
             ctx.add_class("armed-link")
             btn.set_label("click again to reset your tiles")
             return
-        from . import layout
+        import signal
+        from . import layout, resident
         layout.reset()
+        # Start keeps running in the background with the old tiles: let it
+        # go, so the next time it opens it reads the defaults.
+        resident.send("start", signal.SIGTERM)
         ctx.remove_class("armed-link")
         btn.set_label("start tiles reset")
 

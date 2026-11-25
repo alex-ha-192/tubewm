@@ -779,7 +779,7 @@ class Glance(Gtk.Box):
             self._add_tile(spec)
         self.layout(animate=False)
         GLib.timeout_add(1000, self.tick)
-        GLib.idle_add(self.tick)
+        GLib.idle_add(lambda: self.tick() and False)   # once, not every idle moment
 
     # ── building blocks ──────────────────────────────────────────────
     @staticmethod
@@ -862,6 +862,8 @@ class Glance(Gtk.Box):
         self.anim = GLib.timeout_add(16, step_anim)
 
     def tick(self):
+        if not self.get_mapped():
+            return True   # start is hidden: nobody to show the tiles to
         now = time.monotonic()
         if self.stack.get_visible_child_name() == "tiles":
             for t in self.tiles:
