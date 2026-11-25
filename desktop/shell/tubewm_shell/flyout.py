@@ -1,6 +1,6 @@
 """tube-flyout: the panel that drops down when you click something on the bar.
 
-    tube-flyout volume | power | network | calendar | notifications | window
+    tube-flyout volume | power | network | bluetooth | calendar | notifications | window
 
 Each panel is one of the applets (applets.py) under a lowercase heading.
 Clicking the same thing again, clicking anywhere else, or Escape closes it.
@@ -18,6 +18,7 @@ PANELS = {
     "volume": ("volume", "right"),
     "power": ("power", "right"),
     "network": ("network", "right"),
+    "bluetooth": ("bluetooth", "right"),
     "calendar": ("calendar", "right"),
     "notifications": ("notifications", "right"),
     "window": ("window", "left"),

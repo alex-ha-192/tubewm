@@ -6,7 +6,7 @@ import datetime
 import json
 import os
 
-from . import common, glyphs, tiles
+from . import bluetooth, common, glyphs, tiles
 
 from gi.repository import Gdk, GLib, Gtk  # noqa: E402
 
@@ -251,6 +251,11 @@ class Charms:
             if common.sh("nmcli radio wifi") == "enabled":
                 wifi.get_style_context().add_class("toggle-on")
             toggles.pack_start(wifi, False, False, 0)
+        if bluetooth.available():
+            bt = _button("bluetooth", self.on_bluetooth)
+            if bluetooth.powered():
+                bt.get_style_context().add_class("toggle-on")
+            toggles.pack_start(bt, False, False, 0)
         if toggles.get_children():
             box.pack_start(_section("quick"), False, False, 0)
             box.pack_start(toggles, False, False, 0)
@@ -358,6 +363,12 @@ class Charms:
         common.sh(["nmcli", "radio", "wifi", "off" if on else "on"], timeout=5)
         ctx = btn.get_style_context()
         (ctx.remove_class if on else ctx.add_class)("toggle-on")
+
+    def on_bluetooth(self, btn):
+        on = bluetooth.powered()
+        bluetooth.set_powered(not on)
+        ctx = btn.get_style_context()
+        (ctx.add_class if bluetooth.powered() else ctx.remove_class)("toggle-on")
 
     def on_power(self, btn):
         ctx = btn.get_style_context()

@@ -53,21 +53,21 @@ PACKAGES = {
         "playerctl brightnessctl libnotify wireplumber python-gobject python-cairo gtk3 "
         "gtk-layer-shell ttf-opensans",
         "gtklock gtklock-powerbar-module pavucontrol blueman curl ttf-jetbrains-mono xdg-desktop-portal-wlr "
-        "xdg-desktop-portal-gtk power-profiles-daemon upower wayfire",
+        "xdg-desktop-portal-gtk power-profiles-daemon upower wayfire bluez bluez-utils pipewire-audio",
     ),
     "debian": (
         "sway swaybg swayidle swaylock waybar fuzzel mako-notifier foot grim slurp wl-clipboard "
         "jq playerctl brightnessctl libnotify-bin wireplumber python3-gi python3-gi-cairo "
         "gir1.2-gtk-3.0 gir1.2-gtklayershell-0.1 fonts-open-sans",
         "gtklock pavucontrol blueman curl fonts-jetbrains-mono xdg-desktop-portal-wlr "
-        "xdg-desktop-portal-gtk power-profiles-daemon upower wayfire",
+        "xdg-desktop-portal-gtk power-profiles-daemon upower wayfire bluez libspa-0.2-bluetooth",
     ),
     "fedora": (
         "sway swaybg swayidle swaylock waybar fuzzel mako foot grim slurp wl-clipboard jq "
         "playerctl brightnessctl libnotify wireplumber python3-gobject python3-cairo gtk3 "
         "gtk-layer-shell open-sans-fonts",
         "gtklock pavucontrol blueman curl jetbrains-mono-fonts xdg-desktop-portal-wlr "
-        "xdg-desktop-portal-gtk power-profiles-daemon upower wayfire",
+        "xdg-desktop-portal-gtk power-profiles-daemon upower wayfire bluez",
     ),
     "suse": (
         "sway swaybg swayidle swaylock waybar fuzzel mako foot grim slurp wl-clipboard jq "
@@ -76,6 +76,33 @@ PACKAGES = {
         "",
     ),
 }
+
+
+# Services the desktop's controls talk to: bluetooth on/off and pairing, and
+# the battery's power modes. Arch installs them switched off, so the install
+# (and every update) turns on any that are there but not on.
+SERVICES = (
+    ("bluetooth.service", "bluetooth", "/sys/class/bluetooth", "bluez"),
+    ("power-profiles-daemon.service", "power modes", None, "power-profiles-daemon"),
+)
+
+
+def services_to_start(installing=()):
+    """[(unit, what)] of the SERVICES that are installed but switched off, or
+    that come with a package in `installing`. Bluetooth only on a computer
+    that has it."""
+    if not shutil.which("systemctl"):
+        return []
+    out = []
+    for unit, what, needs, package in SERVICES:
+        if needs and not os.path.isdir(needs):
+            continue
+        r = quiet(["systemctl", "is-enabled", unit], timeout=5)
+        state = r.stdout.strip() if r else ""
+        if state == "disabled" or (package in installing and state not in ("enabled", "static",
+                                                                             "alias", "masked")):
+            out.append((unit, what))
+    return out
 
 
 # What it takes to build the Wayfire plugins in desktop/wayfire/plugins.
@@ -453,6 +480,7 @@ class Plan:
         self.fresh = fresh
         self.layout = keyboard.guess()
         self.packages = []
+        self.services = []
         self.apps = []
         self.steps = []
 
@@ -485,6 +513,11 @@ class Plan:
             if s.family == "arch":
                 title += " and update the system"
             steps.append(Step("packages", title, names, self.do_packages, system=True))
+        self.services = services_to_start(self.packages)
+        if self.services:
+            steps.append(Step("services", "Turn on %s" % " and ".join(w for _u, w in self.services),
+                              "So the bar can switch them. They start now and with the computer.",
+                              self.do_services, system=True, soft=True))
         steps.append(Step("desktop", "Set up the desktop",
                           "Start screen, charms, bar and configs. Old configs are backed up.",
                           self.do_desktop, toggle=False))
@@ -572,6 +605,14 @@ class Plan:
 
     def do_keyboard_system(self, run):
         run.run(keyboard.system_command(*self.layout), sudo=True)
+
+    def do_services(self, run):
+        # Run after the packages, so a unit they brought is there now; one
+        # whose package the distro didn't have is left alone.
+        for unit, _what in self.services:
+            r = quiet(["systemctl", "cat", unit], timeout=5)
+            if r and r.returncode == 0:
+                run.run(["systemctl", "enable", "--now", unit], sudo=True, check=False)
 
     def do_session(self, run):
         files = session_files()
