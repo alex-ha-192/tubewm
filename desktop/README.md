@@ -58,6 +58,8 @@ day to day. Everything is a click away; keys are extras.
   button): the strip slides up out of the way and back after.
 * **Notifications** come in as a band across the top and go away after a
   few seconds; the last twenty stay in the panel under the time.
+* **Volume and brightness** changes show as a band just under the strip,
+  whatever made them: the keys, Fn keys the firmware handles, a headset or an app.
 * **Desktops** look after themselves. There is always a spare `+` at the end
   of the strip. Open something there and it becomes a desktop named after it
   (`web`, `code`, `music`, `web 2`…). Leave a desktop empty and it goes away.
@@ -65,7 +67,8 @@ day to day. Everything is a click away; keys are extras.
   fingers sideways on the touchpad slide between desktops.
 * **The strip is always there** (but for full screen), above start and the
   panel; its start mark is a little cluster of tiles in your accent colour. Sound, network,
-  bluetooth (while it's on) and battery sit beside the time; click any of them for everything that
+  bluetooth (while it's on) and battery sit beside the date and time, with the volume and
+  charge as numbers; the speaker's waves and the battery's fill follow them too. Click any of them for everything that
   isn't an app, in one panel on the right: sound and brightness, which
   speakers and microphone to use, wi-fi, bluetooth, battery, quiet hours,
   caffeine, your notifications, and lock, sleep, sign out, restart and shut down. Click

@@ -408,6 +408,7 @@ window.strip.strip-gone .strip-row { opacity: 0; }
 .strip-desk.current { color: @tube_fg; }
 .strip-desk.drop { color: #FFFFFF; background-color: @tube_accent; }
 .strip-clock { color: @tube_fg; padding: 0 0 0 10px; }
+.strip-date { font-size: 20px; font-weight: 300; color: @tube_subtle; padding: 0 0 0 10px; }
 .strip-status { padding: 0 24px 0 16px; min-height: 40px; background: none; border: none;
                 border-radius: 0; box-shadow: none; }
 .strip-status:hover { background-color: alpha(@tube_fg, 0.08); }

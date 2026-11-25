@@ -1,7 +1,7 @@
 """tube-osd-daemon: the small volume / brightness indicator.
 
-A band across the top of the screen, like a Windows Phone toast: the word,
-a thin level line and the number. It appears
+A band across the top of the screen, just under the strip, like a Windows
+Phone toast: the word, a thin level line and the number. It appears
 when a key (or the bar's scroll wheel) changes the level, holds for 1.5 s
 and fades away. Clicks go straight through it.
 
@@ -32,7 +32,7 @@ FIFO = os.path.join(RUNTIME, "tube-osd.fifo")
 LOCK = os.path.join(RUNTIME, "tube-osd.lock")
 NO_LAYER = os.path.join(RUNTIME, "tube-osd.nolayer")
 
-HEIGHT = 40          # the same height as the strip it covers
+HEIGHT = 40          # the same height as the strip above it
 HOLD_MS = 1500       # fully visible
 FADE_MS = 300        # fade out
 FADE_IN_MS = 90
@@ -108,7 +108,12 @@ def run():
             GtkLayerShell.set_layer(win, GtkLayerShell.Layer.OVERLAY)
             for edge in (GtkLayerShell.Edge.TOP, GtkLayerShell.Edge.LEFT, GtkLayerShell.Edge.RIGHT):
                 GtkLayerShell.set_anchor(win, edge, True)
-            GtkLayerShell.set_exclusive_zone(win, -1)
+            # Exclusive zone 0, not -1: keep out of the room the strip (or a
+            # bar) reserves and sit just below it. Over the strip, both on
+            # the overlay layer, which one is on top is up to the compositor,
+            # and Sway (at least) kept the strip on top: the band was
+            # drawn, just never seen.
+            GtkLayerShell.set_exclusive_zone(win, 0)
             GtkLayerShell.set_keyboard_interactivity(win, False)
             area = Gtk.DrawingArea()
             area.connect("draw", self.draw)
@@ -255,7 +260,13 @@ def run():
             osd.show(*latest)
         return True
 
-    GLib.io_add_watch(fd, GLib.PRIORITY_HIGH, GLib.IO_IN, on_input)
+    # Default priority, never HIGH. GDK's Wayland source takes the display's
+    # read lock while the main loop prepares, and only lets go when it is
+    # checked; GLib skips checking it whenever a higher-priority source is
+    # ready. Mapping the window from a HIGH callback then waits on that lock
+    # for ever: the indicator froze on its first key press after fading out,
+    # and every press after that was lost.
+    GLib.io_add_watch(fd, GLib.PRIORITY_DEFAULT, GLib.IO_IN, on_input)
 
     from . import levels
 

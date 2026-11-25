@@ -30,7 +30,7 @@ import sys
 import threading
 import time
 
-from . import applets, bluetooth, common, desktops, levels, wm
+from . import applets, bluetooth, common, desktops, levels, marks, wm
 
 from gi.repository import Gdk, GdkPixbuf, Gio, GLib, Gtk  # noqa: E402
 
@@ -80,12 +80,14 @@ def zone_rect(zone, w, h, top):
     }[zone]
 
 
-def icon_surface(name, pal, scale, widget):
+def icon_surface(name, pal, scale, widget, svg=None):
     """One of tubewm's line icons, in the palette's colours, drawn for this
-    screen's scale."""
+    screen's scale. Pass svg to draw that instead of the named file."""
     try:
-        with open(os.path.join(ICON_DIR, name + ".svg")) as fh:
-            svg = re.sub(r"@([A-Z_]+)@", lambda m: pal.get(m.group(1), pal.get("FG", "#FFFFFF")), fh.read())
+        if svg is None:
+            with open(os.path.join(ICON_DIR, name + ".svg")) as fh:
+                svg = re.sub(r"@([A-Z_]+)@", lambda m: pal.get(m.group(1), pal.get("FG", "#FFFFFF")),
+                             fh.read())
         loader = GdkPixbuf.PixbufLoader.new_with_type("svg")
         loader.set_size(ICON * scale, ICON * scale)
         loader.write(svg.encode())
@@ -223,16 +225,31 @@ class Strip:
         self.bt = Gtk.Image()
         self.batt_pct = Gtk.Label()
         self.batt_pct.get_style_context().add_class("strip-pct")
-        for w in (self.sound, self.net, self.bt):
+        # The volume, like the battery: the mark shows roughly how loud, the
+        # number exactly.
+        self.sound_pct = Gtk.Label()
+        self.sound_pct.get_style_context().add_class("strip-pct")
+        sound = Gtk.Box(spacing=6)
+        sound.pack_start(self.sound, False, False, 0)
+        sound.pack_start(self.sound_pct, False, False, 0)
+        self.sound_box = sound
+        marks.pack_start(sound, False, False, 0)
+        for w in (self.net, self.bt):
             marks.pack_start(w, False, False, 0)
         batt = Gtk.Box(spacing=6)
         batt.pack_start(self.batt, False, False, 0)
         batt.pack_start(self.batt_pct, False, False, 0)
         marks.pack_start(batt, False, False, 0)
         self.batt_box = batt
+        # The date, then the time.
+        clock = Gtk.Box(spacing=0)
+        self.date = Gtk.Label()
+        self.date.get_style_context().add_class("strip-date")
         self.clock = Gtk.Label()
         self.clock.get_style_context().add_class("strip-clock")
-        marks.pack_start(self.clock, False, False, 0)
+        clock.pack_start(self.date, False, False, 0)
+        clock.pack_start(self.clock, False, False, 0)
+        marks.pack_start(clock, False, False, 0)
         right.add(marks)
         self.status_button = right
         row.pack_end(right, False, False, 0)
@@ -248,6 +265,7 @@ class Strip:
         win.show_all()
         self.set_handle_visible(False)
         self.batt_box.hide()
+        self.sound_box.hide()
         self.bt.hide()
         self.tick()
         GLib.timeout_add_seconds(1, self.tick)
@@ -394,6 +412,7 @@ class Strip:
     # ── the clock ────────────────────────────────────────────────────
     def tick(self):
         self.clock.set_text(time.strftime("%H:%M"))
+        self.date.set_text(marks.date_text())
         return True
 
     # ── sound, network, bluetooth, battery ───────────────────────────
@@ -424,19 +443,23 @@ class Strip:
             pass
         GLib.idle_add(self._show, vol, name, (pct, state, left), bt)
 
-    def _icon(self, image, name):
+    def _icon(self, image, name, svg=None):
+        """Set image to a named icon, or to svg (cached under name, which is
+        then any hashable key for it)."""
         scale = self.win.get_scale_factor()
         key = (name, scale)
         if key not in self.icons:
-            self.icons[key] = icon_surface(name, self.pal, scale, self.win)
+            self.icons[key] = icon_surface(name, self.pal, scale, self.win, svg)
         if self.icons[key] is not None:
             image.set_from_surface(self.icons[key])
 
     def _show_sound(self, level, muted):
-        self.sound.set_visible(level is not None)
+        self.sound_box.set_visible(level is not None)
         if level is not None:
-            self._icon(self.sound, "volume-muted" if muted or level == 0 else "volume")
-            self.sound.set_tooltip_text("sound off" if muted else "sound %d" % level)
+            self._icon(self.sound, marks.volume_key(level, muted),
+                       marks.volume_svg(level, muted, self.pal))
+            self.sound_pct.set_text("off" if muted else "%d%%" % level)
+            self.sound_box.set_tooltip_text("sound off" if muted else "sound %d%%" % level)
         return False
 
     def watch_sound(self):
@@ -457,7 +480,8 @@ class Strip:
         self.batt_box.set_visible(pct is not None)
         if pct is not None:
             charging = "charg" in state and "dis" not in state
-            self._icon(self.batt, "battery-charging" if charging else "battery-low" if pct < 20 else "battery")
+            self._icon(self.batt, marks.battery_key(pct, charging),
+                       marks.battery_svg(pct, charging, self.pal))
             self.batt_pct.set_text("%d%%" % pct)
             tip = "battery %d%%" % pct + (", charging" if charging else "")
             if left and not charging:
