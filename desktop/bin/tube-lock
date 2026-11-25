@@ -10,13 +10,30 @@
 # ring), then plain swaylock. If one fails to start the next is tried, so
 # the screen always locks. Returns once the screen is locked, and does
 # nothing if it already is.
+#
+# tube-lock --before-sleep (what tube-idle runs as the laptop goes to sleep)
+# also waits a moment after locking, so the lock screen is on the display
+# before it sleeps. Otherwise the last thing shown, the desktop, is what
+# comes back for a second when the lid opens.
 PATH="$(dirname "$(readlink -f "$0")"):$PATH"  # find the other tube-* commands
 set -u
 CONFIG=${XDG_CONFIG_HOME:-$HOME/.config}
 RUN=${XDG_RUNTIME_DIR:-/tmp}
 
+settle=0
+if [ "${1:-}" = --before-sleep ]; then
+    settle=1
+    shift
+fi
+
+# Locked: give the lock screen time to be drawn when sleep is next.
+locked() {
+    [ "$settle" = 1 ] && sleep 1
+    exit 0
+}
+
 # Already locked? Do nothing (swayidle can fire twice around suspend).
-if pgrep -x gtklock >/dev/null || pgrep -x swaylock >/dev/null; then exit 0; fi
+if pgrep -x gtklock >/dev/null || pgrep -x swaylock >/dev/null; then locked; fi
 
 # The keyboard layout's human name, e.g. "English (UK)".
 keyboard_name() {
@@ -77,14 +94,14 @@ if command -v gtklock >/dev/null; then
             -e "s|{{INITIAL}}|$(printf '%s' "$initial" | xml_escape | sed 's/[|&\\]/\\&/g')|" \
             -e "s|{{KEYBOARD}}|$(keyboard_name | xml_escape | sed 's/[|&\\]/\\&/g')|" \
             "$CONFIG/gtklock/layout.ui" > "$layout_file"
-        gtklock "${args[@]}" --layout "$layout_file" --date-format '%A %-d %B' "$@" && exit 0
+        gtklock "${args[@]}" --layout "$layout_file" --date-format '%A %-d %B' "$@" && locked
     fi
-    gtklock "${args[@]}" "$@" && exit 0
+    gtklock "${args[@]}" "$@" && locked
 fi
 
 if swaylock --help 2>&1 | grep -q -- '--clock'; then
     swaylock --daemonize --clock --indicator --timestr '%H:%M' \
-        --datestr '%A %-d %B' "$@" && exit 0
+        --datestr '%A %-d %B' "$@" && locked
 fi
 
-exec swaylock --daemonize "$@"
+swaylock --daemonize "$@" && locked

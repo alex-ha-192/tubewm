@@ -150,7 +150,8 @@ DEFAULT = "fade"
 
 def render(style, w, h, path=None, pal=None):
     pal = pal or common.load_palette()
-    surf = cairo.ImageSurface(cairo.FORMAT_RGB24, int(w), int(h))
+    w, h = int(round(w)), int(round(h))  # every style counts in whole pixels
+    surf = cairo.ImageSurface(cairo.FORMAT_RGB24, w, h)
     cr = cairo.Context(surf)
     STYLES.get(style, STYLES[DEFAULT])[0](cr, w, h, pal)
     if path:
@@ -212,12 +213,13 @@ def apply(style, reload=True):
     if style not in STYLES:
         raise SystemExit("tube-wallpaper: no style called %r (try: tube-wallpaper list)" % style)
     w, h = biggest_output()
+    # Draw it first: settings only marks a style chosen once it is on disk.
+    render(style, w, h, OUT)
     os.makedirs(os.path.dirname(STATE), exist_ok=True)
     with open(STATE, "w") as fh:
         fh.write(style + "\n")
     if os.path.exists(OFF):
         os.remove(OFF)
-    render(style, w, h, OUT)
     os.makedirs(os.path.dirname(SNIPPET), exist_ok=True)
     with open(SNIPPET, "w") as fh:
         fh.write("# Written by tube-wallpaper. Remove this file to go back to the plain backdrop.\n")

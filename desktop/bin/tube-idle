@@ -4,7 +4,9 @@
 #   4 min idle   the screen dims (any key or touch brings it back)
 #   5 min idle   the session locks
 #   lid closed   logind suspends the laptop; the screen is locked first,
-#                and swayidle waits for the lock to be up before sleeping
+#                and swayidle waits until the lock screen has been drawn
+#                before letting it sleep, so waking shows the lock screen
+#                and never a glimpse of the desktop
 #
 # The screen turning off is the compositor's job (Wayfire: [idle]
 # dpms_timeout; Sway: its own config). Apps playing video keep all of
@@ -26,4 +28,4 @@ exec swayidle -w \
     "${dim[@]}" \
     timeout 300 'loginctl lock-session' \
     lock 'tube-lock' \
-    before-sleep 'tube-lock'
+    before-sleep 'tube-lock --before-sleep'

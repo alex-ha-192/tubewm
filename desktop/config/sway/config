@@ -91,7 +91,7 @@ exec mako
 exec swayidle -w \
     timeout 300 '$tubebin/tube-lock' \
     timeout 600 'swaymsg "output * power off"' resume 'swaymsg "output * power on"' \
-    before-sleep '$tubebin/tube-lock'
+    before-sleep '$tubebin/tube-lock --before-sleep'
 
 # Let portals and user services see the Wayland session.
 exec dbus-update-activation-environment --systemd WAYLAND_DISPLAY XDG_CURRENT_DESKTOP=sway SWAYSOCK && systemctl --user try-restart xdg-desktop-portal.service
