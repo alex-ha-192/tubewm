@@ -15,7 +15,10 @@ the strip to leave it be. Right-click it for the same as a menu. (Each
 window's own title strip has its close button.)
 
 When an app goes full screen (F11, a video's full-screen button) the strip
-slides up out of the way, and back when it leaves.
+slides up out of the way, and back when it leaves. It slides without ever
+changing the room it keeps at the top of the screen: if that room changed,
+Wayfire's grid would put every snapped window back in its slot, and a window
+that had just gone full screen would drop straight out of it again.
 """
 
 import json
@@ -150,6 +153,12 @@ class Strip:
         win.set_title("tube-strip")
         win.get_style_context().add_class("tube")
         win.get_style_context().add_class("strip")
+        # See-through, so that out of the way it can leave one invisible row
+        # on screen (see slide()); the row of controls paints the strip.
+        visual = win.get_screen().get_rgba_visual()
+        if visual is not None:
+            win.set_visual(visual)
+            win.set_app_paintable(True)
         LS = common.GtkLayerShell
         if LS is not None and LS.is_supported():
             LS.init_for_window(win)
@@ -290,29 +299,45 @@ class Strip:
         return False
 
     def slide(self, goal):
+        """Slide the strip up out of the way (goal 0) or back down (1).
+
+        The room the strip keeps at the top stays HEIGHT the whole time:
+        Wayfire reserves exclusive zone + top margin, so as the margin goes
+        negative the zone grows by the same amount. If the room changed,
+        Wayfire's grid would re-place every snapped window, and that takes a
+        full-screen window out of full screen.
+
+        It never goes away completely either: unmapping it would give the
+        room back, and a surface entirely off screen gets no frames to slide
+        back with. Out of the way, one row stays on screen, invisible and
+        letting clicks through."""
         LS = common.GtkLayerShell
         if LS is None or not LS.is_supported() or goal == self.shown and not self.slide_tick:
             return
-        if goal > 0 and not self.win.get_visible():
-            # Off screen it was unmapped: a surface nobody can see gets no
-            # frames to draw the slide with. Map it again with one row of it
-            # on screen, so it is drawn, and slide from there.
-            LS.set_margin(self.win, LS.Edge.TOP, -(HEIGHT - 1))
-            self.shown = 1.0 / HEIGHT
-            self.win.show()
+        gone = self.win.get_style_context()
+        if goal > 0:
+            gone.remove_class("strip-gone")
+            self.win.input_shape_combine_region(None)
         start, t0 = self.shown, GLib.get_monotonic_time()
         span = HIDE_MS * abs(goal - start) or 1
+        lowest = HEIGHT - 1  # px slid up when out of the way
+
+        def place(shown):
+            up = min(lowest, int(round(HEIGHT * (1 - shown))))
+            LS.set_exclusive_zone(self.win, HEIGHT + up)
+            LS.set_margin(self.win, LS.Edge.TOP, -up)
 
         def tick(*_):
             k = min(1.0, (GLib.get_monotonic_time() - t0) / 1000.0 / span)
             ease = 1 - (1 - k) ** 3
             self.shown = start + (goal - start) * ease
-            LS.set_margin(self.win, LS.Edge.TOP, -int(round(HEIGHT * (1 - self.shown))))
+            place(self.shown)
             if k >= 1.0:
                 self.shown = goal
                 self.slide_tick = None
                 if goal == 0:
-                    self.win.hide()
+                    gone.add_class("strip-gone")
+                    self.win.input_shape_combine_region(_empty_region())
                 return False
             return True
 
