@@ -41,13 +41,27 @@ if ! have wayfire; then
     skip "wayfire is not installed"
     finish
 fi
-export XDG_RUNTIME_DIR=$SANDBOX/run WLR_BACKENDS=headless WLR_LIBINPUT_NO_DEVICES=1
-mkdir -p "$XDG_RUNTIME_DIR" && chmod 700 "$XDG_RUNTIME_DIR"
 cat >"$SANDBOX/wayfire.ini" <<'EOF'
 [core]
 plugins = tube-decor
 EOF
-wayfire -d -c "$SANDBOX/wayfire.ini" >"$SANDBOX/wayfire.log" 2>&1 &
+# Wayfire refuses to run as root, so in a root container run it as an
+# ordinary user, pointed at the plugins built above.
+run=()
+user=
+if [ "$(id -u)" = 0 ]; then
+    user=$(ci_user)
+    chmod -R a+rX "$SANDBOX"
+    run=(runuser -u "$user" --)
+fi
+export XDG_RUNTIME_DIR=$SANDBOX/run
+mkdir -p "$XDG_RUNTIME_DIR" && chmod 700 "$XDG_RUNTIME_DIR"
+if [ -n "$user" ]; then chown "$user" "$XDG_RUNTIME_DIR"; fi
+touch "$SANDBOX/wayfire.log" && chmod a+w "$SANDBOX/wayfire.log"
+"${run[@]}" env HOME="$HOME" XDG_RUNTIME_DIR="$XDG_RUNTIME_DIR" \
+    WLR_BACKENDS=headless WLR_RENDERER=pixman WLR_LIBINPUT_NO_DEVICES=1 \
+    WAYFIRE_PLUGIN_PATH="$lib" WAYFIRE_PLUGIN_XML_PATH="$meta" \
+    wayfire -d -c "$SANDBOX/wayfire.ini" >>"$SANDBOX/wayfire.log" 2>&1 &
 wf_pid=$!
 for _ in $(seq 1 40); do
     grep -q -e "Loaded plugin" -e "error loading plugin" -e "Failed to load" "$SANDBOX/wayfire.log" && break
