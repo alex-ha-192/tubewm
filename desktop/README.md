@@ -28,7 +28,7 @@ font, and no borrowed artwork.
 | **Toasts** | Plain charcoal cards, top right under the bar: the app's icon, a title and the message. Click one to open the app. | mako |
 | **Volume and brightness** | A small bar at the bottom centre (glyph, level, number) that fades after 1.5 s, whatever changed the level (the Fn keys, a headset, an app). Clicks go through it. Scrolling on the bar's volume moves in small steps and ignores touchpad bursts. | `tube-osd` |
 | **Lock** | A big clock and the date. Any key or click brings up your name, the password box and your keyboard layout (e.g. English (UK)). gtklock 4 or later gets the full layout, older gtklock the same colours, and swaylock(-effects) is the fallback. | `tube-lock` |
-| **Apps** | GTK 3/4 squared off and accent-coloured, foot terminal on a full-bleed black canvas, no title-bar buttons. | gtk.css, gsettings, foot |
+| **Apps** | GTK 3/4 squared off and accent-coloured, foot terminal on a full-bleed black canvas, a square close button in their own title bars. | gtk.css, settings.ini, gsettings, foot |
 | **Accent** | One command recolours everything above, plus any hooks in `~/.config/tubewm/accent.d/` (the VS Code and Vivaldi themes in `apps/` use this). | `tube-accent` |
 
 ## Wayfire: the mouse-first desktop
