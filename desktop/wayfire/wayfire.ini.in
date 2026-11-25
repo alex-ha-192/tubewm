@@ -237,6 +237,9 @@ autostart_wf_shell = false
 desktops = ~/.local/bin/tube-desktops daemon
 # The strip along the top: start, desktops, the window handle and the time.
 bar = ~/.local/bin/tube-strip
+# The volume / brightness indicator, watching from the start so it shows
+# changes the keys never told it about (Fn keys the firmware handles).
+osd = ~/.local/bin/tube-osd-daemon
 notifications = mako
 wallpaper = ~/.local/bin/tube-wallpaper show
 idle = ~/.local/bin/tube-idle

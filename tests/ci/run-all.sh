@@ -9,7 +9,7 @@ failed=()
 step() { local name=$1; shift; printf '\n\033[1;34m### %s\033[0m\n' "$name"; "$@" || failed+=("$name"); }
 
 step lint        "$here/lint.sh"
-step "unit tests" python3 -m pytest -q "$repo/apps/tests"
+step "unit tests" python3 -m pytest -q "$repo/apps/tests" "$repo/desktop/shell/tests"
 step desktop     "$here/check-desktop.sh"
 step apps        "$here/check-apps.sh"
 step session     "$here/smoke-session.sh"

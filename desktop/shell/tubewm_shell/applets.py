@@ -12,7 +12,7 @@ import os
 import re
 import urllib.parse
 
-from . import bluetooth, common, glyphs, tiles, wm  # common picks the GTK version
+from . import bluetooth, common, glyphs, levels, tiles, wm  # common picks the GTK version
 
 from gi.repository import GLib, Gtk, Pango  # noqa: E402
 
@@ -304,8 +304,11 @@ class Music(Applet):
         row.set_halign(Gtk.Align.CENTER)
         self.controls = row
         self.pack_start(row, False, False, 0)
-        self.controls.set_no_show_all(True)
+        # Show the buttons first: show_all() does nothing at all on a widget
+        # marked no-show-all, so the other way round left an empty row, and
+        # with something playing there were no controls under it.
         row.show_all()
+        self.controls.set_no_show_all(True)
         self._art = None
 
     def ctl(self, what):
@@ -561,9 +564,16 @@ def brightness():
         return None
     try:
         cur, mx = int(run(["brightnessctl", "g"])), int(run(["brightnessctl", "m"]))
-        return round(100 * cur / max(1, mx))
+        return (cur * 100 + mx // 2) // max(1, mx)
     except ValueError:
         return None
+
+
+def set_brightness(v):
+    """From a slider: never all the way to black. Hushed, so the indicator
+    doesn't pop up over the slider that's moving it."""
+    levels.hush()
+    run(["brightnessctl", "-q", "set", "%d%%" % max(1, v)])
 
 
 class Power(Applet):
@@ -598,8 +608,7 @@ class Power(Applet):
             self.pack_start(section("brightness"), False, False, 4)
             line = Gtk.Box(spacing=10)
             line.pack_start(glyphs.Glyph("brightness", 20), False, False, 0)
-            line.pack_start(slider(b, lambda v: run(["brightnessctl", "-q", "set", "%d%%" % max(1, v)])),
-                            True, True, 0)
+            line.pack_start(slider(b, set_brightness), True, True, 0)
             self.pack_start(line, False, False, 0)
 
     def update(self):
@@ -621,18 +630,12 @@ class Power(Applet):
 
 
 def volume():
-    """(percent, muted) of the default output."""
-    out = run(["wpctl", "get-volume", "@DEFAULT_AUDIO_SINK@"]) if common.have("wpctl") else ""
-    m = re.search(r"([\d.]+)", out)
-    if m:
-        return round(float(m.group(1)) * 100), "MUTED" in out
-    out = run(["pactl", "get-sink-volume", "@DEFAULT_SINK@"])
-    m = re.search(r"(\d+)%", out)
-    muted = "yes" in run(["pactl", "get-sink-mute", "@DEFAULT_SINK@"])
-    return (int(m.group(1)) if m else None), muted
+    """(percent, muted) of the default output; (None, False) with no sound server."""
+    return levels.volume() or (None, False)
 
 
 def set_volume(v):
+    levels.hush()
     if common.have("wpctl"):
         run(["wpctl", "set-volume", "-l", "1.5", "@DEFAULT_AUDIO_SINK@", "%d%%" % v])
     else:

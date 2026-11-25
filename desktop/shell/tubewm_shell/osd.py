@@ -5,6 +5,11 @@ a thin level line and the number. It appears
 when a key (or the bar's scroll wheel) changes the level, holds for 1.5 s
 and fades away. Clicks go straight through it.
 
+It also watches the levels itself (see levels.py), so a change tube-osd never
+heard about still shows: Fn keys the firmware handles, a headset's buttons,
+an app setting its own volume. Changes made from our own sliders don't.
+The session starts it, so it is watching from the first press.
+
 It stays running after the first key press and listens on a FIFO, so later
 presses only cost a `printf` from tube-osd. Each line on the FIFO is
 
@@ -251,6 +256,13 @@ def run():
         return True
 
     GLib.io_add_watch(fd, GLib.PRIORITY_HIGH, GLib.IO_IN, on_input)
+
+    from . import levels
+
+    def changed(kind, value, muted):
+        if not levels.hushed():
+            GLib.idle_add(lambda: osd.show(kind, value, muted) and False)
+    osd.watcher = levels.Watcher(changed)
     return osd, Gtk
 
 
