@@ -162,7 +162,6 @@ def test_tube_idle_drops_timeouts(state, tmp_path, on):
         caffeine.set_active(True)
         time.sleep(0.5)   # past systemd-inhibit failing, where there's no logind
     env = dict(os.environ, PATH="%s:/usr/bin:/bin" % fake)
-    env.pop("SWAYSOCK", None)
     out = subprocess.run(["bash", TUBE_IDLE], env=env, capture_output=True, text=True, timeout=10)
     assert out.returncode == 0, out.stderr
     args = out.stdout.split("\n")

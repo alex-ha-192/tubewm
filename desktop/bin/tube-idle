@@ -10,8 +10,7 @@
 #
 # The screen turning off is the compositor's job (Wayfire: [idle]
 # dpms_timeout; Sway: its own config). Apps playing video keep all of
-# this away through the idle-inhibit protocol. On Sway this also turns the
-# screen off after 10 minutes.
+# this away through the idle-inhibit protocol.
 #
 # While caffeine is on (tube-caffeine), swayidle runs without its timeouts:
 # nothing dims, locks or turns off, but the lid and sleep still lock first.
@@ -38,9 +37,6 @@ else
         timeouts+=(timeout 240 'brightnessctl -q -s set $(( $(brightnessctl get) / 2 ))' resume 'brightnessctl -q -r')
     fi
     timeouts+=(timeout 300 'loginctl lock-session')
-    if [ -n "${SWAYSOCK:-}" ]; then
-        timeouts+=(timeout 600 'swaymsg "output * power off"' resume 'swaymsg "output * power on"')
-    fi
 fi
 
 exec swayidle -w \

@@ -90,8 +90,10 @@ bar {
 exec mako
 # The volume / brightness indicator, watching from the start (see tube-osd).
 exec $tubebin/tube-osd-daemon
-# Dim, lock and screen off when you step away, unless caffeine is on (see tube-idle).
-exec $tubebin/tube-idle
+exec swayidle -w \
+    timeout 300 '$tubebin/tube-lock' \
+    timeout 600 'swaymsg "output * power off"' resume 'swaymsg "output * power on"' \
+    before-sleep '$tubebin/tube-lock --before-sleep'
 
 # Let portals and user services see the Wayland session.
 exec dbus-update-activation-environment --systemd WAYLAND_DISPLAY XDG_CURRENT_DESKTOP=sway SWAYSOCK && systemctl --user try-restart xdg-desktop-portal.service
@@ -222,6 +224,6 @@ for_window [app_id="blueman-manager"] floating enable, resize set 640 480
 for_window [app_id="nm-connection-editor"] floating enable
 for_window [title="(?i)picture.in.picture"] floating enable, sticky enable
 
-# Session lock on suspend/resume is handled by tube-idle (swayidle) above.
+# Session lock on suspend/resume is handled by swayidle above.
 
 include ~/.config/sway/config.d/*.conf

@@ -13,7 +13,7 @@ devices; settings can also take the row out of the side panel.
 How: a small process holds a logind idle inhibitor (systemd-inhibit
 --what=idle, so no idle suspend), tube-idle runs swayidle without its
 timeouts (no dim, no lock), and Wayfire's [idle] dpms_timeout is written as
--1 (no screen off; on Sway, tube-idle's power-off timeout is left out).
+-1 (no screen off).
 """
 
 import os
