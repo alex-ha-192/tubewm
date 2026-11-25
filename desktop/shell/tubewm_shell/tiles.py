@@ -332,10 +332,10 @@ class AppTile(Tile):
 
 ACTIONS = {
     "lock": ("lock", "lock", "tube-lock"),
-    "settings": ("settings", "settings", "tube-charms --settings"),
+    "settings": ("settings", "settings", "tube-settings"),
     "charms": ("charms", "start", "tube-charms"),
     "switcher": ("switch", "apps", "tube-switcher"),
-    "devices": ("devices", "devices", "tube-charms --devices"),
+    "devices": ("devices", "devices", "tube-settings devices"),
     "screenshot": ("screenshot", "share", "sleep 0.3; tube-share"),
 }
 
@@ -986,7 +986,7 @@ class NetworkTile(Tile):
 
     def activate_tile(self):
         common.run_detached("nm-connection-editor" if common.have("nm-connection-editor")
-                            else "tube-charms --settings")
+                            else "tube-settings network")
         return False
 
 

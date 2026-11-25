@@ -78,7 +78,7 @@
         "format-linked": "no address",
         "tooltip-format": "{ifname} · {ipaddr}",
         "tooltip-format-wifi": "{essid} · {signalStrength}% · {ipaddr}",
-        "on-click": "~/.local/bin/tube-charms --settings"
+        "on-click": "~/.local/bin/tube-settings network"
     },
 
     "pulseaudio": {

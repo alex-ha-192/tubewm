@@ -1,4 +1,4 @@
-/* tubewm shell (start screen + charms).
+/* tubewm shell (start screen, charms, settings).
  * The @tube_* colours are defined from the palette at load time.
  * Your own overrides: ~/.config/tubewm/user.css */
 
@@ -137,35 +137,60 @@ entry.search:focus { border-color: @tube_accent; }
 .clock-date { font-size: 26px; font-weight: 300; color: @tube_fg; }
 .clock-status { font-size: 15px; font-weight: 300; color: @tube_subtle; }
 
-.flyout { background-color: @tube_surface; color: @tube_fg; padding: 36px 30px; }
-.flyout-section { font-size: 15px; font-weight: 600; color: @tube_fg; margin-top: 22px; }
-.flyout-text { font-size: 14px; color: @tube_subtle; }
-.flyout button {
+/* ── settings (tube-settings): full screen, true black ──── */
+window.tube.tube-settings { background-color: #000000; }
+.settings-nav { padding: 56px 40px 40px 72px; }
+.settings-title { margin-bottom: 44px; }
+button.settings-cat {
+    background: transparent;
+    color: @tube_subtle;
+    border: none;
+    padding: 12px 18px 12px 14px;
+    border-left: 4px solid transparent;
+}
+button.settings-cat:hover, button.settings-cat:focus { color: @tube_fg; background: #121212; }
+button.settings-cat.current { color: @tube_fg; border-left-color: @tube_accent; }
+button.settings-cat:active { background: @tube_accent; color: #FFFFFF; }
+.settings-cat-name { font-size: 24px; font-weight: 300; color: inherit; }
+.settings-page { padding: 72px 72px 56px 40px; }
+.settings-page-title { margin-top: 64px; margin-bottom: 8px; }
+.settings-section { font-size: 20px; font-weight: 600; color: @tube_fg; margin-top: 26px; }
+.settings-text { font-size: 15px; color: @tube_subtle; }
+.settings-value { font-size: 20px; font-weight: 300; color: @tube_fg; }
+.settings-page button, .settings-nav button.settings-link {
     background: transparent;
     color: @tube_fg;
     border: 2px solid @tube_subtle;
     padding: 6px 14px;
     font-weight: 400;
 }
-.flyout button:hover { border-color: @tube_fg; background: @tube_surface_hi; }
-.flyout button:active { background: @tube_accent; border-color: @tube_accent; }
-.flyout button.armed { background: @tube_urgent; border-color: @tube_urgent; }
-.flyout button.link { border: none; padding: 6px 0; color: @tube_accent_light; }
-.flyout button.toggle-on { background: @tube_accent; border-color: @tube_accent; }
+.settings-page button:hover { border-color: @tube_fg; background: #161616; }
+.settings-page button:active { background: @tube_accent; border-color: @tube_accent; }
+.settings-page button.settings-link, .settings-nav button.settings-link {
+    border: none; padding: 6px 0; font-size: 16px; color: @tube_accent_light;
+}
+.settings-page button.settings-link:hover, .settings-nav button.settings-link:hover {
+    background: transparent; color: @tube_fg;
+}
+.settings-page button.settings-link.armed-link { color: @tube_urgent; }
+.settings-close { margin-left: 18px; }
 
-.flyout button.swatch { border: none; padding: 0; min-width: 44px; min-height: 44px; }
-.flyout button.swatch:hover { box-shadow: inset 0 0 0 2px alpha(#FFFFFF, 0.5); }
-.flyout button.swatch.current { box-shadow: inset 0 0 0 3px #FFFFFF; }
+.settings-page button.swatch { border: none; padding: 0; min-width: 60px; min-height: 60px; }
+.settings-page button.swatch:hover { box-shadow: inset 0 0 0 2px alpha(#FFFFFF, 0.5); }
+.settings-page button.swatch.current { box-shadow: inset 0 0 0 3px #FFFFFF; }
+.settings-page button.wall { border: none; padding: 0; min-width: 160px; min-height: 90px; }
+.settings-page button.wall:hover { box-shadow: inset 0 0 0 2px alpha(#FFFFFF, 0.5); }
+.settings-page button.wall.current, .settings-page button.wall-off.current { box-shadow: inset 0 0 0 3px #FFFFFF; }
+.settings-page button.wall-off { border: 2px solid @tube_surface_hi; padding: 0; min-height: 90px; color: @tube_subtle; }
+
+.settings-page switch { background: transparent; border: 2px solid @tube_fg; min-width: 88px; min-height: 22px; padding: 2px; }
+.settings-page switch:checked { background: @tube_accent; border-color: @tube_accent; }
+.settings-page switch slider { background: @tube_fg; min-width: 14px; min-height: 22px; border: none; margin: 0; }
+.settings-page switch image { color: transparent; }
 
 scale trough { background: @tube_surface_hi; min-height: 6px; border: none; }
 scale highlight { background: @tube_accent; border: none; }
 scale slider { background: @tube_fg; min-width: 12px; min-height: 22px; border: none; margin: -8px 0; }
-
-.flyout button.wall { border: none; padding: 0; min-width: 90px; min-height: 51px; }
-.flyout button.wall:hover { box-shadow: inset 0 0 0 2px alpha(#FFFFFF, 0.5); }
-.flyout button.wall.current, .flyout button.wall-off.current { box-shadow: inset 0 0 0 3px #FFFFFF; }
-.flyout button.wall-off { border: 2px solid @tube_surface_hi; padding: 0; min-height: 51px; color: @tube_subtle; }
-.flyout button.link.armed-link { color: @tube_urgent; }
 
 popover.tube-popover entry.field, popover.tube-popover combobox.field button {
     background: @tube_surface_hi;

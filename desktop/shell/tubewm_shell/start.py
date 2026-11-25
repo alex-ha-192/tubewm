@@ -378,7 +378,7 @@ class Start:
 
         links = Gtk.Box(spacing=40)
         links.set_halign(Gtk.Align.END)
-        for text, cmd in (("settings", "tube-charms --settings"), ("lock", "tube-lock"),
+        for text, cmd in (("settings", "tube-settings"), ("lock", "tube-lock"),
                           ("power", "tube-status")):
             links.pack_start(link(word(text, "start-foot"), lambda c=cmd: self.run(c)), False, False, 0)
         col.pack_end(links, False, False, 0)
