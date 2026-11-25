@@ -10,6 +10,7 @@ starts rejecting one of our configs fails here before it fails on a laptop.
 | `lint.sh` | shellcheck on every shell script, pyflakes on every Python file, every JSON / JSONC / TOML file parses |
 | `check-desktop.sh` | runs `desktop/install.sh` into a throwaway home, then asks the real tools about every config it wrote: `foot --check-config`, `sway -C`, `fuzzel --check-config`, swaylock keys against `swaylock --help`, GTK 3 / GTK 4's own CSS parser for waybar, GTK, gtklock and the shell. Repeats after `tube-accent lime`, then uninstalls. |
 | `check-apps.sh` | runs `apps/install.sh` into a throwaway home, parses every JSON / TOML it wrote, and loads the themes in tmux, Neovim, mpv, kitty and Helix |
+| `check-plugins.sh` | builds `desktop/wayfire/plugins` with `build.sh` against the installed Wayfire (its own CI job installs Arch's current `wayfire`), checks each plugin is installed and exports `newInstance`, that a second run is a no-op, and tries to load it in a headless Wayfire (only a warning when there's no GPU to start one) |
 | `smoke-session.sh` | starts headless sway the way a display manager does (clean environment, `PATH` without `~/.local/bin`), checks waybar, mako and swayidle stay up, that every program the sway and waybar configs run is findable from inside the session, that start, charms and foot open, that changing the accent from the session works, and that the session log has no config errors or tracebacks |
 | `run-all.sh` | all of the above plus `pytest apps/tests` |
 

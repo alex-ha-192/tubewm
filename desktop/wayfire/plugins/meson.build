@@ -7,7 +7,8 @@ project('tubewm-wayfire-plugins', 'cpp',
   default_options: ['cpp_std=c++17', 'buildtype=release', 'warning_level=1'])
 
 wayfire    = dependency('wayfire', version: '>=0.10.0')
-wlroots    = dependency('wlroots-0.19')
+# No wlroots here: Wayfire's own pkg-config file requires the wlroots it
+# was built with (0.19 for Wayfire 0.10, 0.20 for 0.11), so it comes along.
 wfconfig   = dependency('wf-config')
 cairo      = dependency('cairo')
 pango      = dependency('pango')
@@ -15,10 +16,11 @@ pangocairo = dependency('pangocairo')
 pixman     = dependency('pixman-1')
 libdrm     = dependency('libdrm')
 wayland    = dependency('wayland-server')
-glm        = dependency('glm', required: false)
+# Wayfire's headers include glm, which distros ship as a separate -dev package.
+glm        = dependency('glm', required: false)  # headers in /usr/include either way
 
 add_project_arguments(['-DWLR_USE_UNSTABLE', '-DWAYFIRE_PLUGIN'], language: 'cpp')
 
-plugin_deps = [wayfire, wlroots, wfconfig, cairo, pango, pangocairo, pixman, libdrm, wayland, glm]
+plugin_deps = [wayfire, wfconfig, cairo, pango, pangocairo, pixman, libdrm, wayland, glm]
 
 subdir('tube-decor')

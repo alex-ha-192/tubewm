@@ -10,7 +10,8 @@
 # plugin could not be built.
 #
 # Needs meson, ninja, a C++ compiler, pkg-config and Wayfire's headers
-# (Arch/CachyOS: in the wayfire package; Debian: wayfire-dev;
+# plus glm and wayland-protocols and vulkan-headers (Arch/CachyOS: wayfire glm wayland-protocols vulkan-headers;
+# Debian: wayfire-dev;
 # Fedora: wayfire-devel).
 set -u
 
@@ -33,11 +34,15 @@ if ! pkg-config --exists wayfire; then
     say "not built, Wayfire's headers are not installed"
     exit 1
 fi
+if ! printf '#include <glm/glm.hpp>\n' | c++ -x c++ -fsyntax-only - >/dev/null 2>&1; then
+    say "not built, glm (a header library Wayfire's headers use) is not installed"
+    exit 1
+fi
 
 # What the build depends on: every source file, and the Wayfire and wlroots
 # versions the plugins are compiled against (plugins must match exactly).
 want=$( {
-    pkg-config --modversion wayfire wlroots-0.19 2>/dev/null
+    pkg-config --modversion wayfire 2>/dev/null; pkg-config --print-requires wayfire 2>/dev/null
     cd "$here" && find . -type f ! -name '*.md' | LC_ALL=C sort | xargs cat
 } | cksum)
 

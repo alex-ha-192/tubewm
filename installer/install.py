@@ -80,10 +80,10 @@ PACKAGES = {
 
 # What it takes to build the Wayfire plugins in desktop/wayfire/plugins.
 BUILD_DEPS = {
-    "arch": "meson ninja gcc pkgconf",
-    "debian": "meson ninja-build g++ pkg-config wayfire-dev libdrm-dev",
-    "fedora": "meson ninja-build gcc-c++ pkgconf-pkg-config wayfire-devel libdrm-devel",
-    "suse": "meson ninja gcc-c++ pkgconf wayfire-devel",
+    "arch": "meson ninja gcc pkgconf glm wayland-protocols vulkan-headers",
+    "debian": "meson ninja-build g++ pkg-config wayfire-dev libdrm-dev libglm-dev wayland-protocols libvulkan-dev",
+    "fedora": "meson ninja-build gcc-c++ pkgconf-pkg-config wayfire-devel libdrm-devel glm-devel wayland-protocols-devel vulkan-headers",
+    "suse": "meson ninja gcc-c++ pkgconf wayfire-devel glm-devel wayland-protocols-devel vulkan-headers",
 }
 PLUGIN_BUILD = os.path.join(REPO, "desktop", "wayfire", "plugins", "build.sh")
 UPSTREAM = "https://github.com/alex-ha-192/tubewm"
