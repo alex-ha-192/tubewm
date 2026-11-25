@@ -2,6 +2,9 @@
 # tube-update: get the newest tubewm without touching git yourself.
 #
 #   tube-update               show what's new and update (opens a terminal if needed)
+#   tube-update --fresh       get the newest tubewm and install it as if for the
+#                             first time: your colour, tiles and settings are
+#                             deleted and the welcome runs again
 #   tube-update --check       look for updates; prints how many, exits 1 if none
 #   tube-update --notify      at most once a day: look, and if there are updates,
 #                             show a notification with an "update" button
@@ -9,7 +12,8 @@
 # It updates the tubewm folder you installed from (keeping your own edits
 # safe), or its own copy in ~/.local/share/tubewm-source if that folder is
 # gone, then runs the installer in update mode: your colour, tiles and
-# settings stay as they are.
+# settings stay as they are (unless you ask for --fresh, or pick "start from
+# scratch" on the what's-new screen).
 set -u
 CONFIG=${XDG_CONFIG_HOME:-$HOME/.config}
 DATA=${XDG_DATA_HOME:-$HOME/.local/share}
@@ -47,7 +51,7 @@ remember() { mkdir -p "$CACHE"; echo "$1" > "$CACHE/updates"; }
 
 case ${1:-} in
     -h|--help)
-        sed -n '2,14p' "$0" | sed 's/^# \{0,1\}//'; exit 0 ;;
+        sed -n '2,18p' "$0" | sed 's/^# \{0,1\}//'; exit 0 ;;
     --check)
         src=$(find_source) || { echo "tube-update: couldn't find or fetch tubewm" >&2; exit 2; }
         n=$(count_updates "$src") || { echo "tube-update: couldn't reach GitHub" >&2; exit 2; }
@@ -70,7 +74,7 @@ case ${1:-} in
             notify-send -a tubewm "tubewm update" "$text Open \"update tubewm\" in start." 2>/dev/null
         fi
         exit 0 ;;
-    "") ;;
+    ""|--fresh) ;;
     *) echo "tube-update: unknown option $1 (try --help)" >&2; exit 2 ;;
 esac
 
@@ -78,10 +82,14 @@ esac
 if [ ! -t 0 ] || [ ! -t 1 ]; then
     term=${TERMINAL:-foot}
     command -v "$term" >/dev/null || term=foot
-    exec "$term" -e "$SELF"
+    exec "$term" -e "$SELF" "$@"
 fi
 src=$(find_source) || { echo "tube-update: couldn't find or fetch tubewm (is git installed?)"; read -r -p "Press enter to close" _; exit 1; }
-"$src/install.sh" --update
+if [ "${1:-}" = --fresh ]; then
+    "$src/install.sh" --update --fresh
+else
+    "$src/install.sh" --update
+fi
 status=$?
 [ $status -eq 0 ] || [ $status -eq 1 ] || { echo; read -r -p "Press enter to close" _; }
 exit $status
