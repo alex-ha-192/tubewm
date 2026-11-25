@@ -10,6 +10,7 @@ Nothing here imports GTK, so asking is quick.
 
 import fcntl
 import os
+import signal
 import time
 
 RUNTIME = os.environ.get("XDG_RUNTIME_DIR", "/tmp")
@@ -69,3 +70,12 @@ def announce(name):
     """Tell later launches where to find us; call once we listen for signals."""
     with open(_pidfile(name), "w") as fh:
         fh.write(str(os.getpid()))
+
+
+def unblock(signals):
+    """Make sure SIGNALS reach us. A blocked signal mask is inherited across
+    fork and exec, and the compositor that autostarts us (or whatever ran
+    us) may have some blocked for itself: then the Windows key's signal is
+    held back for ever, and start looks dead from its first close on. Call
+    from the main thread before any other thread starts."""
+    signal.pthread_sigmask(signal.SIG_UNBLOCK, signals)

@@ -614,6 +614,8 @@ def main(argv=None):
     lock = resident.claim("start", wait=wait)
     if lock is None:
         return 0   # another copy is starting up right now
+    # Before Start() starts the tile threads, so they inherit it too.
+    resident.unblock(set(SIGNALS) | {signal.SIGTERM})
     start = Start(mode)
     for sig, what in SIGNALS.items():
         GLib.unix_signal_add(GLib.PRIORITY_HIGH, sig, lambda *_a, w=what: start.on_signal(w))
