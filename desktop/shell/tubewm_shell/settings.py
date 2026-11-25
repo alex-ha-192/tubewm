@@ -277,6 +277,12 @@ class Settings:
             box.pack_start(_label("Install wlr-randr to see your displays here.",
                                   "settings-text"), False, False, 0)
 
+        from . import bluetooth
+        if bluetooth.available():
+            self.section(box, "bluetooth", "Connect your devices, or pair a new one, from "
+                                           "bluetooth in the side panel.")
+            box.pack_start(self.switch(bluetooth.powered(), bluetooth.set_powered), False, False, 0)
+
         apps = [("arrange displays", "wdisplays"), ("sound", "pavucontrol"),
                 ("bluetooth", "blueman-manager"), ("printers", "system-config-printer")]
         shown = [(t, c) for t, c in apps if common.have(c)]
