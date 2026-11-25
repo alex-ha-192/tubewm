@@ -30,7 +30,7 @@ import sys
 import threading
 import time
 
-from . import applets, bluetooth, common, desktops, wm
+from . import applets, bluetooth, common, desktops, levels, wm
 
 from gi.repository import Gdk, GdkPixbuf, Gio, GLib, Gtk  # noqa: E402
 
@@ -255,6 +255,7 @@ class Strip:
         win.connect("notify::scale-factor", lambda *_: (self.icons.clear(), self.look()))
         self.look()
         GLib.timeout_add_seconds(STATUS_EVERY, self.look)
+        self.watch_sound()
         self.watch_accent()
         self.shown = 1.0        # 1: on screen, 0: slid up out of the way
         self.slide_tick = None
@@ -431,12 +432,21 @@ class Strip:
         if self.icons[key] is not None:
             image.set_from_surface(self.icons[key])
 
-    def _show(self, vol, net, batt, bt=None):
-        level, muted = vol if vol else (None, False)
+    def _show_sound(self, level, muted):
         self.sound.set_visible(level is not None)
         if level is not None:
             self._icon(self.sound, "volume-muted" if muted or level == 0 else "volume")
             self.sound.set_tooltip_text("sound off" if muted else "sound %d" % level)
+        return False
+
+    def watch_sound(self):
+        """The volume as soon as it moves (keys, a headset, an app), not at
+        the next look in a few seconds."""
+        self.sound_watcher = levels.Watcher(
+            lambda kind, v, muted: GLib.idle_add(self._show_sound, v, muted), brightness=False)
+
+    def _show(self, vol, net, batt, bt=None):
+        self._show_sound(*(vol if vol else (None, False)))
         self._icon(self.net, "wired" if net == "wired" else "wifi" if net else "offline")
         self.net.set_tooltip_text(("wi-fi: " + net) if net and net != "wired" else net or "not connected")
         self.bt.set_visible(bt is not None)

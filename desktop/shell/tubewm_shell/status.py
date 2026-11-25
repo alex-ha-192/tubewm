@@ -13,7 +13,7 @@ import os
 import sys
 import time
 
-from . import applets, bluetooth, common
+from . import applets, bluetooth, common, levels
 
 from gi.repository import GLib, Gtk, Pango  # noqa: E402
 
@@ -80,18 +80,26 @@ class Status:
         rows.get_style_context().add_class("status-rows")
         box.pack_start(rows, False, False, 0)
 
+        self.levels = {}   # kind -> its row, for the watcher to move
         vol = applets.volume()
         if vol and vol[0] is not None:
-            rows.pack_start(self.level_row("sound", vol[0], applets.set_volume), False, False, 0)
+            self.levels["volume"] = self.level_row("sound", vol[0], applets.set_volume)
+            if vol[1]:
+                self.levels["volume"].set_level(vol[0], True)
+            rows.pack_start(self.levels["volume"], False, False, 0)
         # Speakers and microphones: rebuilt when a bluetooth headset comes or goes.
         self.audio = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=20)
         rows.pack_start(self.audio, False, False, 0)
         self.fill_audio()
         light = applets.brightness()
         if light is not None:
-            rows.pack_start(self.level_row(
-                "brightness", light,
-                lambda v: applets.run(["brightnessctl", "-q", "set", "%d%%" % max(1, v)])), False, False, 0)
+            self.levels["brightness"] = self.level_row("brightness", light, applets.set_brightness)
+            rows.pack_start(self.levels["brightness"], False, False, 0)
+        # Keys, the firmware, a headset or an app can move them while we're
+        # open: follow, so the lines always say what the level really is.
+        self.watcher = levels.Watcher(
+            lambda kind, v, muted: GLib.idle_add(self.follow, kind, v, muted),
+            volume="volume" in self.levels, brightness="brightness" in self.levels)
 
         net = applets._net_text()
         if common.have("nmcli"):
@@ -313,6 +321,7 @@ class Status:
         scale.set_value(value)
         scale.get_style_context().add_class("status-line")
         pending = {}
+        held = [False]   # the pointer is on the line, dragging it
 
         def changed(s):
             v = int(s.get_value())
@@ -320,9 +329,27 @@ class Status:
             if pending.get("id"):
                 GLib.source_remove(pending["id"])
             pending["id"] = GLib.timeout_add(60, lambda: (on_change(v), pending.clear(), False)[2])
-        scale.connect("value-changed", changed)
+        handler = scale.connect("value-changed", changed)
+        scale.connect("button-press-event", lambda *_: held.__setitem__(0, True) or False)
+        scale.connect("button-release-event", lambda *_: held.__setitem__(0, False) or False)
         box.pack_start(scale, False, False, 0)
+
+        def set_level(v, muted=False):
+            """Moved from outside: show it, without sending it back."""
+            if held[0] or pending.get("id"):
+                return   # you're moving it; what you set wins
+            scale.handler_block(handler)
+            scale.set_value(v)
+            scale.handler_unblock(handler)
+            num.set_text("off" if muted else str(v))
+        box.set_level = set_level
         return box
+
+    def follow(self, kind, value, muted):
+        row = self.levels.get(kind)
+        if row is not None:
+            row.set_level(value, muted)
+        return False
 
     # ── actions ──────────────────────────────────────────────────────
     def tick(self):
