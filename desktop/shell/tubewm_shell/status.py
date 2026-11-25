@@ -2,8 +2,10 @@
 
 Click the time on the strip to open it. A big clock and the date, sound and
 brightness as thin lines you drag, which speakers and microphone to use,
-wi-fi, battery and quiet hours, your
+wi-fi, bluetooth, battery and quiet hours, your
 notifications, and lock / sleep / sign out / restart / shut down as words.
+Click network, bluetooth or battery to open it up: the wi-fi networks around
+you, your bluetooth devices and pairing new ones, the power mode.
 Click outside it, or press Escape, to close it.
 """
 
@@ -11,12 +13,14 @@ import os
 import sys
 import time
 
-from . import applets, common
+from . import applets, bluetooth, common
 
 from gi.repository import GLib, Gtk, Pango  # noqa: E402
 
 WIDTH = 460
 DND_MODE = "do-not-disturb"
+INSIDE_MAX = 340   # px: the most an opened row takes before it scrolls
+PROFILE_NAMES = {"power-saver": "battery saver", "balanced": "balanced", "performance": "performance"}
 
 
 def label(text, *classes, xalign=0.0):
@@ -79,10 +83,10 @@ class Status:
         vol = applets.volume()
         if vol and vol[0] is not None:
             rows.pack_start(self.level_row("sound", vol[0], applets.set_volume), False, False, 0)
-        for kind in ("output", "input"):
-            devices = applets.audio_devices(kind)
-            if devices:
-                rows.pack_start(self.device_row(kind, devices), False, False, 0)
+        # Speakers and microphones: rebuilt when a bluetooth headset comes or goes.
+        self.audio = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=20)
+        rows.pack_start(self.audio, False, False, 0)
+        self.fill_audio()
         light = applets.brightness()
         if light is not None:
             rows.pack_start(self.level_row(
@@ -90,9 +94,16 @@ class Status:
                 lambda v: applets.run(["brightnessctl", "-q", "set", "%d%%" % max(1, v)])), False, False, 0)
 
         net = applets._net_text()
-        rows.pack_start(self.pair("network", net or "not connected",
-                                  lambda: common.run_detached("nm-connection-editor")
-                                  if common.have("nm-connection-editor") else None), False, False, 0)
+        if common.have("nmcli"):
+            self.net = self.expander("network", net or "not connected", self.network_applet)
+            rows.pack_start(self.net, False, False, 0)
+        else:
+            rows.pack_start(self.pair("network", net or "not connected"), False, False, 0)
+        if bluetooth.available():
+            self.bt = self.expander("bluetooth", "", self.bluetooth_applet)
+            rows.pack_start(self.bt, False, False, 0)
+            applets.bluetooth._async(lambda: (bluetooth.powered(), bluetooth.connected_names()),
+                                     self.show_bluetooth)
         pct, state, left = applets.battery_info()
         if pct is not None:
             detail = "%d%%" % pct
@@ -100,6 +111,15 @@ class Status:
                 detail += " · charging"
             elif left:
                 detail += " · " + left.replace(" until empty", " left")
+        else:
+            detail = "plugged in"
+        names, cur = applets.profiles()
+        if names:
+            rows.pack_start(self.expander("battery" if pct is not None else "power",
+                                          detail + " · " + PROFILE_NAMES.get(cur, cur),
+                                          lambda row: self.power_modes(row, names, cur, detail)),
+                            False, False, 0)
+        elif pct is not None:
             rows.pack_start(self.pair("battery", detail), False, False, 0)
         self.quiet = self.pair("quiet hours", "on" if self.dnd() else "off", self.toggle_dnd)
         rows.pack_start(self.quiet, False, False, 0)
@@ -155,6 +175,96 @@ class Status:
             b.value = val
             return b
         return row
+
+    def expander(self, name, value, make):
+        """A row that opens up when clicked. make(row) builds what's inside
+        the first time it opens, so nothing slow runs until you ask."""
+        box = Gtk.Box(orientation=Gtk.Orientation.VERTICAL)
+        reveal = Gtk.Revealer()
+        reveal.set_transition_type(Gtk.RevealerTransitionType.SLIDE_DOWN)
+        reveal.set_transition_duration(180)
+
+        def toggle():
+            if not reveal.get_child():
+                inner = make(box)
+                inner.get_style_context().add_class("status-inside")
+                # A long list of networks scrolls rather than pushing the
+                # power words off the bottom of the screen.
+                scroll = Gtk.ScrolledWindow()
+                scroll.set_policy(Gtk.PolicyType.NEVER, Gtk.PolicyType.AUTOMATIC)
+                scroll.set_propagate_natural_height(True)
+                scroll.set_max_content_height(INSIDE_MAX)
+                scroll.add(inner)
+                reveal.add(scroll)
+                scroll.show_all()
+            reveal.set_reveal_child(not reveal.get_reveal_child())
+        row = self.pair(name, value, toggle)
+        row.value.set_ellipsize(Pango.EllipsizeMode.END)
+        row.value.set_max_width_chars(26)
+        box.pack_start(row, False, False, 0)
+        box.pack_start(reveal, False, False, 0)
+        box.value = row.value
+        return box
+
+    def power_modes(self, row, names, cur, detail):
+        """Battery saver / balanced / performance, as words: the one in use
+        is in the accent colour."""
+        listing = Gtk.Box(orientation=Gtk.Orientation.VERTICAL)
+        listing.get_style_context().add_class("status-devices")
+        order = [n for n in ("power-saver", "balanced", "performance") if n in names]
+        order += [n for n in names if n not in order]
+
+        def pick(n):
+            applets.run(["powerprofilesctl", "set", n])
+            now = applets.run(["powerprofilesctl", "get"]) or n
+            row.value.set_text(detail + " · " + PROFILE_NAMES.get(now, now))
+            for b in listing.get_children():
+                ctx = b.get_style_context()
+                (ctx.add_class if b.mode == now else ctx.remove_class)("current")
+        for n in order:
+            b = word_button(PROFILE_NAMES.get(n, n), lambda n=n: pick(n), "status-device")
+            b.mode = n
+            b.get_child().set_xalign(0.0)
+            if n == cur:
+                b.get_style_context().add_class("current")
+            listing.pack_start(b, False, False, 0)
+        return listing
+
+    def network_applet(self, _row):
+        applet = applets.Network()
+        applet.closes = Gtk.main_quit
+        return applet
+
+    def bluetooth_applet(self, _row):
+        applet = applets.Bluetooth()
+        applet.closes = Gtk.main_quit
+        # Connecting a headset adds speakers; show them, and the row's words.
+        applet.on_change = self.after_bluetooth
+        return applet
+
+    def show_bluetooth(self, result):
+        if not result:
+            return
+        on, names = result
+        self.bt.value.set_text(", ".join(names).lower() if names and on else "on" if on else "off")
+
+    def after_bluetooth(self):
+        applets.bluetooth._async(lambda: (bluetooth.powered(), bluetooth.connected_names()),
+                                 self.show_bluetooth)
+        # The sound server takes a moment to offer a headset once it connects.
+        for delay in (2, 5):
+            GLib.timeout_add_seconds(delay, lambda: self.fill_audio() or False)
+
+    def fill_audio(self):
+        for child in self.audio.get_children():
+            self.audio.remove(child)
+            child.destroy()
+        for kind in ("output", "input"):
+            devices = applets.audio_devices(kind)
+            if devices:
+                self.audio.pack_start(self.device_row(kind, devices), False, False, 0)
+        self.audio.set_visible(bool(self.audio.get_children()))
+        self.audio.show_all()
 
     def device_row(self, kind, devices):
         """Which speakers (output) or microphone (input) to use. Click to

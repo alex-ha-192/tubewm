@@ -26,6 +26,7 @@
     "modules-right": [
         "tray",
         "network",
+        "bluetooth",
         "backlight",
         "pulseaudio",
         "battery",
@@ -143,6 +144,18 @@
         "tooltip-format": "{ifname} · {ipaddr}",
         "tooltip-format-wifi": "{essid} · {signalStrength}% · {ipaddr}",
         "on-click": "~/.local/bin/tube-flyout network"
+    },
+    "bluetooth": {
+        "format": "",
+        "format-off": "",
+        "format-disabled": "",
+        "format-no-controller": "",
+        "format-connected": "{device_alias}",
+        "format-connected-battery": "{device_alias} {device_battery_percentage}%",
+        "tooltip-format": "bluetooth {status}",
+        "tooltip-format-connected": "bluetooth · {device_enumerate}",
+        "tooltip-format-enumerate-connected": "{device_alias}",
+        "on-click": "~/.local/bin/tube-flyout bluetooth"
     },
     "backlight": {
         "format": "{percent}",

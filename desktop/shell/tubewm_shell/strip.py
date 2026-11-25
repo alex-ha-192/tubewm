@@ -2,9 +2,10 @@
 
 It is always there. On the left, the start square and the desktops in light
 type: the one you're on in white. Click one to go there, right-click it for
-its menu, + for a new one. On the right, sound, network and battery as
-small marks, and the time; click any of them for everything else (sound,
-brightness, wi-fi, battery, notifications, power).
+its menu, + for a new one. On the right, sound, network, bluetooth (while
+it's on) and battery as small marks, and the time; click any of them for
+everything else (sound, brightness, wi-fi, bluetooth, battery and power
+mode, notifications, power).
 
 Between them is the handle for the window you're in. Point at it and the
 window's name appears. Drag it down to a side of the screen for half, into
@@ -29,7 +30,7 @@ import sys
 import threading
 import time
 
-from . import applets, common, desktops, wm
+from . import applets, bluetooth, common, desktops, wm
 
 from gi.repository import Gdk, GdkPixbuf, Gio, GLib, Gtk  # noqa: E402
 
@@ -219,9 +220,10 @@ class Strip:
         right.connect("clicked", lambda *_: spawn("tube-status"))
         marks = Gtk.Box(spacing=16)
         self.sound, self.net, self.batt = Gtk.Image(), Gtk.Image(), Gtk.Image()
+        self.bt = Gtk.Image()
         self.batt_pct = Gtk.Label()
         self.batt_pct.get_style_context().add_class("strip-pct")
-        for w in (self.sound, self.net):
+        for w in (self.sound, self.net, self.bt):
             marks.pack_start(w, False, False, 0)
         batt = Gtk.Box(spacing=6)
         batt.pack_start(self.batt, False, False, 0)
@@ -246,6 +248,7 @@ class Strip:
         win.show_all()
         self.set_handle_visible(False)
         self.batt_box.hide()
+        self.bt.hide()
         self.tick()
         GLib.timeout_add_seconds(1, self.tick)
         self.watch_desktops()
@@ -392,7 +395,7 @@ class Strip:
         self.clock.set_text(time.strftime("%H:%M"))
         return True
 
-    # ── sound, network, battery ──────────────────────────────────────
+    # ── sound, network, bluetooth, battery ───────────────────────────
     def look(self):
         """Ask how things are, off the main loop (the tools can be slow)."""
         self.check_accent()   # in case the file watch missed it
@@ -412,7 +415,13 @@ class Strip:
             pct, state, left = applets.battery_info()
         except Exception:  # noqa: BLE001
             pct, state, left = None, "", ""
-        GLib.idle_add(self._show, vol, name, (pct, state, left))
+        bt = None   # None: no bluetooth, or it's off; else the connected names
+        try:
+            if bluetooth.available() and bluetooth.powered():
+                bt = bluetooth.connected_names()
+        except Exception:  # noqa: BLE001
+            pass
+        GLib.idle_add(self._show, vol, name, (pct, state, left), bt)
 
     def _icon(self, image, name):
         scale = self.win.get_scale_factor()
@@ -422,7 +431,7 @@ class Strip:
         if self.icons[key] is not None:
             image.set_from_surface(self.icons[key])
 
-    def _show(self, vol, net, batt):
+    def _show(self, vol, net, batt, bt=None):
         level, muted = vol if vol else (None, False)
         self.sound.set_visible(level is not None)
         if level is not None:
@@ -430,6 +439,10 @@ class Strip:
             self.sound.set_tooltip_text("sound off" if muted else "sound %d" % level)
         self._icon(self.net, "wired" if net == "wired" else "wifi" if net else "offline")
         self.net.set_tooltip_text(("wi-fi: " + net) if net and net != "wired" else net or "not connected")
+        self.bt.set_visible(bt is not None)
+        if bt is not None:
+            self._icon(self.bt, "bluetooth-connected" if bt else "bluetooth")
+            self.bt.set_tooltip_text(("bluetooth: " + ", ".join(bt).lower()) if bt else "bluetooth on")
         pct, state, left = batt
         self.batt_box.set_visible(pct is not None)
         if pct is not None:

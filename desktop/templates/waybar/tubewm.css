@@ -65,7 +65,7 @@ tooltip label { color: @FG@; padding: 4px 6px; }
     margin: 14px 0 14px 12px;
 }
 
-#mpris, #tray, #idle_inhibitor, #network, #backlight, #pulseaudio, #battery, #clock {
+#mpris, #tray, #idle_inhibitor, #network, #bluetooth, #backlight, #pulseaudio, #battery, #clock {
     color: #D0D0D0;
     font-weight: 300;
     padding: 0 12px;
@@ -79,7 +79,7 @@ tooltip label { color: @FG@; padding: 4px 6px; }
 #network.disconnected, #pulseaudio.muted { color: @SUBTLE@; }
 
 /* Status icons: tubewm's own line glyphs, drawn beside the number. */
-#network, #backlight, #pulseaudio, #battery {
+#network, #bluetooth, #backlight, #pulseaudio, #battery {
     background-repeat: no-repeat;
     background-position: 12px center;
     background-size: 18px 18px;
@@ -89,6 +89,8 @@ tooltip label { color: @FG@; padding: 4px 6px; }
 #network.ethernet        { background-image: url("icons/wired.svg"); }
 #network.disconnected,
 #network.linked          { background-image: url("icons/offline.svg"); }
+#bluetooth.on            { background-image: url("icons/bluetooth.svg"); padding-left: 30px; }
+#bluetooth.connected     { background-image: url("icons/bluetooth-connected.svg"); }
 #backlight               { background-image: url("icons/brightness.svg"); }
 #pulseaudio              { background-image: url("icons/volume.svg"); }
 #pulseaudio.muted        { background-image: url("icons/volume-muted.svg"); }

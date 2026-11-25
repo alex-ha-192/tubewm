@@ -12,7 +12,7 @@ import os
 import re
 import urllib.parse
 
-from . import common, glyphs, tiles, wm  # common picks the GTK version
+from . import bluetooth, common, glyphs, tiles, wm  # common picks the GTK version
 
 from gi.repository import GLib, Gtk, Pango  # noqa: E402
 
@@ -735,6 +735,9 @@ class Network(Applet):
         self.toggle.connect("state-set", self.set_wifi)
         self.list = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=2)
         self.pack_start(self.list, False, False, 0)
+        self.again = button("look for networks again", lambda: self.update(rescan=True), glyph="network")
+        self.pack_start(self.again, False, False, 4)
+        self.rescan = True   # the first look asks the card for a fresh list
         if common.have("nm-connection-editor"):
             self.pack_end(button("network settings", lambda: (spawn("nm-connection-editor"), self.done()),
                                  glyph="settings"), False, False, 6)
@@ -744,22 +747,35 @@ class Network(Applet):
         GLib.timeout_add_seconds(2, lambda: self.update() or False)
         return False
 
-    def update(self):
-        clear(self.list)
+    def update(self, rescan=False):
         if not common.have("nmcli"):
+            clear(self.list)
             self.now.set_text(_net_text() or "no network tools (install NetworkManager)")
             self.toggle.set_sensitive(False)
+            self.again.hide()
             return
         self.now.set_text(_net_text() or "not connected")
         on = run(["nmcli", "radio", "wifi"]) == "enabled"
         self.toggle.handler_block_by_func(self.set_wifi)
         self.toggle.set_active(on)
         self.toggle.handler_unblock_by_func(self.set_wifi)
+        self.again.set_visible(on)
         if not on:
+            clear(self.list)
             return
-        tiles.run_async(["nmcli", "-t", "-f", "IN-USE,SSID,SIGNAL,SECURITY", "dev", "wifi", "list"], self._got)
+        fresh = rescan or self.rescan
+        self.rescan = False
+        if fresh:
+            self.again.set_sensitive(False)
+            if not self.list.get_children():
+                self.list.pack_start(label("looking for networks…", "applet-dim"), False, False, 0)
+                self.list.show_all()
+        tiles.run_async(["nmcli", "-t", "-f", "IN-USE,SSID,SIGNAL,SECURITY", "dev", "wifi", "list",
+                         "--rescan", "yes" if fresh else "auto"], self._got, timeout=30)
 
     def _got(self, out):
+        clear(self.list)
+        self.again.set_sensitive(True)
         seen = set()
         for line in out.splitlines():
             parts = re.split(r"(?<!\\):", line)
@@ -791,7 +807,12 @@ class Network(Applet):
 
     def connect_to(self, ssid, sec, box):
         known = ssid in run(["nmcli", "-t", "-f", "NAME", "connection", "show"]).splitlines()
-        if known or not sec or sec == "--":
+        if known:
+            # A network you've joined before: use what it remembers.
+            tiles.run_async(["nmcli", "connection", "up", "id", ssid], lambda _o: self.update(), timeout=40)
+            self.now.set_text("connecting to %s…" % ssid)
+            return
+        if not sec or sec == "--":
             tiles.run_async(["nmcli", "dev", "wifi", "connect", ssid], lambda _o: self.update(), timeout=40)
             self.now.set_text("connecting to %s…" % ssid)
             return
@@ -808,6 +829,138 @@ class Network(Applet):
         box.pack_start(entry, False, False, 4)
         entry.show()
         entry.grab_focus()
+
+
+class Bluetooth(Applet):
+    """On and off, the devices you've paired (click one to connect or
+    disconnect it), and "pair a new device", which looks for a few seconds
+    and lists what it found: click one to pair and connect it."""
+    title = "bluetooth"
+    every = 10
+
+    def __init__(self, switch=True):
+        self.switch = switch
+        self.busy = False
+        self.on_change = None   # called after something was turned on, off, connected or paired
+        super().__init__()
+
+    def changed(self):
+        self.update()
+        if self.on_change:
+            self.on_change()
+
+    def build(self):
+        self.now = label("", "applet-heading")
+        self.pack_start(self.now, False, False, 0)
+        self.toggle = Gtk.Switch()
+        if self.switch:
+            line = Gtk.Box(spacing=10)
+            line.pack_start(label("bluetooth", "applet-strong"), True, True, 0)
+            line.pack_start(self.toggle, False, False, 0)
+            self.pack_start(line, False, False, 0)
+            self.toggle.connect("state-set", self.set_power)
+        self.list = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=2)
+        self.pack_start(self.list, False, False, 0)
+        self.pair_button = button("pair a new device", self.find, glyph="plus")
+        self.pack_start(self.pair_button, False, False, 4)
+        self.found = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=2)
+        self.pack_start(self.found, False, False, 0)
+        if common.have("blueman-manager"):
+            self.pack_end(button("more bluetooth settings", lambda: (spawn("blueman-manager"), self.done()),
+                                 glyph="settings"), False, False, 6)
+
+    def set_power(self, _sw, state):
+        self.now.set_text("turning on…" if state else "turning off…")
+        bluetooth._async(lambda: bluetooth.set_powered(state), lambda _r: self.changed())
+        return False
+
+    def update(self):
+        if self.busy:
+            return
+        if not bluetooth.available():
+            self.now.set_text("no bluetooth here" if not bluetooth.hardware()
+                              else "no bluetooth tools (install bluez-utils)")
+            self.toggle.set_sensitive(False)
+            self.pair_button.hide()
+            clear(self.list)
+            return
+        bluetooth._async(lambda: (bluetooth.powered(), bluetooth.paired()), self._got)
+
+    def _got(self, result):
+        if not result or self.busy:
+            return
+        on, devices = result
+        if self.switch:
+            self.toggle.handler_block_by_func(self.set_power)
+            self.toggle.set_active(on)
+            self.toggle.handler_unblock_by_func(self.set_power)
+        clear(self.list)
+        self.pair_button.set_visible(on)
+        if not on:
+            self.now.set_text("off")
+            clear(self.found)
+            return
+        names = [n for _m, n, c in devices if c]
+        self.now.set_text(", ".join(names).lower() if names else "on")
+        if devices:
+            self.list.pack_start(section("your devices"), False, False, 2)
+        for mac, name, connected in devices:
+            self.list.pack_start(self._row(mac, name, connected), False, False, 0)
+        self.list.show_all()
+
+    def _row(self, mac, name, connected, new=False):
+        b = button(cb=lambda: self.pick(mac, name, connected, new, hint))
+        b.remove(b.get_child())
+        inner = Gtk.Box(spacing=10)
+        inner.pack_start(label(name, "applet-strong", ellipsize=True), True, True, 0)
+        hint = label("connected" if connected else "pair" if new else "", "applet-dim")
+        inner.pack_start(hint, False, False, 0)
+        b.add(inner)
+        b.get_style_context().add_class("applet-row")
+        if connected:
+            b.get_style_context().add_class("active")
+        return b
+
+    def pick(self, mac, name, connected, new, hint):
+        if self.busy:
+            return
+        self.busy = True
+        if new:
+            hint.set_text("pairing…")
+            bluetooth.pair(mac, lambda ok: self._finished(ok, "couldn't pair with %s" % name, True))
+        elif connected:
+            hint.set_text("disconnecting…")
+            bluetooth.disconnect(mac, lambda ok: self._finished(ok, "couldn't disconnect %s" % name))
+        else:
+            hint.set_text("connecting…")
+            bluetooth.connect(mac, lambda ok: self._finished(ok, "couldn't connect to %s" % name))
+
+    def _finished(self, ok, failed, paired_new=False):
+        self.busy = False
+        if paired_new and ok:
+            clear(self.found)
+        self.changed()
+        if not ok:
+            GLib.timeout_add(400, lambda: self.now.set_text(failed.lower()) or False)
+
+    def find(self):
+        if self.busy:
+            return
+        self.busy = True
+        clear(self.found)
+        self.found.pack_start(label("looking for devices… put yours in pairing mode", "applet-dim",
+                                    wrap=True), False, False, 0)
+        self.found.show_all()
+        bluetooth.scan(self._found)
+
+    def _found(self, devices):
+        self.busy = False
+        clear(self.found)
+        if not devices:
+            self.found.pack_start(label("nothing found to pair", "applet-dim"), False, False, 0)
+        for mac, name in devices or []:
+            self.found.pack_start(self._row(mac, name, False, new=True), False, False, 0)
+        self.found.show_all()
 
 
 class System(Applet):
@@ -965,6 +1118,7 @@ BUILDERS = {
     "disk": lambda spec: Storage(),
     "storage": lambda spec: Storage(),
     "network": lambda spec: Network(),
+    "bluetooth": lambda spec: Bluetooth(),
     "volume": lambda spec: Volume(),
     "sound": lambda spec: Volume(),
     "command": lambda spec: Command(spec.get("command", ""), spec.get("label") or "command"),

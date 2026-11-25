@@ -63,11 +63,15 @@ day to day. Everything is a click away; keys are extras.
   Right-click a name to rename it, keep it, move it or close it. Three
   fingers sideways on the touchpad slide between desktops.
 * **The strip is always there** (but for full screen), above start and the
-  panel; its start mark is a little cluster of tiles in your accent colour. Sound, network
-  and battery sit beside the time; click any of them for everything that
+  panel; its start mark is a little cluster of tiles in your accent colour. Sound, network,
+  bluetooth (while it's on) and battery sit beside the time; click any of them for everything that
   isn't an app, in one panel on the right: sound and brightness, which
-  speakers and microphone to use, wi-fi, battery, quiet hours, your
-  notifications, and lock, sleep, sign out, restart and shut down.
+  speakers and microphone to use, wi-fi, bluetooth, battery, quiet hours, your
+  notifications, and lock, sleep, sign out, restart and shut down. Click
+  network to see the wi-fi networks around you and switch to one; bluetooth
+  to turn it on or off, connect a device you've paired or pair a new one
+  (a headset shows up under output once it connects); battery to pick
+  battery saver, balanced or performance.
 * **Start**: tap the Windows key on its own, or click the accent square.
   It opens on every app from a to z in columns, nothing cut off. Just type:
   the list slides away and the best match comes up first (Enter opens it),
@@ -132,7 +136,9 @@ including the VS Code and Vivaldi themes.
 **Packages used:** sway, swaybg, swayidle, swaylock, waybar, fuzzel, mako, foot,
 grim, slurp, wl-clipboard, jq, playerctl, brightnessctl, libnotify, wireplumber,
 python3-gobject and pycairo with GTK 3 and gtk-layer-shell, Open Sans. Optional: gtklock
-(nicer lock screen), pavucontrol, blueman, NetworkManager (`nmcli`), curl (weather tile).
+(nicer lock screen), pavucontrol, blueman, NetworkManager (`nmcli`), curl (weather tile),
+BlueZ (`bluetoothctl`) with PipeWire's bluetooth audio, power-profiles-daemon (power modes).
+The installer turns on the bluetooth and power-profiles services if they're off.
 
 ## Keys
 
