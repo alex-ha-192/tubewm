@@ -314,8 +314,11 @@ window.start { background-color: @tube_bg; }
 .start-item { font-size: 22px; font-weight: 300; color: @tube_fg; min-height: 33px; }
 .start-dim { font-size: 18px; color: #9A9A9A; margin-bottom: 6px; }
 .start-also { margin-top: 36px; margin-bottom: 10px; }
-.start-best { font-size: 64px; font-weight: 300; color: @tube_accent_light; }
+.start-best { font-size: 64px; font-weight: 300; color: @tube_fg; }
 .start-result { font-size: 32px; font-weight: 300; color: @tube_fg; }
+/* the result Up / Down are on, which Enter opens (the best match at first) */
+.start-link.start-selected .start-best, .start-link.start-selected .start-result { color: @tube_accent_light; }
+.start-link.start-selected .start-kind { color: @tube_fg; }
 .start-kind { font-size: 18px; font-weight: 300; color: #9A9A9A; }
 .start-none { font-size: 32px; font-weight: 300; color: #9A9A9A; }
 .start-divider { min-width: 1px; background-color: #2A2A2A; margin: 24px 0 8px 0; }

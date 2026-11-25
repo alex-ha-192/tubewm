@@ -71,7 +71,7 @@ day to day. Everything is a click away; keys are extras.
 * **Start**: tap the Windows key on its own, or click the accent square.
   It opens on every app from a to z in columns, nothing cut off. Just type:
   the list slides away and the best match comes up first (Enter opens it),
-  apps before web apps. On the right, always: the glance, live tiles you
+  apps before web apps. Up and Down move through the results. On the right, always: the glance, live tiles you
   arrange yourself. Drag one to move it, drag its corner to make it any
   width and height, right-click for shapes, colour, settings and remove, and
   "add a tile" for the library (now playing, calendar, weather,
@@ -167,7 +167,8 @@ There is also a [one-page key reference](docs/keys.html) ([view it rendered](htt
 | 3 fingers ↓ | switcher |
 | 4 fingers ← / → | charms open / close |
 
-Inside start: type to search the app list, `Esc` to clear the search or close,
+Inside start: type to search the app list, `Up`/`Down` to move through the
+results and `Enter` to open the highlighted one, `Esc` to clear the search or close,
 `Alt+Arrows` to move the focused tile, `Menu` or `Shift+F10` for the focused
 tile's menu, `Ctrl+P` to pin or unpin the focused app.
 

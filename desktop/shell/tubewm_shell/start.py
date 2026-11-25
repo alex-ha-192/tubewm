@@ -4,7 +4,8 @@ Start opens on all your apps from a to z, in columns that fit the screen, so
 nothing is cut off; scroll sideways if there are more. Start typing and what
 you type grows huge while the list slides away and the results slide in:
 the best match first (press Enter to open it), then the rest, apps before
-web apps. Esc goes back to the list, and again closes start, as does a
+web apps. Up and Down move through the results, and Enter opens the one
+you are on. Esc goes back to the list, and again closes start, as does a
 click on empty space.
 
 On the right, always, is the glance: live tiles you can move, resize and add
@@ -133,6 +134,8 @@ class Start:
         common.apply_css()
         self.apps = all_apps()
         self.hits = []
+        self.rows = []   # the result buttons shown, best match first
+        self.sel = 0     # which of them Enter opens
 
         win = common.make_layer_window("start")
         common.below_strip(win)
@@ -166,7 +169,7 @@ class Start:
         self.entry_css = Gtk.CssProvider()
         self.entry.get_style_context().add_provider(self.entry_css, Gtk.STYLE_PROVIDER_PRIORITY_USER + 10)
         self.entry.connect("changed", self.on_changed)
-        self.entry.connect("activate", self.launch_first)
+        self.entry.connect("activate", self.launch_selected)
         left.pack_start(self.entry, False, False, 0)
         self.stage = Gtk.Layout()
         self.stage.set_vexpand(True)
@@ -271,18 +274,31 @@ class Start:
         for child in self.results.get_children():
             self.results.remove(child)
         self.hits = search(self.apps, query)
+        self.rows, self.sel = [], 0
         if not self.hits:
             self.results.pack_start(word("nothing matches", "start-none"), False, False, 0)
         else:
             self.results.pack_start(word("best match · press enter", "start-dim"), False, False, 0)
-            self.results.pack_start(self.result(self.hits[0], big=True), False, False, 0)
+            self.rows.append(self.result(self.hits[0], big=True))
+            self.results.pack_start(self.rows[0], False, False, 0)
             if len(self.hits) > 1:
                 more = word("more results", "start-dim")
                 more.get_style_context().add_class("start-also")
                 self.results.pack_start(more, False, False, 0)
             for app in self.hits[1:RESULTS]:
-                self.results.pack_start(self.result(app), False, False, 0)
+                self.rows.append(self.result(app))
+                self.results.pack_start(self.rows[-1], False, False, 0)
+            self.select(0)
         self.results.show_all()
+
+    def select(self, i):
+        """Light up result i: the one Enter opens."""
+        if not self.rows:
+            return
+        self.sel = max(0, min(i, len(self.rows) - 1))
+        for n, row in enumerate(self.rows):
+            ctx = row.get_style_context()
+            (ctx.add_class if n == self.sel else ctx.remove_class)("start-selected")
 
     def on_changed(self, *_):
         query = self.entry.get_text().strip().lower()
@@ -406,9 +422,9 @@ class Start:
         common.launch_app(app)
         self.quit()
 
-    def launch_first(self, *_):
+    def launch_selected(self, *_):
         if self.hits:
-            self.launch(self.hits[0][2])
+            self.launch(self.hits[min(self.sel, len(self.hits) - 1)][2])
 
     def on_scroll(self, _w, event):
         # The wheel scrolls the columns sideways.
@@ -434,6 +450,14 @@ class Start:
                 self.show_apps()
             else:
                 self.quit()
+            return True
+        typing_elsewhere = (not self.entry.has_focus()
+                            and isinstance(self.win.get_focus(), (Gtk.Entry, Gtk.TextView)))
+        if (self.searching and not typing_elsewhere
+                and key in (Gdk.KEY_Up, Gdk.KEY_Down, Gdk.KEY_KP_Up, Gdk.KEY_KP_Down)):
+            # Move through the results; the text keeps the focus, so you
+            # can go on typing.
+            self.select(self.sel + (-1 if key in (Gdk.KEY_Up, Gdk.KEY_KP_Up) else 1))
             return True
         if self.entry.has_focus() or isinstance(self.win.get_focus(), (Gtk.Entry, Gtk.TextView)):
             return False   # typing into search, a tile's note or its settings
