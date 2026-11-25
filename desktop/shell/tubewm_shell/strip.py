@@ -32,7 +32,7 @@ from gi.repository import Gdk, GdkPixbuf, Gio, GLib, Gtk  # noqa: E402
 
 HEIGHT = 40
 ICON = 18            # logical px; drawn at the screen's scale so it stays sharp
-START_ICON = 18      # px: the start mark, nine squares in the accent colour
+START_ICON = 18      # px: the start mark, a little cluster of tiles in the accent colour
 HIDE_MS = 220       # the slide out of the way for full screen
 STATUS_EVERY = 5     # seconds between looks at sound, network and battery
 ICON_DIR = os.path.normpath(os.path.join(common.SHELL_DIR, "..", "templates", "waybar", "icons"))
@@ -250,8 +250,12 @@ class Strip:
             threading.Thread(target=self._watch_fullscreen, daemon=True).start()
 
     # ── the start mark ───────────────────────────────────────────────
+    # A small Start screen on an 18-unit square: one wide tile over a medium
+    # one, a short wide one and two small ones (x, y, w, h).
+    START_TILES = ((0, 0, 18, 8), (0, 10, 8, 8), (10, 10, 8, 3), (10, 15, 3, 3), (15, 15, 3, 3))
+
     def draw_start(self, area, cr):
-        """Nine small squares, three by three, in the accent colour."""
+        """The start cluster: a tiny tile layout in the accent colour."""
         hover = self.start.get_state_flags() & (Gtk.StateFlags.PRELIGHT | Gtk.StateFlags.ACTIVE)
         hexcol = self.pal.get("ACCENT", "#E3008C")
         r, g, b = (int(hexcol[i:i + 2], 16) / 255 for i in (1, 3, 5))
@@ -259,11 +263,9 @@ class Strip:
             r, g, b = (c + (1 - c) * 0.3 for c in (r, g, b))
         cr.set_source_rgb(r, g, b)
         size = min(area.get_allocated_width(), area.get_allocated_height())
-        gap = size / 9.0
-        cell = (size - 2 * gap) / 3.0
-        for i in range(3):
-            for j in range(3):
-                cr.rectangle(i * (cell + gap), j * (cell + gap), cell, cell)
+        k = size / 18.0
+        for x, y, w, h in self.START_TILES:
+            cr.rectangle(x * k, y * k, w * k, h * k)
         cr.fill()
         return False
 
