@@ -53,7 +53,7 @@ day to day. Everything is a click away; keys are extras.
   purpose, drag the strip's handle onto a desktop's name (or `+` for a new
   one), or right-click the handle and pick one under "move to".
 * **Full screen** is only for when an app asks (F11, a video's full-screen
-  button, Super+F): the strip slides up out of the way and back after.
+  button): the strip slides up out of the way and back after.
 * **Notifications** come in as a band across the top and go away after a
   few seconds; the last twenty stay in the panel under the time.
 * **Desktops** look after themselves. There is always a spare `+` at the end
@@ -92,7 +92,7 @@ day to day. Everything is a click away; keys are extras.
 | Keys (optional) | |
 |---|---|
 | Windows key | start |
-| Super+←/→, ↑, ↓ | snap left/right, maximise, restore |
+| Super+←/→, ↑ (or F), ↓ | snap left/right, maximise, restore |
 | Super+1…0 | go to that desktop (Shift: take the window) |
 | Super+Tab | every desktop side by side; drag windows between them |
 | Alt+Tab | switch windows |

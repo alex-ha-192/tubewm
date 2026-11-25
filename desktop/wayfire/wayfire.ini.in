@@ -83,7 +83,7 @@ duration = 220ms circle
 type = crossfade
 slot_l = <super> KEY_LEFT
 slot_r = <super> KEY_RIGHT
-slot_c = <super> KEY_UP
+slot_c = <super> KEY_UP | <super> KEY_F
 restore = <super> KEY_DOWN
 slot_tl = none
 slot_tr = none
@@ -99,7 +99,8 @@ slot_b = none
 mode = center
 
 [wm-actions]
-toggle_fullscreen = <super> KEY_F
+# Super+F maximises like Super+Up (see [grid]); full screen is left to apps (F11).
+toggle_fullscreen = none
 toggle_maximize = <super> KEY_M
 toggle_always_on_top = <super> KEY_T
 toggle_showdesktop = <super> KEY_D
