@@ -47,7 +47,9 @@ day to day. Everything is a click away; keys are extras.
   or to the middle to fill the screen. Snap one window to half the screen
   and the one you used before it takes the other half. A new window takes
   free space if there is some; otherwise the desktop is retiled so nothing
-  is covered (up to four; a fifth gets a desktop of its own). File pickers
+  is covered (up to four; a fifth gets a desktop of its own). Close a
+  tiled window and the ones beside it grow into its space: of two halves
+  the one left fills the screen, and a quarter grows to a half. File pickers
   and password prompts open centred and are never tiled. Dragging a window
   to the screen's edge never sends it to another desktop. To move one on
   purpose, drag the strip's handle onto a desktop's name (or `+` for a new
