@@ -361,6 +361,18 @@ def _place(win_id, arranged):
         _later(SETTLE_AFTER, _settle, plan, arranged)
 
 
+def _fill(gone, arranged):
+    try:
+        plan = wm.fill_gap(gone)
+    except (OSError, wm.WayfireError, ValueError):
+        return
+    now = time.monotonic()
+    for vid, _zone in plan:
+        arranged[vid] = now
+    if plan:
+        _later(SETTLE_AFTER, _settle, plan, arranged)
+
+
 def _settle(plan, arranged):
     try:
         again = wm.settle(plan)
@@ -396,6 +408,13 @@ def daemon():
                     # app has settled on its first size, then check again
                     # a little later in case it moved itself.
                     _later(PLACE_AFTER, _place, view["id"], arranged)
+                if kind == "view-unmapped" and view.get("id") is not None \
+                        and view.get("role") == "toplevel" and not view.get("minimized"):
+                    # A window closed: the ones beside it grow into its
+                    # space (two halves become one window filling the
+                    # screen). Wait a moment so it has really gone from
+                    # Wayfire's list.
+                    _later(PLACE_AFTER, _fill, view, arranged)
                 with locked():
                     reconcile()
         except (OSError, wm.WayfireError, ValueError):

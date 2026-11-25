@@ -251,7 +251,8 @@ def fullscreen(win_id, state=True):
         _sway("[con_id=%d] fullscreen %s" % (win_id, "enable" if state else "disable"))
 
 
-GRID_SLOTS = {"left": "l", "right": "r", "top-left": "tl", "top-right": "tr",
+GRID_SLOTS = {"left": "l", "right": "r", "top": "t", "bottom": "b",
+              "top-left": "tl", "top-right": "tr",
               "bottom-left": "bl", "bottom-right": "br", "max": "c"}
 # wlroots edge bits: top 1, bottom 2, left 4, right 8.
 HALF_EDGES = {7: "left", 11: "right"}
@@ -259,7 +260,8 @@ OPPOSITE = {"left": "right", "right": "left"}
 
 
 def snap(win_id, zone):
-    """zone: left, right, top-left, top-right, bottom-left, bottom-right, max."""
+    """zone: left, right, top, bottom, top-left, top-right, bottom-left,
+    bottom-right, max."""
     if WAYFIRE:
         # Through the grid plugin, so the window is properly tiled (and
         # animates), and the desktops daemon hears about it and pairs it.
@@ -320,6 +322,7 @@ def zone_rect(zone, area):
     return {
         "max": (x, y, w, h),
         "left": (x, y, hw, h), "right": (x + hw, y, w - hw, h),
+        "top": (x, y, w, hh), "bottom": (x, y + hh, w, h - hh),
         "top-left": (x, y, hw, hh), "top-right": (x + hw, y, w - hw, hh),
         "bottom-left": (x, y + hh, hw, h - hh), "bottom-right": (x + hw, y + hh, w - hw, h - hh),
     }[zone]
@@ -468,6 +471,111 @@ def settle(plan):
             snap(vid, zone)
             again.append(vid)
     return again
+
+
+# ── closed windows leave no hole ───────────────────────────────────────────
+
+def _zone_of(r, area):
+    """The zone a rectangle fills, or None if it isn't tiled."""
+    return next((z for z in GRID_SLOTS if _same(r, zone_rect(z, area))), None)
+
+
+def _grow(gone, rects):
+    """Which windows grow into a gap, and to what.
+
+    `gone` is the gap's rectangle and `rects` {id: rectangle} the windows
+    left on the desktop. A side of the gap can be filled when the windows
+    touching it, laid end to end, cover exactly that side: they stretch
+    across the gap together (one quarter becomes a half, or two quarters
+    become the top and bottom halves). Up/down first, so a desktop of halves
+    side by side stays that way. Returns {id: new rectangle}, or {}."""
+    gx, gy, gw, gh = gone
+    sides = [
+        # (windows on this side touch the gap's edge, span along the edge, grown rect)
+        ("above", lambda r: _near(r[1] + r[3], gy), lambda r: (r[0], r[2]),
+         lambda r: (r[0], r[1], r[2], gy + gh - r[1]), (gx, gw)),
+        ("below", lambda r: _near(r[1], gy + gh), lambda r: (r[0], r[2]),
+         lambda r: (r[0], gy, r[2], r[1] + r[3] - gy), (gx, gw)),
+        ("left", lambda r: _near(r[0] + r[2], gx), lambda r: (r[1], r[3]),
+         lambda r: (r[0], r[1], gx + gw - r[0], r[3]), (gy, gh)),
+        ("right", lambda r: _near(r[0], gx + gw), lambda r: (r[1], r[3]),
+         lambda r: (gx, r[1], r[0] + r[2] - gx, r[3]), (gy, gh)),
+    ]
+    for _name, touches, span, grown, (start, length) in sides:
+        # Windows along this edge, lying within the gap's extent.
+        along = [(vid, span(r)) for vid, r in rects.items() if touches(r)
+                 and span(r)[0] >= start - 8 and span(r)[0] + span(r)[1] <= start + length + 8]
+        if not along:
+            continue
+        along.sort(key=lambda a: a[1][0])
+        pos, ok = start, True
+        for _vid, (s0, n) in along:
+            if not _near(s0, pos):
+                ok = False
+                break
+            pos = s0 + n
+        if ok and _near(pos, start + length):
+            return {vid: grown(rects[vid]) for vid, _s in along}
+    return {}
+
+
+def _near(a, b, slack=8):
+    return abs(a - b) <= slack
+
+
+def refill(gone, views, out):
+    """Where windows should go now that `gone` (Wayfire's last description
+    of a window that has just closed) has left a gap on its desktop.
+
+    Only tiled windows move: if the closed window filled a half or a
+    quarter, its neighbours grow over the gap (two halves side by side
+    become one window filling the screen; of four quarters, the one above
+    or below the gap grows to a half). A lone tiled window left behind
+    fills the screen. Windows somebody placed by hand are left alone.
+    Returns [(window id, zone), ...]."""
+    area = out.get("workarea") or out.get("geometry")
+    if not area or gone.get("fullscreen") or floating(gone) or gone.get("parent", -1) != -1:
+        return []
+    gap = _rect(gone, out)
+    if not _zone_of(gap, area) or _zone_of(gap, area) == "max":
+        return []
+    here = _wf_view_workspace(gone, out)
+    others = [v for v in views if v.get("id") != gone.get("id") and _tileable(v)
+              and v.get("output-id") == gone.get("output-id")
+              and _wf_view_workspace(v, out) == here]
+    if not others:
+        return []
+    rects = {v["id"]: _rect(v, out) for v in others}
+    if not all(_zone_of(r, area) for r in rects.values()):
+        return []   # something here was placed by hand: leave it be
+    if len(rects) == 1:
+        (vid, r), = rects.items()
+        return [] if _zone_of(r, area) == "max" else [(vid, "max")]
+    plan = []
+    for vid, r in _grow(gap, rects).items():
+        zone = _zone_of(r, area)
+        if zone:
+            plan.append((vid, zone))
+    return plan
+
+
+def fill_gap(gone):
+    """A window has closed: grow the ones it shared the desktop with into
+    the space it left (Wayfire). Returns [(window id, zone)] for what was
+    moved, to check on later."""
+    if not WAYFIRE or not gone or gone.get("id") is None:
+        return []
+    try:
+        views = _wf("window-rules/list-views")
+    except (OSError, WayfireError):
+        return []
+    out = {o["id"]: o for o in _wf_outputs()}.get(gone.get("output-id"))
+    if not out:
+        return []
+    plan = refill(gone, views, out)
+    for vid, zone in plan:
+        snap(vid, zone)
+    return plan
 
 
 # ── pivots (workspaces) ────────────────────────────────────────────────────
