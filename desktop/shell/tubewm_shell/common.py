@@ -156,6 +156,11 @@ def toggle_instance(name, close_only=False):
     return True
 
 
+def layer_shell():
+    """True when windows go on the Wayland layer shell (not nested or X11)."""
+    return GtkLayerShell is not None and GtkLayerShell.is_supported()
+
+
 def make_layer_window(name, transparent=False, layer="overlay"):
     win = Gtk.Window()
     win.set_title("tube-%s" % name)

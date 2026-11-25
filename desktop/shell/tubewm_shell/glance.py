@@ -882,7 +882,7 @@ class Glance(Gtk.Box):
         self.anim = GLib.timeout_add(16, step_anim)
 
     def tick(self):
-        if not self.get_mapped():
+        if not self.get_mapped() or not getattr(self, "awake", True):
             return True   # start is hidden: nobody to show the tiles to
         now = time.monotonic()
         if self.stack.get_visible_child_name() == "tiles":
