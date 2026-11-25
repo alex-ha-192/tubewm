@@ -108,7 +108,7 @@ try_open() {
     return 1
 }
 # What the key bindings actually run, straight from the installed config.
-for spec in '$mod+s|bin/tube-start' '$mod+c|bin/tube-charms' '$mod+i|bin/tube-charms'; do
+for spec in '$mod+s|bin/tube-start' '$mod+c|bin/tube-charms' '$mod+i|bin/tube-settings'; do
     key=${spec%%|*} pat=${spec#*|}
     if ! cmd=$(python3 "$CI_DIR/parse.py" binding "$C/sway/config" "$key" 2>&1); then
         fail "$key: $cmd"; continue

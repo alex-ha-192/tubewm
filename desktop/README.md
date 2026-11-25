@@ -10,7 +10,7 @@ artwork.
 | | |
 |---|---|
 | ![desktop with a snapped window and a toast](docs/screenshots/desktop.png) | ![the tile menu](docs/screenshots/tile-menu.png) |
-| ![charms and clock card](docs/screenshots/charms.png) | ![settings flyout with wallpapers](docs/screenshots/settings.png) |
+| ![charms and clock card](docs/screenshots/charms.png) | ![settings, full screen on black](docs/screenshots/settings.png) |
 | ![adding a live tile](docs/screenshots/add-tile.png) | ![start with the orange accent](docs/screenshots/start-orange.png) |
 
 ![the eight wallpaper styles](docs/screenshots/wallpapers.png)
@@ -23,7 +23,7 @@ artwork.
 | **Start** | Full-screen tile grid that you arrange yourself: pin apps, add live tiles, drag, resize and recolour them. Every installed app is listed down the right-hand side, Zune style, with letter headers; type anywhere to filter it. | `tube-start` (Python + GTK 3 + gtk-layer-shell) |
 | **Wallpapers** | Eight calm wallpapers drawn from the accent colour, redrawn whenever it changes. | `tube-wallpaper` (cairo) |
 | **Charms** | Right-edge bar (search, share, start, devices, settings) with a big clock card bottom-left. Click anywhere else to dismiss. | `tube-charms` |
-| **Settings flyout** | Accent swatches, wallpapers, volume, brightness, do-not-disturb, wi-fi, bluetooth, and power (restart / shut down ask twice). | `tube-charms --settings` |
+| **Settings** | The one place for settings, full screen on true black: personalise (accent, wallpaper), start, notifications, network and devices (displays, bluetooth on and off). Start's "settings", the settings tile, `Super+I`, the charms and the bar all open it. Sound, brightness and power stay in the side panel. | `tube-settings` |
 | **Snap** | Dock the focused window as a 320 px column at either edge, press again for 500 px, then half. | `tube-snap` |
 | **Switcher** | Every open window on every workspace in one flat list. | `tube-switcher` (fuzzel) |
 | **Toasts** | Plain charcoal cards, top right under the bar: the app's icon, a title and the message. Click one to open the app. | mako |
@@ -75,7 +75,7 @@ day to day. Everything is a click away; keys are extras.
 * **Start**: tap the Windows key on its own, or click the accent square.
   It opens on every app from a to z in columns, nothing cut off. Just type:
   the list slides away and the best match comes up first (Enter opens it),
-  apps before web apps. On the right, always: the glance, live tiles you
+  apps before web apps. Up and Down move through the results. On the right, always: the glance, live tiles you
   arrange yourself. Drag one to move it, drag its corner to make it any
   width and height, right-click for shapes, colour, settings and remove, and
   "add a tile" for the library (now playing, calendar, weather,
@@ -152,7 +152,7 @@ There is also a [one-page key reference](docs/keys.html) ([view it rendered](htt
 | `Super+D` | start, with the app list focused |
 | `Super+Q` | search apps |
 | `Super+C` | charms |
-| `Super+I` | settings flyout |
+| `Super+I` | settings |
 | `Super+Tab` | switch to any window |
 | `Super+Return` | terminal |
 | `Super+L` | lock |
@@ -173,7 +173,8 @@ There is also a [one-page key reference](docs/keys.html) ([view it rendered](htt
 | 3 fingers ↓ | switcher |
 | 4 fingers ← / → | charms open / close |
 
-Inside start: type to search the app list, `Esc` to clear the search or close,
+Inside start: type to search the app list, `Up`/`Down` to move through the
+results and `Enter` to open the highlighted one, `Esc` to clear the search or close,
 `Alt+Arrows` to move the focused tile, `Menu` or `Shift+F10` for the focused
 tile's menu, `Ctrl+P` to pin or unpin the focused app.
 
@@ -192,7 +193,7 @@ Start is a grid of tiles on the left and every installed app on the right.
   large, whichever the tile supports), *colour* (accent, dark, or one of the
   palette accents), *set up…* for tiles with options, and *unpin*.
 * **Add a live tile:** press the **+** under your tiles and pick one.
-* **Start over:** `tube-start --reset`, or the link in the settings flyout.
+* **Start over:** `tube-start --reset`, or the link in settings, under start.
 
 Your layout is saved to `~/.config/tubewm/start.json` as you go. New installs
 start from `desktop/start/default.toml`; tiles for apps you don't have are
@@ -224,10 +225,10 @@ Live tiles turn over the way the spec describes: one tile (sometimes two) every
 ## Make it yours
 
 * **Accent:** `tube-accent list`, `tube-accent cobalt`, `tube-accent '#1BA1E2'`,
-  `tube-accent random`, or click a swatch in the settings flyout.
+  `tube-accent random`, or click a swatch in settings.
 * **Start tiles:** arrange them in start itself (see [Start](#start)).
 * **Wallpaper:** `tube-wallpaper list`, `tube-wallpaper horizon`, or pick one in the
-  settings flyout. `tube-wallpaper off` goes back to the plain backdrop, so you
+  settings. `tube-wallpaper off` goes back to the plain backdrop, so you
   can set your own picture in `~/.config/sway/config.d/`. The word style draws
   "tube" unless you set `TUBE_WALLPAPER_WORD`.
 * **Pivot names:** the `$ws1`…`$ws10` lines at the top of `~/.config/sway/config`, and
@@ -261,7 +262,7 @@ desktop/
   bin/                  tube-* commands (bash, plus two Python entry points)
   shell/                the start screen, charms and wallpapers (Python, GTK 3, gtk-layer-shell, cairo)
     style.css           their stylesheet; colours are filled in at start-up
-    tubewm_shell/       start.py, layout.py, tiles.py, charms.py, wallpaper.py, glyphs.py, common.py,
+    tubewm_shell/       start.py, layout.py, tiles.py, charms.py, settings.py, wallpaper.py, glyphs.py, common.py,
                         welcome.py (first login), keyboard.py (tube-keyboard)
   start/default.toml    the start layout new users get
 ../palette/             shared colours (also read by the apps/ themes)
