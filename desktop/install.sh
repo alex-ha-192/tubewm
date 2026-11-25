@@ -232,7 +232,7 @@ fi
 # ── GTK / GNOME settings ─────────────────────────────────────────────────
 if [ "$gsettings_ok" = 1 ] && command -v gsettings >/dev/null \
         && gsettings list-schemas 2>/dev/null | grep -x org.gnome.desktop.interface >/dev/null; then
-    say "Setting GTK preferences (dark, Open Sans, no title bar buttons)"
+    say "Setting GTK preferences (dark, Open Sans, close button only)"
     mkdir -p "$BACKUP"
     if [ "$first_install" = 1 ]; then
         for kv in "org.gnome.desktop.interface color-scheme" "org.gnome.desktop.interface font-name" \
@@ -249,7 +249,7 @@ if [ "$gsettings_ok" = 1 ] && command -v gsettings >/dev/null \
     gsettings set org.gnome.desktop.interface color-scheme 'prefer-dark' || true
     gsettings set org.gnome.desktop.interface gtk-theme 'Adwaita-dark' || true
     gsettings set org.gnome.desktop.interface font-name 'Open Sans 10' || true
-    gsettings set org.gnome.desktop.wm.preferences button-layout ':' || true
+    gsettings set org.gnome.desktop.wm.preferences button-layout ':close' || true
 fi
 
 [ -d "$BACKUP" ] || note "nothing needed backing up"
