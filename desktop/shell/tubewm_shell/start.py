@@ -154,14 +154,20 @@ class Start:
         self.app_monitor.connect("changed", lambda *_: setattr(self, "apps_stale", True))
         self.look = look_stamp()
 
-        win = common.make_layer_window("start")
+        # The window itself is see-through and everything in it sits on
+        # self.sheet, which carries the background. Wayland ignores a whole
+        # window's opacity, so fading the sheet is what makes start fade.
+        win = common.make_layer_window("start", transparent=True)
         common.below_strip(win)
         win.get_style_context().add_class("start")
         win.connect("key-press-event", self.on_key)
         self.win = win
 
         over = Gtk.Overlay()
-        win.add(over)
+        self.sheet = Gtk.Box()
+        self.sheet.get_style_context().add_class("start-sheet")
+        self.sheet.pack_start(over, True, True, 0)
+        win.add(self.sheet)
         # The click-catcher behind everything: empty space closes start.
         back = Gtk.EventBox()
         back.connect("button-press-event", lambda _w, ev: self.quit() if ev.button == 1 else False)
@@ -213,7 +219,7 @@ class Start:
         self.results.hide()
         self.fill_columns()
         self.refresh_glance()
-        win.set_opacity(0.0)
+        self.sheet.set_opacity(0.0)
         self.shown = True
         self._fade(1.0, None, FADE_IN_MS)
         if mode == "search":
@@ -238,7 +244,7 @@ class Start:
             os.execv(sys.executable, argv)
         self.shown = True
         if not self.win.get_visible():
-            self.win.set_opacity(0.0)
+            self.sheet.set_opacity(0.0)
             self.win.show()
         self.win.present()
         if self.apps_stale or common.monitor_size(self.win) != self.columns_for:
@@ -554,13 +560,13 @@ class Start:
     def _fade(self, target, then, ms=FADE_MS):
         if self.fade_tick:
             GLib.source_remove(self.fade_tick)   # turned round half way
-        start = self.win.get_opacity()
+        start = self.sheet.get_opacity()
         t0 = GLib.get_monotonic_time()
 
         def tick():
             t = min(1.0, (GLib.get_monotonic_time() - t0) / 1000.0 / ms)
             ease = 1 - (1 - t) ** 3
-            self.win.set_opacity(start + (target - start) * ease)
+            self.sheet.set_opacity(start + (target - start) * ease)
             if t >= 1.0:
                 self.fade_tick = None
                 if then:

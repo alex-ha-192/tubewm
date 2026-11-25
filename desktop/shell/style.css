@@ -325,7 +325,8 @@ button.applet-button.icon-button.transport.main:hover { background: alpha(#FFFFF
 .tube-flyout-title { font-size: 28px; font-weight: 300; color: @tube_fg; margin-bottom: 14px; }
 
 /* ── start: every app at once, and type to find one ─────────────────────── */
-window.start { background-color: @tube_bg; }
+window.start { background-color: transparent; }
+.start-sheet { background-color: @tube_bg; }
 .start-hint { font-size: 18px; font-weight: 300; color: #9A9A9A; }
 .start-search { font-size: 30px; font-weight: 300; color: @tube_fg; background: none; border: none;
                 border-bottom: 1px solid #333333; box-shadow: none; border-radius: 0; padding: 0 0 6px 0;
