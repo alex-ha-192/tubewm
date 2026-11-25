@@ -1,9 +1,9 @@
-"""tube-charms: the right-edge charms bar with its clock card, and the
-settings / devices flyouts. Click anywhere else or press Escape to dismiss."""
+"""tube-charms: the right-edge charms bar with its clock card. The settings
+and devices charms open tube-settings. Click anywhere else or press Escape
+to dismiss."""
 
 import argparse
 import datetime
-import json
 import os
 
 from . import bluetooth, common, glyphs, tiles
@@ -11,7 +11,6 @@ from . import bluetooth, common, glyphs, tiles
 from gi.repository import Gdk, GLib, Gtk  # noqa: E402
 
 BAR_WIDTH = 86
-FLYOUT_WIDTH = 346
 
 CHARMS = [
     ("search", "search"),
@@ -20,31 +19,6 @@ CHARMS = [
     ("devices", "devices"),
     ("settings", "settings"),
 ]
-
-
-def _section(text):
-    lab = Gtk.Label(label=text, xalign=0)
-    lab.get_style_context().add_class("flyout-section")
-    return lab
-
-
-def _text(text):
-    lab = Gtk.Label(label=text, xalign=0)
-    lab.get_style_context().add_class("flyout-text")
-    lab.set_line_wrap(True)
-    lab.set_max_width_chars(34)
-    return lab
-
-
-def _button(text, cb, *classes):
-    btn = Gtk.Button(label=text)
-    if "link" in classes:
-        btn.set_halign(Gtk.Align.START)
-    btn.set_relief(Gtk.ReliefStyle.NONE)
-    for c in classes:
-        btn.get_style_context().add_class(c)
-    btn.connect("clicked", cb)
-    return btn
 
 
 class Charms:
@@ -77,8 +51,6 @@ class Charms:
         self.pages.set_interpolate_size(True)
         self.side.add(self.pages)
         self.pages.add_named(self.build_bar(), "bar")
-        self.pages.add_named(self.build_settings(), "settings")
-        self.pages.add_named(self.build_devices(), "devices")
 
         self.card = Gtk.Revealer()
         self.card.set_transition_type(Gtk.RevealerTransitionType.SLIDE_UP)
@@ -136,7 +108,7 @@ class Charms:
             # Wait for the charms to leave the screen before capturing.
             self.run_and_quit("sleep 0.35; tube-share")
         elif name in ("settings", "devices"):
-            self.go(name)
+            self.run_and_quit("tube-settings " + ("devices" if name == "devices" else ""))
 
     # ── clock card ───────────────────────────────────────────────────
     def build_clock(self):
@@ -438,10 +410,7 @@ class Charms:
     # ── misc ─────────────────────────────────────────────────────────
     def on_key(self, _w, event):
         if event.keyval == Gdk.KEY_Escape:
-            if self.pages.get_visible_child_name() != "bar":
-                self.go("bar")
-            else:
-                self.quit()
+            self.quit()
             return True
         return False
 
@@ -453,14 +422,6 @@ class Charms:
     def quit(self, *_):
         Gtk.main_quit()
         return False
-
-
-def volume_get():
-    out = common.sh("wpctl get-volume @DEFAULT_AUDIO_SINK@")
-    try:
-        return float(out.split()[1]) * 100
-    except (IndexError, ValueError):
-        return 50
 
 
 def network_name():
@@ -484,14 +445,19 @@ def network_name():
 
 def main(argv=None):
     parser = argparse.ArgumentParser(prog="tube-charms", description=__doc__.splitlines()[0])
-    parser.add_argument("--settings", action="store_true", help="open the settings flyout")
-    parser.add_argument("--power", action="store_true", help="open settings, for the power buttons")
-    parser.add_argument("--devices", action="store_true", help="open the devices flyout")
+    # Settings used to be a flyout here; the flags still work for old configs.
+    parser.add_argument("--settings", action="store_true", help="open tube-settings")
+    parser.add_argument("--power", action="store_true", help="open the side panel, for power")
+    parser.add_argument("--devices", action="store_true", help="open tube-settings on devices")
     parser.add_argument("--close", action="store_true", help="close the charms if open")
     args = parser.parse_args(argv)
+    if args.settings or args.devices or args.power:
+        from . import settings, status
+        if args.power:
+            return status.main([])
+        return settings.main(["devices"] if args.devices else [])
     if not common.toggle_instance("charms", close_only=args.close):
         return 0
-    page = "settings" if (args.settings or args.power) else "devices" if args.devices else "bar"
-    Charms(page)
+    Charms("bar")
     Gtk.main()
     return 0

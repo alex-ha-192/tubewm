@@ -104,13 +104,13 @@ exec $tubebin/tube-start
 bindsym $mod+s exec $tubebin/tube-start
 bindsym $mod+d exec $tubebin/tube-start --apps
 bindsym $mod+c exec $tubebin/tube-charms
-bindsym $mod+i exec $tubebin/tube-charms --settings
+bindsym $mod+i exec $tubebin/tube-settings
 bindsym $mod+q exec $tubebin/tube-start --search
 bindsym $mod+Return exec $term
 bindsym $mod+l exec $tubebin/tube-lock
 bindsym $mod+z exec pkill -SIGUSR1 waybar
 bindsym $mod+Tab exec $tubebin/tube-switcher
-bindsym $mod+Shift+e exec $tubebin/tube-charms --power
+bindsym $mod+Shift+e exec $tubebin/tube-status
 bindsym $mod+Shift+c reload
 
 # Uncomment to open start by tapping the Super key on its own.
