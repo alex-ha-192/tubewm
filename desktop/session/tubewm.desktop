@@ -1,6 +1,0 @@
-[Desktop Entry]
-Name=tubewm
-Comment=A flat, simple desktop
-Exec=/usr/local/bin/tubewm-session
-Type=Application
-DesktopNames=sway

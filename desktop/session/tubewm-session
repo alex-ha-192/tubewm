@@ -1,16 +1,24 @@
 #!/bin/sh
 # tubewm-session: start the tubewm desktop from a login screen or a console.
 #
-#   tubewm-session            Sway (the default)
+#   tubewm-session            Wayfire (Sway if Wayfire isn't installed)
 #   tubewm-session wayfire    Wayfire
+#   tubewm-session sway       Sway, which tubewm still supports but no longer
+#                             lists on the sign-in screen
 #
 # Installed to /usr/local/bin by ./install.sh and named in the "tubewm" entry
 # on the login screen. It sets up what a login screen doesn't: ~/.local/bin
 # on PATH, the keyboard layout you picked, the Wayland hints apps look for,
 # and a log of the session in ~/.local/state/tubewm/session.log.
 
-comp=${1:-sway}
-[ $# -gt 0 ] && shift
+if [ $# -gt 0 ]; then
+    comp=$1
+    shift
+elif command -v wayfire >/dev/null 2>&1; then
+    comp=wayfire
+else
+    comp=sway
+fi
 
 case ":$PATH:" in
     *":$HOME/.local/bin:"*) ;;

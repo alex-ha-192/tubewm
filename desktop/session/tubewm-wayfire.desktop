@@ -1,6 +1,6 @@
 [Desktop Entry]
-Name=tubewm (Wayfire)
-Comment=A flat, simple desktop, with animations
-Exec=/usr/local/bin/tubewm-session wayfire
+Name=tubewm
+Comment=A flat, simple desktop
+Exec=/usr/local/bin/tubewm-session
 Type=Application
 DesktopNames=wayfire

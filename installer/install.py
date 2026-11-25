@@ -8,6 +8,8 @@ Run it through ./install.sh at the top of the repository:
     ./install.sh --home-only   only touch your home folder: no password needed
     ./install.sh --uninstall   remove tubewm and put your old settings back
     ./install.sh --update      fetch the newest tubewm and install it (what tube-update runs)
+    ./install.sh --fresh       install as if for the first time: your tubewm settings are
+                               deleted and the welcome runs again (add --update to fetch first)
     ./install.sh --plain       plain text instead of the full-screen UI
 
 Only the standard library is used, because this runs before anything else is
@@ -37,7 +39,10 @@ RECORD = os.path.join(CONFIG, "tubewm", "installed")
 
 SESSION_BIN = "/usr/local/bin/tubewm-session"
 SESSION_DIR = "/usr/share/wayland-sessions"
-SESSIONS = {"tubewm.desktop": "sway", "tubewm-wayfire.desktop": "wayfire"}
+SESSIONS = {"tubewm-wayfire.desktop": "wayfire"}
+# Entries older versions put on the sign-in screen, taken off by updates.
+# tubewm.desktop was the Sway session; Wayfire is the desktop now.
+OLD_SESSIONS = ("tubewm.desktop",)
 
 # ── packages ─────────────────────────────────────────────────────────────
 # Required: what the desktop can't work without. Optional: installed when the
@@ -374,14 +379,18 @@ def write_record(**updates):
             fh.write("%s=%s\n" % (k, v))
 
 
-def session_files(include_wayfire):
-    files = {SESSION_BIN: os.path.join(REPO, "desktop", "session", "tubewm-session"),
-             os.path.join(SESSION_DIR, "tubewm.desktop"):
-                 os.path.join(REPO, "desktop", "session", "tubewm.desktop")}
-    if include_wayfire:
-        files[os.path.join(SESSION_DIR, "tubewm-wayfire.desktop")] = os.path.join(
-            REPO, "desktop", "session", "tubewm-wayfire.desktop")
+def session_files():
+    """What goes on the sign-in screen: one tubewm entry, which starts Wayfire
+    (tubewm-session falls back to Sway where there is no Wayfire)."""
+    files = {SESSION_BIN: os.path.join(REPO, "desktop", "session", "tubewm-session")}
+    for name in SESSIONS:
+        files[os.path.join(SESSION_DIR, name)] = os.path.join(REPO, "desktop", "session", name)
     return files
+
+
+def old_session_files():
+    """Sign-in screen entries from older versions that are still there."""
+    return [p for p in (os.path.join(SESSION_DIR, n) for n in OLD_SESSIONS) if os.path.exists(p)]
 
 
 def _same(a, b):
@@ -392,21 +401,56 @@ def _same(a, b):
         return False
 
 
-def wants_wayfire(pkgs_to_install):
-    return os.path.isdir(os.path.join(REPO, "desktop", "wayfire")) and (
-        shutil.which("wayfire") is not None or "wayfire" in pkgs_to_install)
-
-
 def builds_plugins(pkgs_to_install=()):
     return os.path.exists(PLUGIN_BUILD) and (
         shutil.which("wayfire") is not None or "wayfire" in pkgs_to_install)
 
 
+# What --fresh keeps in ~/.config/tubewm: the configs from before tubewm
+# (which --uninstall puts back) and the record of what it changed outside
+# your home folder. Everything else there is a setting of yours.
+FRESH_KEEP = ("backup", "installed")
+# Logs are kept too, so a fresh install that goes wrong can still be looked into.
+FRESH_KEEP_STATE = ("install.log", "session.log", "session.log.old", "update-notes")
+
+
+def reset_settings(line=print):
+    """Delete your tubewm settings (colour, tiles, wallpaper, keyboard, the
+    welcome having been seen), so the next install starts as if new."""
+    def remove(path):
+        line("deleting %s" % _tilde(path))
+        if os.path.isdir(path) and not os.path.islink(path):
+            shutil.rmtree(path, ignore_errors=True)
+        else:
+            try:
+                os.remove(path)
+            except OSError:
+                pass
+
+    base = os.path.join(CONFIG, "tubewm")
+    for name in sorted(_listdir(base)):
+        if name not in FRESH_KEEP:
+            remove(os.path.join(base, name))
+    for name in sorted(_listdir(STATE_DIR)):
+        if name not in FRESH_KEEP_STATE:
+            remove(os.path.join(STATE_DIR, name))
+    cache = os.path.join(os.environ.get("XDG_CACHE_HOME", os.path.join(HOME, ".cache")), "tubewm")
+    if os.path.exists(cache):
+        remove(cache)
+    # Made from those settings; the install writes them again.
+    for rel in ("sway/config.d/10-tubewm-keyboard.conf", "sway/config.d/50-tubewm-wallpaper.conf"):
+        if os.path.lexists(os.path.join(CONFIG, rel)):
+            remove(os.path.join(CONFIG, rel))
+    if os.path.exists(RECORD):
+        write_record(apps=None)
+
+
 class Plan:
-    def __init__(self, system, home_only=False, update=False):
+    def __init__(self, system, home_only=False, update=False, fresh=False):
         self.sys = system
         self.home_only = home_only
-        self.update = update
+        self.update = update and not fresh
+        self.fresh = fresh
         self.layout = keyboard.guess()
         self.packages = []
         self.apps = []
@@ -429,6 +473,11 @@ class Plan:
     def build(self):
         s = self.sys
         steps = []
+        if self.fresh:
+            steps.append(Step("reset", "Delete your tubewm settings and start over",
+                              "Colour, start tiles, wallpaper and keyboard choice go, and the "
+                              "welcome runs again. Configs from before tubewm are kept.",
+                              self.do_reset, toggle=False))
         if self.packages:
             names = ", ".join(self.packages[:6]) + (" and %d more" % (len(self.packages) - 6)
                                                     if len(self.packages) > 6 else "")
@@ -454,13 +503,20 @@ class Plan:
                               "And on text consoles." + (" It is %s now." % keyboard.describe(*sysk)
                                                          if sysk else ""),
                               self.do_keyboard_system, system=True, soft=True))
-        files = session_files(wants_wayfire(self.packages))
-        if not all(_same(dst, src) for dst, src in files.items()):
+        files = session_files()
+        current = all(_same(dst, src) for dst, src in files.items())
+        old = old_session_files()
+        if not current:
             where = {"sddm": "SDDM", "gdm": "GDM", "lightdm": "LightDM", "greetd": "greetd",
                      "plasmalogin": "the Plasma login screen"}.get(s.login_manager, "")
             steps.append(Step("session", "Add tubewm to the sign-in screen",
-                              ("Pick it from the session menu in %s." % where) if where
-                              else "Or start it from a console with  tubewm-session",
+                              (("Pick it from the session menu in %s." % where) if where
+                               else "Or start it from a console with  tubewm-session")
+                              + (" The old Sway entry is taken off." if old else ""),
+                              self.do_session, system=True))
+        elif old:
+            steps.append(Step("session", "Take the old Sway entry off the sign-in screen",
+                              "tubewm runs on Wayfire now, and that's the one entry left.",
                               self.do_session, system=True))
         if self.home_only or not (s.root or can_sudo()):
             for st in steps:
@@ -473,6 +529,9 @@ class Plan:
         return any(st.on and st.system for st in self.steps) and not self.sys.root
 
     # the steps themselves
+
+    def do_reset(self, run):
+        reset_settings(run.line)
 
     def do_packages(self, run):
         cmds = self.sys.install_commands(self.packages)
@@ -515,11 +574,14 @@ class Plan:
         run.run(keyboard.system_command(*self.layout), sudo=True)
 
     def do_session(self, run):
-        files = session_files(wants_wayfire(self.packages))
+        files = session_files()
         run.run(["install", "-d", "-m", "755", SESSION_DIR, os.path.dirname(SESSION_BIN)], sudo=True)
         for dst, src in files.items():
             mode = "755" if dst == SESSION_BIN else "644"
             run.run(["install", "-m", mode, src, dst], sudo=True)
+        old = old_session_files()
+        if old:
+            run.run(["rm", "-f"] + old, sudo=True)
         write_record(session=" ".join(sorted(files)))
 
 
@@ -531,6 +593,7 @@ class Removal:
         self.session = [f for f in rec.get("session", "").split() if os.path.exists(f)] or [
             f for f in [SESSION_BIN] + [os.path.join(SESSION_DIR, n) for n in SESSIONS]
             if os.path.exists(f)]
+        self.session += [f for f in old_session_files() if f not in self.session]
         self.steps = []
 
     def build(self):
@@ -667,7 +730,7 @@ def relaunch_after_pull(args, old_head):
     """Run the installer that just arrived, so new steps and packages count."""
     argv = [sys.executable, os.path.join(REPO, "installer", "install.py"), "--update",
             "--pulled", old_head]
-    for flag in ("yes", "plain", "home_only"):
+    for flag in ("yes", "plain", "home_only", "fresh"):
         if getattr(args, flag):
             argv.append("--" + flag.replace("_", "-"))
     os.execv(sys.executable, argv)
@@ -943,29 +1006,46 @@ class UI:
                 st.on = not st.on
 
     def whats_new(self, news):
+        """The changes waiting, and what to do about them: "update", "fresh"
+        (install from scratch, settings and all) or None for not now."""
         top = 0
+        options = (["update"] if news else []) + ["start from scratch"]
+        choice = 0
         while True:
-            y = self.frame("what's new", "what's new",
-                           "%d change%s since you last updated. Your colour, tiles and settings "
-                           "stay as they are." % (len(news), "" if len(news) == 1 else "s"))
+            if news:
+                y = self.frame("what's new", "what's new",
+                               "%d change%s since you last updated. Updating keeps your colour, "
+                               "tiles and settings as they are; starting from scratch deletes "
+                               "them and runs the welcome again."
+                               % (len(news), "" if len(news) == 1 else "s"))
+            else:
+                y = self.frame("what's new", "up to date",
+                               "You have the newest tubewm. You can still install it again from "
+                               "scratch: your colour, tiles and settings are deleted and the "
+                               "welcome runs again.")
             h, w = self.scr.getmaxyx()
             cw = min(76, w - 2 * self.mx)
-            rows = max(3, h - y - 6)
+            rows = max(3, h - y - 6) if news else 0
             for i, subject in enumerate(news[top:top + rows]):
                 self.put(y + i, self.mx, "■", self.ACCENT)
                 self.put(y + i, self.mx + 2, subject, self.TEXT, width=cw - 2)
             shown = min(rows, len(news) - top)
             if top + rows < len(news):
                 self.put(y + shown, self.mx + 2, "↓ %d more" % (len(news) - top - rows), self.DIM)
-            self.button(y + shown + 2, self.mx, "update")
-            self.footer(["enter update", "↑↓ scroll", "esc not now"])
+            x = self.mx
+            for i, label in enumerate(options):
+                x = self.button(y + shown + (2 if news else 0), x, label, i == choice)
+            self.footer((["←→ choose", "enter ok"] if len(options) > 1 else ["enter ok"])
+                        + (["↑↓ scroll"] if news else []) + ["esc not now"])
             self.scr.refresh()
             k = self.scr.get_wch()
             if k in ("\n", "\r", curses.KEY_ENTER):
-                return True
+                return "fresh" if options[choice] == "start from scratch" else "update"
             if k in ("\x1b", "q"):
-                return False
-            if k == curses.KEY_DOWN and top + rows < len(news):
+                return None
+            if k in (curses.KEY_LEFT, curses.KEY_RIGHT, "\t"):
+                choice = (choice + 1) % len(options)
+            elif k == curses.KEY_DOWN and top + rows < len(news):
                 top += 1
             elif k == curses.KEY_UP and top > 0:
                 top -= 1
@@ -1146,23 +1226,30 @@ def tui_update(ui, args, system):
             ui.done("can't check", [(str(e), ui.ERR), (e.hint, ui.TEXT)], False, "what's new")
             return 1
         news = source.news()
-        if not news:
-            ui.done("up to date", [("You have the newest tubewm.", ui.TEXT)], False, "what's new")
-            return 0
-        if not ui.whats_new(news):
+        if args.fresh and not news:
+            choice = "fresh"  # asked for on the command line; the review still asks
+        else:
+            choice = ui.whats_new(news)
+        if choice is None:
             return 1
-        ui.message("updating", "one moment", "Fetching the new version…")
-        old = source.head()
-        try:
-            source.pull()
-        except Failed as e:
-            ui.done("that didn't work", [(str(e), ui.ERR), (e.hint, ui.TEXT),
-                                         ("Nothing was changed.", ui.SUBTLE)], False, "updating")
-            return 1
-        if source.notes:
-            _save_notes(source.notes)
-        curses.endwin()
-        relaunch_after_pull(args, old)
+        args.fresh = choice == "fresh"
+        if news:
+            ui.message("updating", "one moment", "Fetching the new version…")
+            old = source.head()
+            try:
+                source.pull()
+            except Failed as e:
+                ui.done("that didn't work", [(str(e), ui.ERR), (e.hint, ui.TEXT),
+                                             ("Nothing was changed.", ui.SUBTLE)], False, "updating")
+                return 1
+            if source.notes:
+                _save_notes(source.notes)
+            curses.endwin()
+            relaunch_after_pull(args, old)
+
+    if args.fresh:
+        ui.stages = ui.STAGES_INSTALL
+        return tui_install(ui, args, system, fresh=True)
 
     plan = Plan(system, home_only=args.home_only, update=True)
     ui.message("updating", "one moment", "Looking at what's changed…")
@@ -1271,7 +1358,12 @@ def tui_main(scr, args, system):
                              ui.TEXT)], False)
         return 0
 
-    plan = Plan(system, home_only=args.home_only)
+    return tui_install(ui, args, system, fresh=args.fresh)
+
+
+def tui_install(ui, args, system, fresh=False):
+    """The install from the keyboard onwards; with fresh, your settings go first."""
+    plan = Plan(system, home_only=args.home_only, fresh=fresh)
     ui.frame("keyboard", "one moment", "Looking at what's already installed…")
     ui.scr.refresh()
     plan.survey()
@@ -1289,6 +1381,9 @@ def tui_main(scr, args, system):
             sub = "Everything is ticked already, so press enter to start."
             if not any(s.system for s in steps):
                 sub = "Nothing here needs your password. Press enter to start."
+            if fresh:
+                sub = ("This installs tubewm as if for the first time, so your tubewm settings "
+                       "are deleted. Esc goes back if you'd rather not. " + sub)
             stage = "password" if ui.review(steps, "ready to install", sub, "install") else "keyboard"
         elif stage == "password":
             password = None
@@ -1314,8 +1409,9 @@ def tui_main(scr, args, system):
     plan.remember()
     how, then = finish_lines(system)
     warned = [s for s in steps if s.status == "warned"]
+    notes = _take_notes() if fresh else []
     already = os.environ.get("XDG_CURRENT_DESKTOP", "").lower() == "sway" and os.environ.get("SWAYSOCK")
-    lines = [(how, ui.TEXT), (then, ui.SUBTLE)]
+    lines = [(how, ui.TEXT), (then, ui.SUBTLE)] + [(n, ui.SUBTLE) for n in notes]
     for st in warned:
         lines.append(("\"%s\" didn't work; the rest is fine. Details are in %s."
                       % (st.title, _tilde(LOG)), ui.ERR))
@@ -1340,23 +1436,28 @@ def plain_main(args, system):
         try:
             source.fetch()
             news = source.news()
-            if not news:
+            if not news and not args.fresh:
                 say("tubewm is up to date.")
                 return 0
-            say("%d change%s:" % (len(news), "" if len(news) == 1 else "s"))
-            for subject in news[:15]:
-                print("  ■ " + subject)
-            if not args.yes and sys.stdin.isatty():
+            if news:
+                say("%d change%s:" % (len(news), "" if len(news) == 1 else "s"))
+                for subject in news[:15]:
+                    print("  ■ " + subject)
+            else:
+                say("tubewm is up to date; installing it again from scratch.")
+            if not args.yes and sys.stdin.isatty() and news:
                 if input("Update now? [Y/n] ").strip().lower() not in ("", "y", "yes"):
                     return 1
-            old = source.head()
-            source.pull()
+            if news:
+                old = source.head()
+                source.pull()
         except Failed as e:
             print("tubewm: %s\n%s" % (e, e.hint), file=sys.stderr)
             return 1
-        for note in source.notes:
-            print("  " + note)
-        relaunch_after_pull(args, old)
+        if news:
+            for note in source.notes:
+                print("  " + note)
+            relaunch_after_pull(args, old)
 
     if args.uninstall:
         work = Removal(system)
@@ -1365,8 +1466,11 @@ def plain_main(args, system):
             for st in steps:
                 st.on = True
     else:
-        work = Plan(system, home_only=args.home_only, update=args.update)
+        work = Plan(system, home_only=args.home_only, update=args.update, fresh=args.fresh)
         say("tubewm · %s" % system.name)
+        if args.fresh:
+            print("  from scratch: your tubewm settings (colour, tiles, wallpaper, keyboard)\n"
+                  "  will be deleted and the welcome runs again.")
         print("  looking at what's installed…", flush=True)
         work.survey()
         if args.keyboard:
@@ -1400,7 +1504,7 @@ def plain_main(args, system):
         return 1
     if not args.uninstall:
         work.remember()
-    if args.update:
+    if args.update and not args.fresh:
         _write_update_count(0)
         say("Updated. Sign out and back in to see everything new.")
         return 0
@@ -1425,9 +1529,15 @@ def main(argv=None):
     p.add_argument("--plain", action="store_true", help="plain text instead of the full-screen UI")
     p.add_argument("--update", action="store_true",
                    help="fetch the newest tubewm from GitHub and install it")
+    p.add_argument("--fresh", action="store_true",
+                   help="install as if for the first time: delete your tubewm settings "
+                        "(colour, tiles, wallpaper, keyboard) and run the welcome again; "
+                        "with --update, fetch the newest tubewm first")
     p.add_argument("--pulled", metavar="COMMIT", help=argparse.SUPPRESS)
     p.add_argument("--packages-only", action="store_true", help=argparse.SUPPRESS)
     args = p.parse_args(argv)
+    if args.fresh and args.uninstall:
+        p.error("--fresh and --uninstall don't go together")
 
     system = System()
     if args.packages_only:

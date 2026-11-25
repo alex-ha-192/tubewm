@@ -1,17 +1,71 @@
 # tubewm
 
 A flat, typographic Wayland desktop inspired by the Metro / Zune design language:
-big lowercase headers, pivots, solid colour tiles, an app list down the side,
-and a single accent colour shared by the desktop and your apps.
+big lowercase headers, solid colour tiles, every app listed a to z, and a single
+accent colour shared by the desktop and your apps. It runs on Wayfire and is
+made to be used with the mouse first; keys are extras.
 
 ![tubewm start screen](desktop/docs/screenshots/start.png)
 
-* [`desktop/`](desktop/README.md): the Sway desktop. It has a pivots bar, a start screen with live tiles and an app list, charms, snapping, toasts, a lock screen, wallpapers and GTK styling.
-* [`apps/`](apps/README.md): themes for VS Code, Vivaldi, Firefox, terminals, editors and more, all following the same accent.
+| | |
+|---|---|
+| ![desktop with a snapped window and a toast](desktop/docs/screenshots/desktop.png) | ![the tile menu](desktop/docs/screenshots/tile-menu.png) |
+| ![charms and clock card](desktop/docs/screenshots/charms.png) | ![settings with wallpapers](desktop/docs/screenshots/settings.png) |
+| ![adding a live tile](desktop/docs/screenshots/add-tile.png) | ![start with the orange accent](desktop/docs/screenshots/start-orange.png) |
+
+* [`desktop/`](desktop/README.md): the desktop itself. Start with live tiles,
+  self-managing desktops, Metro title bars, the status panel, notifications,
+  a lock screen, screenshots, wallpapers and GTK styling.
+* [`apps/`](apps/README.md): themes for VS Code, Vivaldi, Firefox, terminals,
+  editors and more, all following the same accent.
 * `palette/`: the shared colour palette that every part reads from.
 
 All fonts are open (Open Sans, plus JetBrains Mono for code), and all glyphs
 and artwork are drawn for this project.
+
+## What you get
+
+* **Start.** Tap the Windows key on its own, or click the accent square in the
+  strip. Every app is listed from a to z in columns; just type and the best
+  match comes up first (Enter opens it). On the right is the glance: live
+  tiles you arrange yourself. Drag a tile to move it, drag its corner to make
+  it any size, right-click for shapes, colour, settings and remove, and pick
+  **add a tile** for the library (now playing, calendar, weather,
+  notifications, battery, sound, network, clock, system, storage, photos,
+  recent files, open windows, note, command and shortcut). Click a tile for its
+  applet: music controls, the week ahead, the sound devices and so on.
+* **Windows** open filling the screen, with a thin flat title strip and a
+  square Metro close button that turns red under the mouse. Drag a title to a
+  side for half the screen, a corner for a quarter, or the middle to fill it.
+  New windows take free space, or the desktop is retiled so nothing is
+  covered. Full screen is only for when an app asks (F11, a video's button,
+  Super+F).
+* **Desktops look after themselves.** There is always a spare `+` at the end
+  of the strip. Open something there and it becomes a desktop named after it
+  (`web`, `code`, `music`…); leave one empty and it goes away. Right-click a
+  name to rename, keep, move or close it.
+* **The status panel.** Sound, network and battery sit beside the time; click
+  any of them for one panel with volume and brightness, speakers and
+  microphones, wi-fi, battery, quiet hours, your last notifications, and lock,
+  sleep, sign out, restart and shut down.
+* **Notifications** come in as a band across the top and go away after a few
+  seconds. Volume and brightness show a small bar at the bottom.
+* **Screenshots.** `Print` (or `Super+Shift+S`) holds the screen still, dims it
+  and lets you choose an area, a window or a whole screen. `Shift+Print` takes
+  the whole screen straight away. Pictures are saved to
+  `~/Pictures/Screenshots` and copied.
+* **The lock screen** shows your wallpaper, a big clock and the date, your name
+  and the password box, with sleep, restart and shut down along the bottom.
+  Where the login manager allows it, the people icon opens the sign-in screen
+  so someone else can start their own desktop while yours keeps running.
+* **One accent colour** for the desktop, the wallpaper and every themed app,
+  changed in one click. Eight wallpapers are drawn from it.
+* **A first-run welcome** to pick your colour and check your keyboard, and a
+  built-in **updater** that tells you when there's something new.
+
+Desktop details, the full list of live tiles and every key are in
+[desktop/README.md](desktop/README.md) and the
+[key reference](desktop/docs/keys.html) ([view it rendered](https://htmlpreview.github.io/?https://github.com/alex-ha-192/tubewm/blob/main/desktop/docs/keys.html)).
 
 ## Installation
 
@@ -34,18 +88,17 @@ What it does:
 
 | | |
 |---|---|
-| In your home folder | The desktop, start screen and charms in `~/.local/share/tubewm`, the `tube-*` commands in `~/.local/bin`, and configs for Sway, Waybar, mako, fuzzel, foot, the lock screen and GTK. Anything it replaces is backed up first. |
+| In your home folder | The desktop, start screen and panels in `~/.local/share/tubewm`, the `tube-*` commands in `~/.local/bin`, and configs for Wayfire, Waybar, mako, fuzzel, foot, the lock screen and GTK. Anything it replaces is backed up first. |
 | App themes | Themes every supported app it finds (see below), in the same colour. |
-| Packages (password) | Only the ones that are missing. On Arch and CachyOS this is a full `pacman -Syu`, which is the supported way to install and also fixes "failed retrieving file" mirror errors. Supports pacman, apt, dnf and zypper. |
+| Packages (password) | Only the ones that are missing, including Wayfire. On Arch and CachyOS this is a full `pacman -Syu`, which is the supported way to install and also fixes "failed retrieving file" mirror errors. Supports pacman, apt, dnf and zypper. |
+| Title bars | Builds tubewm's own Wayfire plugin for the flat title strip and square close button. Until it's built, Wayfire's stock title bars stand in. |
 | Keyboard (password) | Uses your layout on the sign-in screen and the text consoles too (`localectl set-x11-keymap`). |
 | Sign-in screen (password) | Adds **tubewm** to the session menu of SDDM, GDM, LightDM or greetd. |
 
 Then log out, pick **tubewm** on the sign-in screen and sign in. (No sign-in
 screen? Log in on a console and type `tubewm-session`.) The first time, a short
-welcome lets you pick your colour and check your keyboard. After that, start
-opens when you log in: `Super+S` brings it back, `Super+C` opens the charms and
-`Super+I` settings. The full key list is in
-[desktop/docs/keys.html](desktop/docs/keys.html) ([view it rendered](https://htmlpreview.github.io/?https://github.com/alex-ha-192/tubewm/blob/main/desktop/docs/keys.html)).
+welcome lets you pick your colour and check your keyboard. After that, tap the
+Windows key for start, and click the time for the status panel.
 
 Other ways to run it:
 
@@ -53,32 +106,40 @@ Other ways to run it:
 ./install.sh --home-only    # nothing that needs a password
 ./install.sh --yes          # no questions, take the defaults (e.g. over ssh)
 ./install.sh --keyboard us:intl --yes
+./install.sh --fresh        # install as if for the first time (see Starting over)
 ./install.sh --uninstall    # take it all out again
 ```
 
 ### What you need
 
-* A Linux system that can run **Sway 1.9 or newer** (any GPU that works with
-  wlroots; the session launcher adds `--unsupported-gpu` for NVIDIA itself).
+* A Linux system that can run **Wayfire** (any GPU that works with wlroots).
+  The installer adds it from your distro's packages.
 * `git` and `python3` 3.9 or newer. Everything else the installer fetches.
+
+tubewm used to list a separate Sway session on the sign-in screen. That entry
+is gone, and updating takes it off systems that still have it. The Sway
+configs still ship, so `tubewm-session sway` from a console works, and
+`tubewm-session` falls back to Sway by itself on a system without Wayfire.
 
 ### Laptops
 
+* **High-density screens** are scaled to a comfortable size by themselves
+  (2 on a Framework 13 with the 2.8K screen, 1.5 on the 2256 x 1504 one).
+* **Away from the laptop**: after 4 minutes the screen dims, at 5 it locks, at
+  10 it turns off.
 * **Closing the lid** locks the screen, then the laptop sleeps. Opening it
   shows the lock screen, in your keyboard layout. With another monitor plugged
   in, closing the lid just turns the laptop screen off.
 * **The power button** opens the power choices (sleep, sign out, restart, shut
   down) instead of switching off straight away. Holding it still forces power
   off.
+* **The touchpad**: three fingers sideways slide between desktops, and the
+  bottom-right corner is a right click.
 * Your keyboard layout is the same on the desktop, the lock screen, the
   sign-in screen and the consoles. Change it any time with
   `tube-keyboard set gb`, and `tube-keyboard system` to copy it to the sign-in
-  screen.
-* **The lock screen** shows your wallpaper, the time and the password box, with
-  sleep, restart and shut down along the bottom. The people icon opens the
-  sign-in screen so you can start another desktop while this one keeps running
-  (Ctrl+Alt+F1 to F7 switches back). The buttons need
-  `gtklock-powerbar-module`, which the installer adds on Arch.
+  screen. The lock screen's power buttons need `gtklock-powerbar-module`,
+  which the installer adds on Arch.
 
 ### App themes
 
@@ -136,17 +197,17 @@ the desktop when you change the accent (pass `--no-hook` to opt out).
 
 ## Everyday use
 
-**Change the accent** everywhere at once:
+**Change the accent** everywhere at once: click a swatch in settings
+(`Super+I`), or
 
 ```sh
 tube-accent list
 tube-accent cobalt          # or '#1BA1E2', or random
 ```
 
-or click a swatch in the settings flyout (`Super+I`). The wallpaper and the
-themed apps follow.
+The wallpaper and the themed apps follow.
 
-**Change the wallpaper:** pick one in the settings flyout, or
+**Change the wallpaper:** pick one in settings, or
 
 ```sh
 tube-wallpaper list
@@ -154,21 +215,21 @@ tube-wallpaper bands
 tube-wallpaper off          # back to the plain backdrop
 ```
 
-To use your own picture, run `tube-wallpaper off` and put
-`output * bg ~/Pictures/wall.jpg fill` in a file in `~/.config/sway/config.d/`.
+**Arrange start:** drag tiles to move them, drag a corner to resize, right-click
+for shapes, colour, settings and remove, and **add a tile** for the library.
+Your layout is saved as you go. `tube-start --reset` puts back the default
+tiles.
 
-**Edit start:** click a live tile to see more; right-click a tile to resize,
-recolour, set it up or unpin it; drag tiles to move them; press the **+** under the tiles to add
-a live tile; right-click an app in the list to pin it. See
-[desktop/README.md](desktop/README.md#start) for the details.
+**Your own Wayfire settings** go in `~/.config/tubewm/wayfire.ini`; they're
+merged on top of tubewm's every time it writes `~/.config/wayfire.ini`.
 
 ## Updating
 
 Open **update tubewm** in start, or run `tube-update`. It shows what's new,
-asks once, then updates and reinstalls in place; sign out and back in to see
-it all. You never need to touch git: it updates the folder you installed from
-(or its own copy if that folder is gone), and your colour, tiles and settings
-stay as they are.
+then updates and reinstalls in place; sign out and back in to see it all. You
+never need to touch git: it updates the folder you installed from (or its own
+copy if that folder is gone), and your colour, tiles and settings stay as they
+are.
 
 Once a day, a quiet notification tells you when there's something new, and
 the status panel shows a **tubewm** row with the number of updates.
@@ -177,6 +238,22 @@ If you've edited files in the tubewm folder yourself, they're set aside with
 `git stash` first and the update tells you so. If you've made commits of your
 own there, it stops and leaves the folder alone. `tube-update --check` just
 prints how many updates are waiting.
+
+### Starting over
+
+To install tubewm as if for the first time, pick **start from scratch** on the
+updater's first screen (it's there even when you're up to date), or run
+
+```sh
+tube-update --fresh         # fetch the newest tubewm first
+./install.sh --fresh        # or reinstall the version you have
+```
+
+It deletes your tubewm settings (colour, start tiles, wallpaper, keyboard
+choice, your own `user.css` and `wayfire.ini`), then runs the full install:
+the keyboard screen, the list of steps, and the first-run welcome when you
+next sign in. The configs you had before tubewm are kept, so
+`./install.sh --uninstall` can still put them back.
 
 ## Uninstalling
 
@@ -201,7 +278,7 @@ keyboard layout on the sign-in screen is left as it is.
   `sudo libinput measure touchpad-pressure` (from `libinput-tools`), then put
   the values they suggest in `/etc/libinput/local-overrides.quirks`, as
   described in the libinput "Device quirks" documentation.
-* **`Super+S` does nothing:** run `~/.local/bin/tube-start` from a terminal
+* **Start doesn't open:** run `~/.local/bin/tube-start` from a terminal
   (`Super+Return`) to see the error. A missing GtkLayerShell or Open Sans is
   the usual cause.
 * **Stuck with no way out:** `Super+Return` opens a terminal and
@@ -216,3 +293,8 @@ keyboard layout on the sign-in screen is left as it is.
   ticked yet, or Vivaldi needs a restart.
 * **Start looks wrong after an update:** `tube-start --reset` puts back the
   default tiles.
+* **Title bars look like plain Wayfire ones:** the title bar plugin hasn't
+  been built yet, or the build failed. Run `tube-update`, or
+  `desktop/wayfire/plugins/build.sh` in the tubewm folder to see why.
+* **Everything is in a muddle:** `tube-update --fresh` starts again from
+  scratch (see Starting over).
