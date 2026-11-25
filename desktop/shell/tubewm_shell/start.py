@@ -16,6 +16,7 @@ to (see glance.py), the apps you have open, and settings, lock and power.
 """
 
 import argparse
+import faulthandler
 import os
 import re
 import signal
@@ -633,6 +634,9 @@ def main(argv=None):
         except OSError:
             pass
     resident.log("start", "starting (%s)" % mode)
+    # If we ever stop answering, tube-start asks for our stacks before it
+    # replaces us; faulthandler writes them even if Python itself is stuck.
+    faulthandler.register(resident.DUMP, all_threads=True)
     start = Start(mode)
     for sig, what in SIGNALS.items():
         GLib.unix_signal_add(GLib.PRIORITY_HIGH, sig, lambda *_a, w=what: start.on_signal(w))

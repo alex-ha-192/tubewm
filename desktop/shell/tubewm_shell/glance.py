@@ -253,15 +253,35 @@ def _recent(spec, state):
             "more": [(os.path.basename(p), "") for p in files[1:5]]}
 
 
+# App names for the windows tile. Its reader runs on a thread, and Gio's
+# list of installed apps must only be read on the main loop: reading it from
+# a thread while start reads it too (or while it reloads after an install)
+# can leave start stuck on a lock for good, deaf to the Windows key. So the
+# thread only looks names up here, and the main loop fills them in.
+_names = {}
+
+
+def _app_display(app_id):
+    if not app_id:
+        return ""
+    if app_id not in _names:
+        _names[app_id] = None
+        GLib.idle_add(_learn_name, app_id)
+    return _names.get(app_id) or app_id
+
+
+def _learn_name(app_id):
+    info = common.find_app(app_id)
+    _names[app_id] = (info.get_display_name() if info else "") or app_id
+    return False
+
+
 def _windows(spec, state):
     try:
         wins = wm.windows()
     except Exception:  # noqa: BLE001 - no compositor to ask
         wins = []
-    names = []
-    for w in wins:
-        info = common.find_app(w.get("app_id", ""))
-        names.append(((info.get_display_name() if info else "") or w.get("app_id") or "").lower())
+    names = [_app_display(w.get("app_id") or "").lower() for w in wins]
     return {"label": "open windows", "big": str(len(wins)), "sub": ", ".join(n for n in names if n),
             "value": str(len(wins))}
 

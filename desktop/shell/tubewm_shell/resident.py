@@ -14,6 +14,9 @@ import signal
 import time
 
 RUNTIME = os.environ.get("XDG_RUNTIME_DIR", "/tmp")
+# Asks a stuck copy to write every thread's stack to its log (see
+# start.main), before it is replaced.
+DUMP = signal.SIGPWR
 
 
 def _pidfile(name):
@@ -60,6 +63,11 @@ def send(name, sig, answer_within=None):
         time.sleep(0.01)
     log(name, "pid %d didn't answer %s within %.1fs; starting a fresh copy. %s"
         % (pid, signal.Signals(sig).name, answer_within, _proc_state(pid)))
+    try:
+        os.kill(pid, DUMP)   # it writes where every thread is to the log
+        time.sleep(0.3)
+    except OSError:
+        pass
     try:
         os.kill(pid, signal.SIGKILL)
     except OSError:
