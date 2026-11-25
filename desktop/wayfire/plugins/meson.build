@@ -16,7 +16,8 @@ pangocairo = dependency('pangocairo')
 pixman     = dependency('pixman-1')
 libdrm     = dependency('libdrm')
 wayland    = dependency('wayland-server')
-glm        = dependency('glm', required: false)
+# Wayfire's headers include glm, which distros ship as a separate -dev package.
+glm        = dependency('glm', required: false)  # headers in /usr/include either way
 
 add_project_arguments(['-DWLR_USE_UNSTABLE', '-DWAYFIRE_PLUGIN'], language: 'cpp')
 

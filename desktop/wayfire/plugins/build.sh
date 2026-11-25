@@ -10,7 +10,7 @@
 # plugin could not be built.
 #
 # Needs meson, ninja, a C++ compiler, pkg-config and Wayfire's headers
-# (Arch/CachyOS: in the wayfire package; Debian: wayfire-dev;
+# plus glm and wayland-protocols (Arch/CachyOS: wayfire glm wayland-protocols; Debian: wayfire-dev;
 # Fedora: wayfire-devel).
 set -u
 
@@ -31,6 +31,10 @@ for tool in meson ninja pkg-config; do
 done
 if ! pkg-config --exists wayfire; then
     say "not built, Wayfire's headers are not installed"
+    exit 1
+fi
+if ! printf '#include <glm/glm.hpp>\n' | c++ -x c++ -fsyntax-only - >/dev/null 2>&1; then
+    say "not built, glm (a header library Wayfire's headers use) is not installed"
     exit 1
 fi
 
