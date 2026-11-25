@@ -365,8 +365,10 @@ textview.glance-note:focus { border-color: @tube_accent; }
 .tube-popup-item.current label { color: @tube_accent_light; }
 
 /* ── the strip along the top ────────────────────────────────────────────── */
-window.strip { background-color: @tube_bg; }
-.strip-row { min-height: 40px; }
+window.strip { background-color: transparent; }
+.strip-row { min-height: 40px; background-color: @tube_bg; }
+/* Slid up for a full-screen window: the one row left on screen is invisible. */
+window.strip.strip-gone .strip-row { opacity: 0; }
 .strip-start { padding: 11px 12px; margin: 0 6px 0 12px; min-height: 0; min-width: 0;
                background: none; border: none; border-radius: 0; box-shadow: none; }
 .strip-desk, .strip-clock, .strip-word {

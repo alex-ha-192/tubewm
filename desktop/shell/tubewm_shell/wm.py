@@ -34,10 +34,26 @@ def _wf(method, data=None, timeout=2.0):
         s.sendall(struct.pack("<I", len(body)) + body)
         head = _recv(s, 4)
         (n,) = struct.unpack("<I", head)
-        reply = json.loads(_recv(s, n))
+        reply = _whole(json.loads(_recv(s, n)))
     if isinstance(reply, dict) and reply.get("result") == "error":
         raise WayfireError(reply.get("error", "error"))
     return reply
+
+
+# Positions and sizes, which Wayfire 0.11 sends as decimals (1440.0) where
+# 0.10 sent whole numbers. Everything here counts in whole pixels: range(),
+# grim's "x,y wxh" and GTK sizes all refuse 1440.0.
+_PIXELS = ("x", "y", "width", "height")
+
+
+def _whole(obj):
+    """Wayfire's reply with every position and size as a whole number."""
+    if isinstance(obj, dict):
+        return {k: (int(round(v)) if k in _PIXELS and isinstance(v, float) else _whole(v))
+                for k, v in obj.items()}
+    if isinstance(obj, list):
+        return [_whole(v) for v in obj]
+    return obj
 
 
 def _recv(s, n):
@@ -60,7 +76,7 @@ def wf_watch(events=None):
     s.sendall(struct.pack("<I", len(body)) + body)
     while True:
         (n,) = struct.unpack("<I", _recv(s, 4))
-        msg = json.loads(_recv(s, n))
+        msg = _whole(json.loads(_recv(s, n)))
         if "event" in msg:
             yield msg
 
