@@ -23,7 +23,7 @@ artwork.
 | **Start** | Full-screen tile grid that you arrange yourself: pin apps, add live tiles, drag, resize and recolour them. Every installed app is listed down the right-hand side, Zune style, with letter headers; type anywhere to filter it. | `tube-start` (Python + GTK 3 + gtk-layer-shell) |
 | **Wallpapers** | Eight calm wallpapers drawn from the accent colour, redrawn whenever it changes. | `tube-wallpaper` (cairo) |
 | **Charms** | Right-edge bar (search, share, start, devices, settings) with a big clock card bottom-left. Click anywhere else to dismiss. | `tube-charms` |
-| **Settings** | The one place for settings, full screen on true black: personalise (accent, wallpaper), start, notifications, network and devices. Start's "settings", the settings tile, `Super+I`, the charms and the bar all open it. Sound, brightness and power stay in the side panel. | `tube-settings` |
+| **Settings** | The one place for settings, full screen on true black: personalise (accent, wallpaper), start, notifications, network and devices (displays, bluetooth on and off). Start's "settings", the settings tile, `Super+I`, the charms and the bar all open it. Sound, brightness and power stay in the side panel. | `tube-settings` |
 | **Snap** | Dock the focused window as a 320 px column at either edge, press again for 500 px, then half. | `tube-snap` |
 | **Switcher** | Every open window on every workspace in one flat list. | `tube-switcher` (fuzzel) |
 | **Toasts** | Plain charcoal cards, top right under the bar: the app's icon, a title and the message. Click one to open the app. | mako |
