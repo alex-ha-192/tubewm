@@ -178,7 +178,7 @@ class Strip:
         glyph.connect("draw", self.draw_start)
         start.add(glyph)
         start.connect("state-flags-changed", lambda *_: glyph.queue_draw())
-        self.start = start
+        self.start, self.start_glyph = start, glyph
         row.pack_start(start, False, False, 0)
 
         self.desks = Gtk.Box()
@@ -227,6 +227,7 @@ class Strip:
         row.pack_end(right, False, False, 0)
         self.pal = common.load_palette()
         self.icons = {}
+        self.accent_stamp = self._accent_stamp()
 
         self.window = None   # the focused window while the handle is in use
         self.drag = None
@@ -242,6 +243,7 @@ class Strip:
         win.connect("notify::scale-factor", lambda *_: (self.icons.clear(), self.look()))
         self.look()
         GLib.timeout_add_seconds(STATUS_EVERY, self.look)
+        self.watch_accent()
         self.shown = 1.0        # 1: on screen, 0: slid up out of the way
         self.slide_tick = None
         if wm.WAYFIRE:
@@ -264,6 +266,44 @@ class Strip:
                 cr.rectangle(i * (cell + gap), j * (cell + gap), cell, cell)
         cr.fill()
         return False
+
+    # ── a new accent ─────────────────────────────────────────────────
+    ACCENT_FILE = os.path.join(common.CONFIG, "tubewm", "accent")
+
+    def _accent_stamp(self):
+        try:
+            st = os.stat(self.ACCENT_FILE)
+            return (st.st_mtime_ns, st.st_size)
+        except OSError:
+            return None
+
+    def watch_accent(self):
+        """tube-accent rewrites ~/.config/tubewm/accent; when it does, take
+        the new colour. The strip lives for the whole session, so without
+        this the start mark keeps the accent it was started with."""
+        try:
+            os.makedirs(os.path.dirname(self.ACCENT_FILE), exist_ok=True)
+            f = Gio.File.new_for_path(self.ACCENT_FILE)
+            self.accent_monitor = f.monitor_file(Gio.FileMonitorFlags.WATCH_MOVES, None)
+            self.accent_monitor.connect("changed", lambda *_: GLib.idle_add(self.check_accent))
+        except (OSError, GLib.Error):
+            self.accent_monitor = None   # look() still checks now and then
+
+    def check_accent(self):
+        stamp = self._accent_stamp()
+        if stamp != self.accent_stamp:
+            self.accent_stamp = stamp
+            self.recolour()
+        return False
+
+    def recolour(self):
+        """Redraw everything that carries the accent."""
+        self.pal = common.apply_css()
+        self.icons.clear()
+        if self.preview is not None:
+            self.preview.pal = self.pal
+        self.start_glyph.queue_draw()
+        self.look()
 
     # ── out of the way for full screen ───────────────────────────────
     FULLSCREEN_EVENTS = ["view-fullscreen", "view-focused", "view-unmapped", "view-mapped",
@@ -328,6 +368,7 @@ class Strip:
     # ── sound, network, battery ──────────────────────────────────────
     def look(self):
         """Ask how things are, off the main loop (the tools can be slow)."""
+        self.check_accent()   # in case the file watch missed it
         threading.Thread(target=self._gather, daemon=True).start()
         return True
 
