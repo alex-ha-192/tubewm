@@ -52,8 +52,9 @@ day to day. Everything is a click away; keys are extras.
   the one left fills the screen, and a quarter grows to a half. File pickers
   and password prompts open centred and are never tiled. Dragging a window
   to the screen's edge never sends it to another desktop. To move one on
-  purpose, drag the strip's handle onto a desktop's name (or `+` for a new
-  one), right-click the handle and pick one under "move to", or press
+  purpose, drag it by its title (or the strip's handle) onto a desktop's
+  name in the strip, which lights up under the pointer (or onto `+` for a
+  new one), right-click the handle and pick one under "move to", or press
   Super+Ctrl+Shift+←/→ to take it to the desktop beside this one.
   Wherever it lands it finds room as a new window would, beside what's
   already there, and the windows it left grow into its space.

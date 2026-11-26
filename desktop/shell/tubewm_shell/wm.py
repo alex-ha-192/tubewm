@@ -628,6 +628,30 @@ def arrived(win_id, left_behind, gap):
 
 # ── pivots (workspaces) ────────────────────────────────────────────────────
 
+def cursor():
+    """Where the pointer is, in layout coordinates (Wayfire), or None."""
+    if not WAYFIRE:
+        return None
+    for method in ("window-rules/get_cursor_position", "window-rules/get-cursor-position"):
+        try:
+            pos = _wf(method).get("pos") or {}
+            return pos.get("x", 0), pos.get("y", 0)
+        except (OSError, WayfireError):
+            continue
+    return None
+
+
+def focused_id():
+    """The id of the window you're in (Wayfire), or None."""
+    if not WAYFIRE:
+        return None
+    try:
+        info = _wf("window-rules/get-focused-view").get("info") or {}
+    except (OSError, WayfireError):
+        return None
+    return info.get("id") if info.get("role") == "toplevel" else None
+
+
 def _focused_output():
     if WAYFIRE:
         try:

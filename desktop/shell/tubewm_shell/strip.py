@@ -13,7 +13,9 @@ a corner for a quarter, or let go in the middle to fill the screen; an
 accent outline shows where the window will go. Drag it along the strip onto
 a desktop's name (or +) to move the window there; let go anywhere else on
 the strip to leave it be. Right-click it for the same as a menu. (Each
-window's own title strip has its close button.)
+window's own title strip has its close button.) A window dragged by its own
+title strip can be dropped on a desktop's name too: the name lights up
+while the pointer is over it.
 
 When an app goes full screen (F11, a video's full-screen button) the strip
 slides up out of the way, and back when it leaves. It slides without ever
@@ -277,8 +279,10 @@ class Strip:
         self.watch_accent()
         self.shown = 1.0        # 1: on screen, 0: slid up out of the way
         self.slide_tick = None
+        self.title_drag = None   # a window dragged by its own title strip
         if wm.WAYFIRE:
             threading.Thread(target=self._watch_fullscreen, daemon=True).start()
+            threading.Thread(target=self._watch_title_drags, daemon=True).start()
 
     # ── the start mark ───────────────────────────────────────────────
     # A small Start screen on an 18-unit square: one wide tile over a medium
@@ -350,6 +354,60 @@ class Strip:
                     GLib.idle_add(self.check_fullscreen)
             except (OSError, wm.WayfireError, ValueError, KeyError):
                 time.sleep(1)
+
+    # ── windows dragged by their own title strip ─────────────────────
+    # Wayfire's move plugin has the pointer while a window is dragged, so
+    # the strip hears nothing. It watches the plugin start and stop
+    # instead, follows the pointer meanwhile to light up the name under it,
+    # and on letting go over a name takes the window to that desktop.
+
+    TITLE_DRAG_EVERY = 50   # ms between looks at the pointer while dragging
+
+    def _watch_title_drags(self):
+        while True:
+            try:
+                for ev in wm.wf_watch(["plugin-activation-state-changed"]):
+                    if ev.get("plugin") == "move":
+                        GLib.idle_add(self.on_title_drag, bool(ev.get("state")),
+                                      ev.get("output-data") or {})
+            except (OSError, wm.WayfireError, ValueError, KeyError):
+                time.sleep(1)
+
+    def _strip_point(self, origin):
+        pos = wm.cursor()
+        if pos is None:
+            return None
+        return pos[0] - origin[0], pos[1] - origin[1]
+
+    def on_title_drag(self, active, output):
+        if active:
+            if self.drag:
+                return False   # the strip's own handle is being dragged
+            g = output.get("geometry") or {}
+            win_id = wm.focused_id()
+            if win_id is None:
+                return False
+            self.title_drag = {"id": win_id, "origin": (g.get("x", 0), g.get("y", 0))}
+            GLib.timeout_add(self.TITLE_DRAG_EVERY, self.follow_title_drag)
+            return False
+        d, self.title_drag = self.title_drag, None
+        self.mark_drop(None)
+        if not d:
+            return False
+        pt = self._strip_point(d["origin"])
+        target = self.desk_at(*pt) if pt else None
+        if target is not None:
+            self.move_to(target.desk, d["id"])
+        return False
+
+    def follow_title_drag(self):
+        d = self.title_drag
+        if not d:
+            return False
+        pt = self._strip_point(d["origin"])
+        target = self.desk_at(*pt) if pt else None
+        self.mark_drop(target)
+        return True
 
     def check_fullscreen(self):
         """Hide while the window you're in fills the whole screen."""
@@ -643,9 +701,10 @@ class Strip:
             self.set_handle_visible(False)
         return True
 
-    def move_to(self, desk):
-        """Take the window you're in to another desktop, and go with it."""
-        win_id = self.window["id"]
+    def move_to(self, desk, win_id=None):
+        """Take the window you're in (or win_id) to another desktop, and go
+        with it."""
+        win_id = win_id if win_id is not None else self.window["id"]
         wm.send_to_pivot(win_id, desk)
         wm.go_to_pivot(desk)
         wm.focus(win_id)
