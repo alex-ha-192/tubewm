@@ -319,3 +319,17 @@ keyboard layout on the sign-in screen is left as it is.
   `desktop/wayfire/plugins/build.sh` in the tubewm folder to see why.
 * **Everything is in a muddle:** `tube-update --fresh` starts again from
   scratch (see Starting over).
+
+## Licence
+
+Copyright (C) 2026 Alex
+
+tubewm is free software: you can redistribute it and/or modify it under the
+terms of the GNU General Public License as published by the Free Software
+Foundation, either version 3 of the License, or (at your option) any later
+version. It is distributed in the hope that it will be useful, but WITHOUT ANY
+WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS FOR A
+PARTICULAR PURPOSE. See [`LICENSE`](LICENSE) for the full text.
+
+The title bar plugin in `desktop/wayfire/plugins/tube-decor` is based on
+upstream code under the MIT licence; see its own `LICENSE`.

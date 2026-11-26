@@ -418,7 +418,7 @@ def package_json(accent: str) -> dict:
         "description": f"Flat, black, typographic colour themes from the tubewm desktop (accent {accent}).",
         "version": VERSION,
         "publisher": PUBLISHER,
-        "license": "MIT",
+        "license": "GPL-3.0-or-later",
         "engines": {"vscode": "^1.80.0"},
         "categories": ["Themes"],
         "contributes": {
