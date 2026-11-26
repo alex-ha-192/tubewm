@@ -78,7 +78,12 @@ day to day. Everything is a click away; keys are extras.
   battery saver, balanced or performance; caffeine to stop the screen
   dimming, locking or turning off and the computer sleeping by itself until
   you click it again (`tube-caffeine on|off|toggle`; settings, under
-  devices, can hide the row).
+  devices, can hide the row). The clock stays at the top and the
+  notifications and power words at the bottom; everything between them
+  scrolls, and an opened network or bluetooth list scrolls on its own, with
+  a fade over its last row when there's more. While a row is open the clock
+  folds to one line, and if things still don't fit the notifications fold to
+  one row with a count: click it to open or fold them yourself.
 * **Start**: tap the Windows key on its own, or click the start mark.
   It stays ready in the background, so it opens at once. It opens on every app from a to z in columns, nothing cut off. Just type:
   the list slides away and the best match comes up first (Enter opens it),

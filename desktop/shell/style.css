@@ -436,7 +436,29 @@ window.strip.strip-gone .strip-row { opacity: 0; }
 .status-line highlight { min-height: 4px; margin: -1px 0; background-color: @tube_accent; border: none; border-radius: 0; }
 .status-line slider { min-width: 10px; min-height: 22px; margin: -10px 0; background-color: @tube_fg;
                       border: none; border-radius: 0; box-shadow: none; }
-.status-notes-head { margin-top: 44px; margin-bottom: 10px; }
+.status-mini { margin: 18px 0 28px 0; }
+.status-mini-time { font-size: 44px; font-weight: 300; color: @tube_fg; }
+.status-mini-date { font-size: 19px; font-weight: 300; color: #B0B0B0; }
+/* the middle scrolls; its bar sits out at the panel's edge */
+.status-scroll, .status-scroll viewport { background: none; border: none; }
+.status-scroll { margin-right: -40px; }
+.status-rows { margin-right: 40px; }
+.status-scroll scrollbar { background: none; border: none; }
+.status-scroll scrollbar slider { min-width: 4px; border: none; border-radius: 0;
+                                  background-color: @tube_surface_hi; }
+/* over an opened list that scrolls: there's more below */
+.status-fade { background-color: transparent;
+               background-image: linear-gradient(to bottom, alpha(@tube_bg, 0), @tube_bg); }
+.status-notes { border-top: 1px solid @tube_surface_hi; margin-top: 12px; }
+.status-notes-head { margin-top: 16px; margin-bottom: 10px; }
+.status-notes.folded .status-notes-head { margin-top: 12px; margin-bottom: 0; }
+.status-notes.folded .status-header { font-size: 20px; }
+.status-notes-toggle { padding: 0; margin: 0; background: none; border: none; box-shadow: none; min-height: 0; }
+.status-notes-toggle:hover .status-header { color: @tube_accent_light; }
+.status-count { font-size: 15px; font-weight: 600; color: #FFFFFF; background-color: @tube_accent;
+                padding: 0 8px; min-width: 12px; }
+.status-note-more { font-size: 15px; color: #B0B0B0; margin-bottom: 6px; }
+.status-power { margin-top: 18px; }
 .status-header { font-size: 32px; font-weight: 300; color: @tube_fg; }
 .status-note { margin-bottom: 14px; }
 .status-note-title { font-size: 16px; font-weight: 600; color: @tube_fg; }

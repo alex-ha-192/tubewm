@@ -6,6 +6,12 @@ wi-fi, bluetooth, battery, quiet hours and caffeine, your
 notifications, and lock / sleep / sign out / restart / shut down as words.
 Click network, bluetooth or battery to open it up: the wi-fi networks around
 you, your bluetooth devices and pairing new ones, the power mode.
+
+The clock sits at the top and the power words at the bottom; everything in
+between scrolls. An opened wi-fi or bluetooth list scrolls on its own too,
+without a bar: a fade over its last row says there is more. While a row is
+open the clock folds to one line, and when the rows no longer fit the
+notifications fold to one row with a count; click it to open or fold them.
 Click caffeine to keep the screen on and the desktop awake (tube-caffeine).
 Click outside it, or press Escape, to close it.
 
@@ -22,7 +28,7 @@ import sys
 import threading
 import time
 
-from . import applets, bluetooth, caffeine, common, levels, resident
+from . import applets, bluetooth, caffeine, common, glyphs, levels, resident
 
 from gi.repository import GLib, Gtk, Pango  # noqa: E402
 
@@ -33,7 +39,9 @@ except ImportError:  # pragma: no cover - comes with python-gobject on most syst
 
 WIDTH = 460
 DND_MODE = "do-not-disturb"
-INSIDE_MAX = 340   # px: the most an opened row takes before it scrolls
+INSIDE_MAX = 380   # px: the most an opened row takes before it scrolls
+FADE = 64          # px: the fade over an opened list that has more below
+NOTES_SHOWN = 3    # notifications listed in the panel; the rest are "n more"
 # What a later `tube-status` sends the one already running (bin/tube-status
 # sends these too, before it loads GTK).
 SIGNALS = {signal.SIGUSR1: "toggle", signal.SIGHUP: "close"}
@@ -88,7 +96,7 @@ def gather():
         "dnd": Status.dnd(),
         "caffeine": (caffeine.shown(), caffeine.active()),
         "updates": pending_updates(),
-        "notes": applets.notification_history()[:4],
+        "notes": applets.notification_history(),
     }
 
 
@@ -218,15 +226,53 @@ class Status:
             child.destroy()
         box = self.box
         self.levels = {}
+        self.opened = set()        # rows that are open just now
+        self.notes = None          # the notifications, pinned at the bottom
+        self.notes_chosen = False  # opened or folded by hand: leave them be
+        # The clock: big, or one line while a row is open.
+        self.head = Gtk.Stack()
+        self.head.set_transition_type(Gtk.StackTransitionType.CROSSFADE)
+        self.head.set_transition_duration(180)
+        self.head.set_vhomogeneous(False)
+        self.head.set_interpolate_size(True)
+        big = Gtk.Box(orientation=Gtk.Orientation.VERTICAL)
         self.time = label("", "status-time")
         self.date = label("", "status-date")
-        box.pack_start(self.time, False, False, 0)
-        box.pack_start(self.date, False, False, 0)
+        big.pack_start(self.time, False, False, 0)
+        big.pack_start(self.date, False, False, 0)
+        mini = Gtk.Box()
+        mini.get_style_context().add_class("status-mini")
+        self.mini_time = label("", "status-mini-time")
+        self.mini_date = label("", "status-mini-date", xalign=1.0)
+        self.mini_date.set_valign(Gtk.Align.BASELINE)
+        self.mini_time.set_valign(Gtk.Align.BASELINE)
+        mini.pack_start(self.mini_time, False, False, 0)
+        mini.pack_end(self.mini_date, False, False, 0)
+        self.head.add_named(big, "big")
+        self.head.add_named(mini, "mini")
+        box.pack_start(self.head, False, False, 0)
         self.tick()
 
+        # Everything between the clock and the notifications scrolls, so an
+        # opened row never pushes anything off the bottom of the screen.
         rows = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=20)
         rows.get_style_context().add_class("status-rows")
-        box.pack_start(rows, False, False, 0)
+        self.rows = rows
+        scroll = Gtk.ScrolledWindow()
+        scroll.get_style_context().add_class("status-scroll")
+        scroll.set_policy(Gtk.PolicyType.NEVER, Gtk.PolicyType.AUTOMATIC)
+        scroll.set_shadow_type(Gtk.ShadowType.NONE)
+        scroll.set_vexpand(True)
+        scroll.add(rows)
+        # The viewport: no frame, and give the rows all the height they ask
+        # for (by default it squeezes them to their minimum, so the opened
+        # list would shrink instead of the middle scrolling).
+        scroll.get_child().set_shadow_type(Gtk.ShadowType.NONE)
+        scroll.get_child().set_vscroll_policy(Gtk.ScrollablePolicy.NATURAL)
+        scroll.connect("size-allocate", lambda *_: self.fit_later())
+        rows.connect("size-allocate", lambda *_: self.fit_later())
+        self.scroll = scroll
+        box.pack_start(scroll, True, True, 0)
 
         vol = d["volume"]
         if vol:
@@ -286,22 +332,6 @@ class Status:
                 lambda: self.run_and_close(os.path.join(common.HOME, ".local", "bin", "tube-update"))),
                 False, False, 0)
 
-        notes = d["notes"]
-        if notes:
-            head = Gtk.Box()
-            head.get_style_context().add_class("status-notes-head")
-            head.pack_start(label("notifications", "status-header"), False, False, 0)
-            head.pack_end(word_button("clear", self.clear_notes, "status-small"), False, False, 0)
-            box.pack_start(head, False, False, 0)
-            for n in notes:
-                item = Gtk.Box(orientation=Gtk.Orientation.VERTICAL)
-                item.get_style_context().add_class("status-note")
-                item.pack_start(label(n["summary"] or n["app"], "status-note-title"), False, False, 0)
-                if n["body"]:
-                    body = label(n["body"].splitlines()[0][:80], "status-note-body")
-                    item.pack_start(body, False, False, 0)
-                box.pack_start(item, False, False, 0)
-
         power = Gtk.Box(spacing=24)
         power.get_style_context().add_class("status-power")
         for text, cmd in (("lock", "tube-lock"), ("sleep", "systemctl suspend"),
@@ -310,8 +340,104 @@ class Status:
                           ("restart", "systemctl reboot"), ("shut down", "systemctl poweroff")):
             power.pack_start(word_button(text, lambda c=cmd: self.run_and_close(c)), False, False, 0)
         box.pack_end(power, False, False, 0)
+
+        notes = d["notes"]
+        if notes:
+            self.notes = self.notes_section(notes)
+            box.pack_end(self.notes, False, False, 0)
         box.show_all()
         self.audio.set_visible(bool(self.audio.get_children()))
+
+    # ── notifications ────────────────────────────────────────────────
+    def notes_section(self, notes):
+        """The notifications, pinned above the power words. Their heading is
+        a button: click it to fold them to one row with a count, or open
+        them again."""
+        section = Gtk.Box(orientation=Gtk.Orientation.VERTICAL)
+        section.get_style_context().add_class("status-notes")
+        head = Gtk.Box()
+        head.get_style_context().add_class("status-notes-head")
+        toggle = Gtk.Button()
+        toggle.set_relief(Gtk.ReliefStyle.NONE)
+        toggle.get_style_context().add_class("status-notes-toggle")
+        inner = Gtk.Box(spacing=12)
+        inner.pack_start(label("notifications", "status-header"), False, False, 0)
+        count = label(str(len(notes)) if len(notes) < 100 else "99+", "status-count", xalign=0.5)
+        count.set_valign(Gtk.Align.CENTER)
+        count.set_no_show_all(True)
+        inner.pack_start(count, False, False, 0)
+        arrow = glyphs.Glyph("down", 20)
+        inner.pack_start(arrow, False, False, 0)
+        toggle.add(inner)
+        toggle.connect("clicked", lambda *_: (self.touch(), self.fold_notes(not section.folded, chosen=True)))
+        head.pack_start(toggle, False, False, 0)
+        clear = word_button("clear", self.clear_notes, "status-small")
+        clear.set_valign(Gtk.Align.CENTER)
+        head.pack_end(clear, False, False, 0)
+        section.pack_start(head, False, False, 0)
+
+        listing = Gtk.Box(orientation=Gtk.Orientation.VERTICAL)
+        for n in notes[:NOTES_SHOWN]:
+            item = Gtk.Box(orientation=Gtk.Orientation.VERTICAL)
+            item.get_style_context().add_class("status-note")
+            item.pack_start(label(n["summary"] or n["app"], "status-note-title"), False, False, 0)
+            if n["body"]:
+                body = label(n["body"].splitlines()[0][:80], "status-note-body")
+                item.pack_start(body, False, False, 0)
+            listing.pack_start(item, False, False, 0)
+        if len(notes) > NOTES_SHOWN:
+            listing.pack_start(label("%d more" % (len(notes) - NOTES_SHOWN), "status-note-more"),
+                               False, False, 0)
+        reveal = Gtk.Revealer()
+        reveal.set_transition_type(Gtk.RevealerTransitionType.SLIDE_UP)
+        reveal.set_transition_duration(180)
+        reveal.add(listing)
+        reveal.set_reveal_child(True)
+        section.pack_start(reveal, False, False, 0)
+        section.folded = False
+        section.reveal, section.count, section.arrow = reveal, count, arrow
+        return section
+
+    def fold_notes(self, folded, chosen=False):
+        section = self.notes
+        if section is None:
+            return
+        if chosen:
+            self.notes_chosen = True
+        if section.folded == folded:
+            return
+        section.folded = folded
+        ctx = section.get_style_context()
+        (ctx.add_class if folded else ctx.remove_class)("folded")
+        section.count.set_visible(folded)
+        section.arrow.name = "up" if folded else "down"
+        section.arrow.queue_draw()
+        section.reveal.set_reveal_child(not folded)
+
+    def fit_later(self):
+        """Fold or open the notifications once GTK has finished sizing
+        things, not in the middle of it."""
+        if not getattr(self, "fit_queued", False):
+            self.fit_queued = True
+            GLib.idle_add(self.fit)
+
+    def fit(self):
+        """Notifications fold when the rows no longer fit between the clock
+        and them, and open again when the rows would fit with them open, so
+        long as nobody has folded or opened them by hand."""
+        self.fit_queued = False
+        section = self.notes
+        if section is None or self.notes_chosen or section.reveal.get_child_revealed() != (not section.folded):
+            return False   # nothing to do, left as chosen, or mid-slide
+        have = self.scroll.get_allocated_height()
+        _min, need = self.rows.get_preferred_height()
+        if not section.folded and need > have:
+            self.fold_notes(True)
+        elif section.folded:
+            _min, extra = section.reveal.get_child().get_preferred_height()
+            if need <= have - extra:
+                self.fold_notes(False)
+        return False
 
     # ── rows ─────────────────────────────────────────────────────────
     def pair(self, name, value, on_click=None):
@@ -342,16 +468,37 @@ class Status:
             if not reveal.get_child():
                 inner = make(box)
                 inner.get_style_context().add_class("status-inside")
-                # A long list of networks scrolls rather than pushing the
-                # power words off the bottom of the screen.
+                # A long list of networks scrolls on its own, in a window of
+                # its own, with no bar: a fade over the last row says there
+                # is more, and goes once you reach the end.
                 scroll = Gtk.ScrolledWindow()
-                scroll.set_policy(Gtk.PolicyType.NEVER, Gtk.PolicyType.AUTOMATIC)
+                scroll.set_policy(Gtk.PolicyType.NEVER, Gtk.PolicyType.EXTERNAL)
                 scroll.set_propagate_natural_height(True)
                 scroll.set_max_content_height(INSIDE_MAX)
                 scroll.add(inner)
-                reveal.add(scroll)
-                scroll.show_all()
-            reveal.set_reveal_child(not reveal.get_reveal_child())
+                scroll.get_child().set_shadow_type(Gtk.ShadowType.NONE)
+                fade = Gtk.EventBox(valign=Gtk.Align.END)
+                fade.get_style_context().add_class("status-fade")
+                fade.set_size_request(-1, FADE)
+                fade.set_no_show_all(True)
+                over = Gtk.Overlay()
+                over.add(scroll)
+                over.add_overlay(fade)
+                over.set_overlay_pass_through(fade, True)
+                adj = scroll.get_vadjustment()
+                more = lambda *_: fade.set_visible(
+                    adj.get_value() + adj.get_page_size() < adj.get_upper() - 1)
+                adj.connect("changed", more)
+                adj.connect("value-changed", more)
+                reveal.add(over)
+                over.show_all()
+            now = not reveal.get_reveal_child()
+            reveal.set_reveal_child(now)
+            (self.opened.add if now else self.opened.discard)(name)
+            self.head.set_visible_child_name("mini" if self.opened else "big")
+            if now:
+                # Once it has slid open, bring all of it into view.
+                GLib.timeout_add(reveal.get_transition_duration() + 40, lambda: self.show_row(box) or False)
         row = self.pair(name, value, toggle)
         row.value.set_ellipsize(Pango.EllipsizeMode.END)
         row.value.set_max_width_chars(26)
@@ -359,6 +506,12 @@ class Status:
         box.pack_start(reveal, False, False, 0)
         box.value = row.value
         return box
+
+    def show_row(self, box):
+        """Scroll the middle so the whole of an opened row is in view."""
+        point = box.translate_coordinates(self.rows, 0, 0)
+        if point is not None:
+            self.scroll.get_vadjustment().clamp_page(point[1], point[1] + box.get_allocated_height())
 
     def power_modes(self, row, names, cur, detail):
         """Battery saver / balanced / performance, as words: the one in use
@@ -505,8 +658,11 @@ class Status:
     def tick(self):
         if self.away:
             return True   # nobody to see it; show() catches it up
-        self.time.set_text(time.strftime("%H:%M"))
-        self.date.set_text(time.strftime("%A %-d %B").lower())
+        now, today = time.strftime("%H:%M"), time.strftime("%A %-d %B").lower()
+        self.time.set_text(now)
+        self.date.set_text(today)
+        self.mini_time.set_text(now)
+        self.mini_date.set_text(today)
         return True
 
     @staticmethod
