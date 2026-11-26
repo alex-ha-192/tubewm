@@ -523,7 +523,7 @@ def _near(a, b, slack=8):
     return abs(a - b) <= slack
 
 
-def refill(gone, views, out):
+def refill(gone, views, out, here=None):
     """Where windows should go now that `gone` (Wayfire's last description
     of a window that has just closed) has left a gap on its desktop.
 
@@ -532,6 +532,8 @@ def refill(gone, views, out):
     become one window filling the screen; of four quarters, the one above
     or below the gap grows to a half). A lone tiled window left behind
     fills the screen. Windows somebody placed by hand are left alone.
+    `here` is the desktop the gap is on, when that isn't the one `gone`
+    is on now (it has been moved away rather than closed).
     Returns [(window id, zone), ...]."""
     area = out.get("workarea") or out.get("geometry")
     if not area or gone.get("fullscreen") or floating(gone) or gone.get("parent", -1) != -1:
@@ -539,7 +541,8 @@ def refill(gone, views, out):
     gap = _rect(gone, out)
     if not _zone_of(gap, area) or _zone_of(gap, area) == "max":
         return []
-    here = _wf_view_workspace(gone, out)
+    if here is None:
+        here = _wf_view_workspace(gone, out)
     others = [v for v in views if v.get("id") != gone.get("id") and _tileable(v)
               and v.get("output-id") == gone.get("output-id")
               and _wf_view_workspace(v, out) == here]
@@ -573,6 +576,51 @@ def fill_gap(gone):
     if not out:
         return []
     plan = refill(gone, views, out)
+    for vid, zone in plan:
+        snap(vid, zone)
+    return plan
+
+
+# ── windows moved to another desktop ───────────────────────────────────────
+
+def arrived(win_id, left_behind, gap):
+    """A window has been moved to another desktop (Super+Ctrl+Shift+arrow,
+    Super+Shift+number, the strip's handle, expo): make room for it there,
+    as for a window that has just opened, so it doesn't land on top of
+    what's already on that desktop and look as if nothing happened; and let
+    the windows it left behind grow into the space it left.
+
+    `left_behind` is the ids of the windows that shared its old desktop,
+    `gap` its geometry there, as Wayfire gave it. If they have all come along with it
+    (a whole desktop was moved), nothing changes. Returns [(window id,
+    zone)] for what was moved, to check on later."""
+    if not WAYFIRE:
+        return []
+    try:
+        views = _wf("window-rules/list-views")
+    except (OSError, WayfireError):
+        return []
+    view = _view(views, win_id)
+    if not view:
+        return []
+    out = {o["id"]: o for o in _wf_outputs()}.get(view.get("output-id"))
+    if not out:
+        return []
+    here = _wf_view_workspace(view, out)
+    behind = [v for v in views if v.get("id") in left_behind
+              and v.get("output-id") == view.get("output-id")]
+    if behind and all(_wf_view_workspace(v, out) == here for v in behind):
+        return []   # the whole desktop moved: it's arranged already
+    plan = []
+    if _tileable(view):
+        plan, overflow = arrange(view, views, out)
+        if overflow:
+            plan = []   # a full desktop: leave it where it was put
+    left = [v for v in behind if _wf_view_workspace(v, out) != here]
+    if left and gap:
+        gone = dict(view, geometry=gap)
+        others = [v for v in views if v.get("id") != win_id]
+        plan += refill(gone, [gone] + others, out, here=_wf_view_workspace(left[0], out))
     for vid, zone in plan:
         snap(vid, zone)
     return plan

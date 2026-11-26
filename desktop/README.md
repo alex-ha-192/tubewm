@@ -53,7 +53,10 @@ day to day. Everything is a click away; keys are extras.
   and password prompts open centred and are never tiled. Dragging a window
   to the screen's edge never sends it to another desktop. To move one on
   purpose, drag the strip's handle onto a desktop's name (or `+` for a new
-  one), or right-click the handle and pick one under "move to".
+  one), right-click the handle and pick one under "move to", or press
+  Super+Ctrl+Shift+←/→ to take it to the desktop beside this one.
+  Wherever it lands it finds room as a new window would, beside what's
+  already there, and the windows it left grow into its space.
 * **Full screen** is only for when an app asks (F11, a video's full-screen
   button): the strip slides up out of the way and back after.
 * **Notifications** come in as a band across the top and go away after a
@@ -101,6 +104,8 @@ day to day. Everything is a click away; keys are extras.
 |---|---|
 | Windows key | start |
 | Super+←/→, ↑ (or F), ↓ | snap left/right, maximise, restore |
+| Super+Ctrl+←/→ | the desktop to the left/right |
+| Super+Ctrl+Shift+←/→ | take the window to the desktop to the left/right |
 | Super+1…0 | go to that desktop (Shift: take the window) |
 | Super+Tab | every desktop side by side; drag windows between them |
 | Alt+Tab | switch windows |

@@ -173,9 +173,16 @@ def _instant(fn):
         wm._try(lambda: wm._wf("wayfire/set-config-options", {"vswitch/duration": old or "320ms circle"}))
 
 
+# Windows this process has just moved to another column while repacking
+# the desktops: id -> when. The daemon doesn't treat those as windows you
+# moved (see _arrive).
+SHIFTED = {}
+
+
 def _move_column(windows, src, dst):
     for w in windows:
         if w.get("workspace") == src:
+            SHIFTED[w["id"]] = time.monotonic()
             wm._try(lambda w=w: wm._wf("vswitch/send-view", {"x": dst, "y": 0, "view-id": w["id"]}))
 
 
@@ -340,6 +347,7 @@ EVENTS = ["view-mapped", "view-unmapped", "view-workspace-changed",
 
 
 PLACE_AFTER = 0.15   # seconds after a window opens before it's placed
+ARRIVE_AFTER = 0.5   # after one is moved to another desktop (the slide is 320 ms)
 SETTLE_AFTER = 0.6   # and before checking it stayed there
 
 
@@ -373,6 +381,35 @@ def _fill(gone, arranged):
         _later(SETTLE_AFTER, _settle, plan, arranged)
 
 
+def _arrive(win_id, left_behind, gap, arranged):
+    try:
+        plan = wm.arrived(win_id, left_behind, gap)
+    except (OSError, wm.WayfireError, ValueError):
+        return
+    now = time.monotonic()
+    for vid, _zone in plan:
+        arranged[vid] = now
+    if plan:
+        _later(SETTLE_AFTER, _settle, plan, arranged)
+
+
+def _moved(ev, arranged, now):
+    """A window went to another desktop. If you moved it (rather than us,
+    repacking the desktops or making room), find it room there in a moment,
+    once the slide is over."""
+    view = ev.get("view") or {}
+    vid = view.get("id")
+    src = (ev.get("from") or {}).get("x")
+    dst = (ev.get("to") or {}).get("x")
+    if vid is None or src is None or src == dst or view.get("role") != "toplevel":
+        return
+    if now - SHIFTED.get(vid, -9) < 2 or now - arranged.get(vid, -9) < 2:
+        return
+    left_behind = {w["id"] for w in wm.windows()
+                   if w.get("workspace") == src and w["id"] != vid}
+    _later(ARRIVE_AFTER, _arrive, vid, left_behind, view.get("geometry"), arranged)
+
+
 def _settle(plan, arranged):
     try:
         again = wm.settle(plan)
@@ -402,6 +439,8 @@ def daemon():
                     if ev.get("new-edges") != ev.get("old-edges"):
                         wm.pair(dict(view, **{"tiled-edges": ev.get("new-edges")}))
                     continue
+                if kind == "view-workspace-changed":
+                    _moved(ev, arranged, now)
                 if kind == "view-mapped" and view.get("id") is not None:
                     # A new window takes free space, or the desktop is
                     # retiled so nothing is covered. Wait a moment so the
