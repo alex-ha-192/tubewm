@@ -436,6 +436,9 @@ def daemon():
                     # you used before it to the other half.
                     if now - arranged.get(view.get("id"), -9) < 2:
                         continue
+                    # You tiled it yourself: if to a corner, it keeps
+                    # that size when a window beside it closes.
+                    wm.chose(view, ev.get("new-edges"))
                     if ev.get("new-edges") != ev.get("old-edges"):
                         wm.pair(dict(view, **{"tiled-edges": ev.get("new-edges")}))
                     continue
@@ -454,6 +457,8 @@ def daemon():
                     # screen). Wait a moment so it has really gone from
                     # Wayfire's list.
                     _later(PLACE_AFTER, _fill, view, arranged)
+                if kind == "view-unmapped" and view.get("id") is not None:
+                    wm.CHOSEN.discard(view["id"])
                 with locked():
                     reconcile()
         except (OSError, wm.WayfireError, ValueError):

@@ -91,3 +91,54 @@ def test_new_half_zones_map_to_grid_slots():
     assert wm.GRID_SLOTS["top"] == "t" and wm.GRID_SLOTS["bottom"] == "b"
     assert wm.zone_rect("top", AREA) == (0, 40, 1920, 520)
     assert wm.zone_rect("bottom", AREA) == (0, 560, 1920, 520)
+
+
+# ── windows you put in a corner yourself keep their size ──────────────────
+
+def chosen(*ids):
+    wm.CHOSEN.clear()
+    wm.CHOSEN.update(ids)
+
+
+def test_your_corner_window_is_not_maximised_when_the_other_closes():
+    try:
+        chosen(2)
+        assert refill(view(1, "left"), view(2, "top-right")) == []
+        assert refill(view(1, "bottom-left"), view(2, "top-right")) == []
+    finally:
+        chosen()
+
+
+def test_your_corner_window_is_not_grown_but_others_still_are():
+    tl, tr = view(1, "top-left"), view(2, "top-right")
+    bl, br = view(3, "bottom-left"), view(4, "bottom-right")
+    try:
+        chosen(2)
+        # top-right would grow down; it's yours, so bottom-left grows across.
+        assert refill(br, tl, tr, bl) == [(3, "bottom")]
+        chosen(2, 3)
+        assert refill(br, tl, tr, bl) == []
+    finally:
+        chosen()
+
+
+def test_halves_still_grow_after_a_corner_was_chosen_elsewhere():
+    try:
+        chosen(9)
+        assert refill(view(1, "left"), view(2, "right")) == [(2, "max")]
+    finally:
+        chosen()
+
+
+def test_chose_remembers_corners_and_forgets_on_any_other_tiling():
+    try:
+        chosen()
+        wm.chose({"id": 5}, 9)          # top|right
+        assert 5 in wm.CHOSEN
+        wm.chose({"id": 5}, 11)         # right half
+        assert 5 not in wm.CHOSEN
+        wm.chose({"id": 5}, 6)          # bottom|left
+        wm.chose({"id": 5}, 0)          # untiled
+        assert 5 not in wm.CHOSEN
+    finally:
+        chosen()

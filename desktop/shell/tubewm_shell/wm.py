@@ -480,7 +480,7 @@ def _zone_of(r, area):
     return next((z for z in GRID_SLOTS if _same(r, zone_rect(z, area))), None)
 
 
-def _grow(gone, rects):
+def _grow(gone, rects, keep=()):
     """Which windows grow into a gap, and to what.
 
     `gone` is the gap's rectangle and `rects` {id: rectangle} the windows
@@ -488,7 +488,8 @@ def _grow(gone, rects):
     touching it, laid end to end, cover exactly that side: they stretch
     across the gap together (one quarter becomes a half, or two quarters
     become the top and bottom halves). Up/down first, so a desktop of halves
-    side by side stays that way. Returns {id: new rectangle}, or {}."""
+    side by side stays that way. A side with a window in `keep` on it is
+    never used. Returns {id: new rectangle}, or {}."""
     gx, gy, gw, gh = gone
     sides = [
         # (windows on this side touch the gap's edge, span along the edge, grown rect)
@@ -514,13 +515,32 @@ def _grow(gone, rects):
                 ok = False
                 break
             pos = s0 + n
-        if ok and _near(pos, start + length):
+        if ok and _near(pos, start + length) and not any(vid in keep for vid, _s in along):
             return {vid: grown(rects[vid]) for vid, _s in along}
     return {}
 
 
 def _near(a, b, slack=8):
     return abs(a - b) <= slack
+
+
+# Windows you put in a quarter yourself (dragging a title or the strip's
+# handle into a corner), by id. They keep that size: nothing grows them
+# into the space a closed window leaves. tube-desktops keeps this up to date.
+CHOSEN = set()
+CORNER_EDGES = {5, 6, 9, 10}   # top|left, bottom|left, top|right, bottom|right
+
+
+def chose(view, edges):
+    """Wayfire says `view` was tiled to `edges`, and not by us: remember
+    whether it was put in a corner."""
+    vid = view.get("id")
+    if vid is None:
+        return
+    if edges in CORNER_EDGES:
+        CHOSEN.add(vid)
+    else:
+        CHOSEN.discard(vid)
 
 
 def refill(gone, views, out, here=None):
@@ -531,7 +551,8 @@ def refill(gone, views, out, here=None):
     quarter, its neighbours grow over the gap (two halves side by side
     become one window filling the screen; of four quarters, the one above
     or below the gap grows to a half). A lone tiled window left behind
-    fills the screen. Windows somebody placed by hand are left alone.
+    fills the screen. Windows somebody placed by hand are left alone, and
+    so is a window you put in a corner yourself (CHOSEN): it isn't grown.
     `here` is the desktop the gap is on, when that isn't the one `gone`
     is on now (it has been moved away rather than closed).
     Returns [(window id, zone), ...]."""
@@ -553,9 +574,9 @@ def refill(gone, views, out, here=None):
         return []   # something here was placed by hand: leave it be
     if len(rects) == 1:
         (vid, r), = rects.items()
-        return [] if _zone_of(r, area) == "max" else [(vid, "max")]
+        return [] if _zone_of(r, area) == "max" or vid in CHOSEN else [(vid, "max")]
     plan = []
-    for vid, r in _grow(gap, rects).items():
+    for vid, r in _grow(gap, rects, CHOSEN).items():
         zone = _zone_of(r, area)
         if zone:
             plan.append((vid, zone))
