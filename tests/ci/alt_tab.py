@@ -10,12 +10,18 @@ session could not be set up.
 """
 
 import json
+import os
+import shutil
 import socket
 import struct
+import subprocess
 import sys
 import time
 
 fails = 0
+# What the test's wayfire.ini sets [tube-decor] active_color to.
+ACCENT = (255, 0, 0)
+display = None
 
 
 class Wayfire:
@@ -70,6 +76,41 @@ def tap(wf, name):
     key(wf, name, False)
 
 
+def screenshot():
+    """The screen as (width, height, rgb bytes), from grim, or None."""
+    if not shutil.which("grim") or not display:
+        return None
+    env = dict(os.environ, WAYLAND_DISPLAY=display)
+    out = subprocess.run(["grim", "-t", "ppm", "-"], env=env, capture_output=True, timeout=10).stdout
+    # P6\nW H\n255\n<rgb>
+    parts = out.split(b"\n", 3)
+    if len(parts) < 4 or parts[0] != b"P6":
+        return None
+    w, h = (int(n) for n in parts[1].split())
+    return w, h, parts[3]
+
+
+def title_bar_colour(wf, app):
+    """The colour on screen at the left end of APP's title bar."""
+    shot = screenshot()
+    if not shot:
+        return None
+    w, _h, rgb = shot
+    g = by_app(wf)[app]["geometry"]
+    x, y = g["x"] + 4, g["y"] + 4
+    i = (y * w + x) * 3
+    return tuple(rgb[i:i + 3])
+
+
+def check_drawn(what, wf, app):
+    """APP is in front, so its title bar on screen must be the accent."""
+    colour = title_bar_colour(wf, app)
+    if colour is None:
+        print("skip  %s (no grim)" % what)
+        return
+    check(what, colour, ACCENT)
+
+
 def check(what, got, want):
     global fails
     if got == want:
@@ -90,7 +131,9 @@ def wait_for(cond, what, timeout=15):
 
 
 def main():
+    global display
     wf = Wayfire(sys.argv[1])
+    display = wf.call("stipc/get_display").get("wayland")
     print("outputs: %s" % [o.get("name") for o in wf.call("window-rules/list-outputs")])
     # Open a, b, c in turn; c ends up focused, then b, then a by recency.
     for app in ("tube-a", "tube-b", "tube-c"):
@@ -103,14 +146,18 @@ def main():
     print("windows: %s" % sorted(by_app(wf)))
     check("before: c has the keyboard", focused(wf), "tube-c")
     check("before: only c is lit", lit(wf), ["tube-c"])
+    check_drawn("before: c's title bar is drawn in the accent", wf, "tube-c")
 
     key(wf, "KEY_LEFTALT", True)
     tap(wf, "KEY_TAB")
     check("Alt+Tab: opens on c, c lit", lit(wf), ["tube-c"])
+    check_drawn("Alt+Tab: c's title bar is drawn in the accent", wf, "tube-c")
     tap(wf, "KEY_TAB")
     check("Tab: b lit", lit(wf), ["tube-b"])
+    check_drawn("Tab: b's title bar is drawn in the accent", wf, "tube-b")
     tap(wf, "KEY_TAB")
     check("Tab: a lit", lit(wf), ["tube-a"])
+    check_drawn("Tab: a's title bar is drawn in the accent", wf, "tube-a")
     key(wf, "KEY_LEFTSHIFT", True)
     tap(wf, "KEY_TAB")
     check("Shift+Tab: back to b, b lit", lit(wf), ["tube-b"])
@@ -131,6 +178,7 @@ def main():
     check("minimised: opens on b, b lit", lit(wf), ["tube-b"])
     tap(wf, "KEY_TAB")
     check("minimised: c lit", lit(wf), ["tube-c"])
+    check_drawn("minimised: c's title bar is drawn in the accent", wf, "tube-c")
     key(wf, "KEY_LEFTALT", False)
     time.sleep(0.6)
     check("minimised: c is restored", by_app(wf)["tube-c"].get("minimized"), False)

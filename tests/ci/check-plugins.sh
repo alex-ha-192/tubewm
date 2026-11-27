@@ -46,6 +46,12 @@ cat >"$SANDBOX/wayfire.ini" <<'EOF'
 plugins = ipc stipc ipc-rules wm-actions tube-decor tube-switch
 preferred_decoration_mode = server
 
+[tube-decor]
+title_height = 32
+border_size = 0
+active_color = 1 0 0 1
+inactive_color = 0 0 1 1
+
 [tube-switch]
 activate = <alt> KEY_TAB
 activate_backward = <alt> <shift> KEY_TAB
