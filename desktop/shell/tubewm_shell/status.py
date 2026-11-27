@@ -10,8 +10,10 @@ you, your bluetooth devices and pairing new ones, the power mode.
 The clock sits at the top and the power words at the bottom; everything in
 between scrolls. An opened wi-fi or bluetooth list scrolls on its own too,
 without a bar: a fade over its last row says there is more. While a row is
-open the clock folds to one line, and when the rows no longer fit the
-notifications fold to one row with a count; click it to open or fold them.
+open the clock folds to one line. Opening network or bluetooth folds the
+notifications to one row with a count, and so does anything else that leaves
+the rows without room; click it to open or fold them. Clearing them leaves
+the panel open.
 Click caffeine to keep the screen on and the desktop awake (tube-caffeine).
 Click outside it, or press Escape, to close it.
 
@@ -41,6 +43,7 @@ WIDTH = 460
 DND_MODE = "do-not-disturb"
 INSIDE_MAX = 380   # px: the most an opened row takes before it scrolls
 FADE = 64          # px: the fade over an opened list that has more below
+LISTS = ("network", "bluetooth")   # rows that fold the notifications away
 NOTES_SHOWN = 3    # notifications listed in the panel; the rest are "n more"
 # What a later `tube-status` sends the one already running (bin/tube-status
 # sends these too, before it loads GTK).
@@ -433,7 +436,7 @@ class Status:
         _min, need = self.rows.get_preferred_height()
         if not section.folded and need > have:
             self.fold_notes(True)
-        elif section.folded:
+        elif section.folded and not self.opened & set(LISTS):
             _min, extra = section.reveal.get_child().get_preferred_height()
             if need <= have - extra:
                 self.fold_notes(False)
@@ -496,6 +499,11 @@ class Status:
             reveal.set_reveal_child(now)
             (self.opened.add if now else self.opened.discard)(name)
             self.head.set_visible_child_name("mini" if self.opened else "big")
+            if now and name in LISTS:
+                # Make room for the list: fold the notifications whether or
+                # not things would fit. Clicking them open again still works.
+                self.notes_chosen = False
+                self.fold_notes(True)
             if now:
                 # Once it has slid open, bring all of it into view.
                 GLib.timeout_add(reveal.get_transition_duration() + 40, lambda: self.show_row(box) or False)
@@ -687,7 +695,12 @@ class Status:
             except OSError:
                 pass
         self.data = dict(self.data, notes=[])
-        self.quit()
+        # Stay open: just take the notifications away.
+        self.touch()
+        section, self.notes = self.notes, None
+        if section is not None:
+            # After this click is done with: "clear" is inside it.
+            GLib.idle_add(lambda: section.destroy() and False)
 
     def run_and_close(self, cmd):
         common.run_detached(cmd)
