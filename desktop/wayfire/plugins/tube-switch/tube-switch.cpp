@@ -1,11 +1,15 @@
 /*
  * tube-switch: Alt+Tab through the windows on the current desktop.
  *
- * Wayfire's own fast-switcher (MIT, see LICENSE) with one change: minimised
+ * Wayfire's own fast-switcher (MIT, see LICENSE), changed so minimised
  * windows are in the list too. While you hold Alt, a minimised window is
  * shown in its place like the others; let go on it and it is restored and
  * focused, let go on another and it goes back to being minimised. Without
  * this, a window you minimised had no way back (tubewm has no task bar).
+ *
+ * Also unlike fast-switcher: it opens on the window you are in (each Tab
+ * after the first moves on), letting go of Shift does not end it, and once
+ * it closes the accent title bar is on the window that has the keyboard.
  *
  * The same source builds against Wayfire 0.10 and 0.11.
  */
@@ -26,6 +30,7 @@
 #include <wayfire/seat.hpp>
 #include <wayfire/toplevel-view.hpp>
 #include <wayfire/window-manager.hpp>
+#include <algorithm>
 
 class tube_switch : public wf::per_output_plugin_instance_t, public wf::keyboard_interaction_t
 {
@@ -170,6 +175,18 @@ class tube_switch : public wf::per_output_plugin_instance_t, public wf::keyboard
         {
             return wf::get_focus_timestamp(a) > wf::get_focus_timestamp(b);
         });
+
+        // The window you're in comes first, whatever the timestamps say, as
+        // the switcher starts on it.
+        wayfire_view active = wf::get_core().seat->get_active_view();
+        auto it = std::find_if(views.begin(), views.end(), [&] (const wayfire_toplevel_view& v)
+        {
+            return v.get() == active.get();
+        });
+        if (it != views.end())
+        {
+            std::rotate(views.begin(), it, it + 1);
+        }
     }
 
     void exit_show_desktop()
@@ -221,8 +238,17 @@ class tube_switch : public wf::per_output_plugin_instance_t, public wf::keyboard
         }
 
         input_grab->grab_input(wf::scene::layer::OVERLAY);
+        // Only Alt (or whatever else the binding holds) ends the switch, not
+        // Shift: letting go of Shift to go forward again keeps it open.
         activating_modifiers = wf::get_core().seat->get_keyboard_modifiers();
-        switch_next(forward);
+        if (activating_modifiers & ~WLR_MODIFIER_SHIFT)
+        {
+            activating_modifiers &= ~WLR_MODIFIER_SHIFT;
+        }
+
+        // Start on the window you're in: the first press only opens the
+        // switcher, each Tab after it moves on.
+        view_chosen(0, true);
 
         output->connect(&cleanup_view);
 
@@ -267,6 +293,7 @@ class tube_switch : public wf::per_output_plugin_instance_t, public wf::keyboard
         // Ungrab after selecting the correct view, so that it gets the focus directly
         input_grab->ungrab_input();
         output->deactivate_plugin(&grab_interface);
+        show_focus_in_title_bars();
 
         // Remove transformers after modifying alpha
         for (auto view : views)
@@ -277,6 +304,27 @@ class tube_switch : public wf::per_output_plugin_instance_t, public wf::keyboard
         views.clear();
         active = false;
         cleanup_view.disconnect();
+    }
+
+    /* While switching, the accent title bar marks the highlighted window.
+     * Afterwards it must mark the window that really has the keyboard, so
+     * set every window's state from the seat rather than trusting what
+     * switching left behind (the seat skips windows it thinks are already
+     * activated). */
+    void show_focus_in_title_bars()
+    {
+        wayfire_view active = wf::get_core().seat->get_active_view();
+        wayfire_toplevel_view top = nullptr;
+        if (active)
+        {
+            top = wf::toplevel_cast(wf::find_topmost_parent(active));
+        }
+
+        for (auto view : views)
+        {
+            bool has_focus = (view.get() == active.get()) || (top && (view == top));
+            view->set_activated(has_focus);
+        }
     }
 
     void switch_next(bool forward)
