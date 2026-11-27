@@ -49,7 +49,8 @@ day to day. Everything is a click away; keys are extras.
   free space if there is some; otherwise the desktop is retiled so nothing
   is covered (up to four; a fifth gets a desktop of its own). Close a
   tiled window and the ones beside it grow into its space: of two halves
-  the one left fills the screen, and a quarter grows to a half. File pickers
+  the one left fills the screen, and a quarter grows to a half. A window
+  you put in a corner yourself keeps that size. File pickers
   and password prompts open centred and are never tiled. Hold Alt and tap
   Tab to go through the windows on this desktop, minimised ones included.
   It opens on the window you're in, lit in your accent; each Tab (or
