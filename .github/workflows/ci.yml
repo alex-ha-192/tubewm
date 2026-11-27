@@ -75,7 +75,7 @@ jobs:
           if-no-files-found: ignore
 
   wayfire-plugins:
-    name: title bars build on current Arch Wayfire
+    name: title bars and Alt+Tab build on current Arch Wayfire
     runs-on: ubuntu-latest
     timeout-minutes: 20
     container:

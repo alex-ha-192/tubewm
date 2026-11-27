@@ -1,0 +1,26 @@
+<?xml version="1.0"?>
+<wayfire>
+	<plugin name="tube-switch">
+		<_short>Tube switch</_short>
+		<_long>Alt+Tab through the windows on the current desktop, minimised ones included.</_long>
+		<category>Window Management</category>
+		<option name="activate" type="key">
+			<_short>Next window</_short>
+			<_long>Opens the switcher, or moves to the next window while it is open.</_long>
+			<default>&lt;alt&gt; KEY_TAB</default>
+		</option>
+		<option name="activate_backward" type="key">
+			<_short>Previous window</_short>
+			<_long>Opens the switcher, or moves to the previous window while it is open.</_long>
+			<default>&lt;alt&gt; &lt;shift&gt; KEY_TAB</default>
+		</option>
+		<option name="inactive_alpha" type="double">
+			<_short>Inactive opacity</_short>
+			<_long>How see-through the other windows are while you choose.</_long>
+			<default>0.5</default>
+			<precision>0.05</precision>
+			<min>0.0</min>
+			<max>1.0</max>
+		</option>
+	</plugin>
+</wayfire>

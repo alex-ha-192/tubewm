@@ -50,7 +50,12 @@ day to day. Everything is a click away; keys are extras.
   is covered (up to four; a fifth gets a desktop of its own). Close a
   tiled window and the ones beside it grow into its space: of two halves
   the one left fills the screen, and a quarter grows to a half. File pickers
-  and password prompts open centred and are never tiled. Dragging a window
+  and password prompts open centred and are never tiled. Hold Alt and tap
+  Tab (Shift+Tab to go back) to go through the windows on this desktop,
+  minimised ones included; let go and that one is in front, restored if it
+  was minimised. That is tubewm's own plugin too
+  ([`wayfire/plugins/tube-switch`](wayfire/plugins/tube-switch)); until it
+  is built, Wayfire's fast-switcher stands in and skips minimised windows. Dragging a window
   to the screen's edge never sends it to another desktop. To move one on
   purpose, drag it by its title (or the strip's handle) onto a desktop's
   name in the strip, which lights up under the pointer (or onto `+` for a
@@ -116,7 +121,7 @@ day to day. Everything is a click away; keys are extras.
 | Super+Ctrl+Shift+←/→ | take the window to the desktop to the left/right |
 | Super+1…0 | go to that desktop (Shift: take the window) |
 | Super+Tab | every desktop side by side; drag windows between them |
-| Alt+Tab | switch windows |
+| Alt+Tab, Alt+Shift+Tab | switch windows on this desktop, minimised ones too |
 | Super+C | the panel under the time |
 | Super+W / Alt+F4 | close the window |
 | Super+Enter, Super+E | terminal, files |
