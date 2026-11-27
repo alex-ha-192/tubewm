@@ -24,3 +24,4 @@ add_project_arguments(['-DWLR_USE_UNSTABLE', '-DWAYFIRE_PLUGIN'], language: 'cpp
 plugin_deps = [wayfire, wfconfig, cairo, pango, pangocairo, pixman, libdrm, wayland, glm]
 
 subdir('tube-decor')
+subdir('tube-switch')

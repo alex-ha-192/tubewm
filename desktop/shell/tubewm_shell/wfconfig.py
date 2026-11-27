@@ -29,11 +29,20 @@ KEYBOARD_DEFAULT = {"layout": "", "variant": "", "options": ""}
 # plugins/build.sh has built them. Until then, Wayfire's stock decoration.
 DATA = os.environ.get("XDG_DATA_HOME") or os.path.expanduser("~/.local/share")
 TUBE_DECOR = os.path.join(DATA, "wayfire", "plugins", "libtube-decor.so")
+# Alt+Tab: tubewm's own switcher (desktop/wayfire/plugins/tube-switch), which
+# also brings back minimised windows. Until it is built, Wayfire's
+# fast-switcher, which skips them.
+TUBE_SWITCH = os.path.join(DATA, "wayfire", "plugins", "libtube-switch.so")
 
 
 def decoration():
     """The plugin that draws title bars: tube-decor if it is built."""
     return "tube-decor" if os.path.exists(TUBE_DECOR) else "decoration"
+
+
+def switcher():
+    """The plugin behind Alt+Tab: tube-switch if it is built."""
+    return "tube-switch" if os.path.exists(TUBE_SWITCH) else "fast-switcher"
 
 
 def keyboard():
@@ -136,6 +145,7 @@ def build(pal=None):
         "DECOR": decoration(),
         "DESKTOP_BINDINGS": _desktop_bindings(),
         "OUTPUTS": outputs(),
+        "SWITCHER": switcher(),
         "XKB_LAYOUT": kb.get("layout", ""),
         "XKB_VARIANT": kb.get("variant", ""),
         "XKB_OPTIONS": kb.get("options", ""),

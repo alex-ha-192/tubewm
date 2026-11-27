@@ -9,7 +9,7 @@
 
 [core]
 plugins = \
-  alpha animate autostart command @DECOR@ expo fast-switcher foreign-toplevel \
+  alpha animate autostart command @DECOR@ expo @SWITCHER@ foreign-toplevel \
   grid gtk-shell idle ipc ipc-rules move place resize session-lock \
   shortcuts-inhibit vswipe vswitch wayfire-shell window-rules wm-actions \
   xdg-activation
@@ -162,6 +162,14 @@ duration = 300ms circle
 offset = 16
 inactive_brightness = 0.6
 keyboard_interaction = true
+
+# Alt+Tab (Shift to go back) through the windows on this desktop, the
+# minimised ones too: let go on one and it comes back. That is tube-switch,
+# tubewm's own plugin; until it is built, fast-switcher, which skips them.
+[tube-switch]
+activate = <alt> KEY_TAB
+activate_backward = <alt> <shift> KEY_TAB
+inactive_alpha = 0.5
 
 [fast-switcher]
 activate = <alt> KEY_TAB

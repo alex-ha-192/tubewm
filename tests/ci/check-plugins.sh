@@ -2,7 +2,7 @@
 # Build tubewm's Wayfire plugins (desktop/wayfire/plugins) against the
 # Wayfire that Arch ships today, the way the installer does, and load them in
 # a headless Wayfire. Catches a new Wayfire release breaking the title bars
-# before it reaches a laptop.
+# or Alt+Tab before it reaches a laptop.
 set -uo pipefail
 . "$(dirname "$0")/lib.sh"
 
@@ -43,7 +43,7 @@ if ! have wayfire; then
 fi
 cat >"$SANDBOX/wayfire.ini" <<'EOF'
 [core]
-plugins = tube-decor
+plugins = tube-decor tube-switch
 EOF
 # Wayfire refuses to run as root, so in a root container run it as an
 # ordinary user, pointed at the plugins built above.
@@ -69,13 +69,17 @@ for _ in $(seq 1 40); do
     sleep 0.25
 done
 sleep 0.5
-if grep -q -e "error loading plugin.*tube-decor" -e 'Failed to load plugin "tube-decor"' "$SANDBOX/wayfire.log"; then
-    fail "Wayfire could not load tube-decor:"
-    grep -e "error loading" -e "Failed to load" "$SANDBOX/wayfire.log" | head -5
-elif grep -q "Loaded plugin.*libtube-decor.so" "$SANDBOX/wayfire.log"; then
-    pass "Wayfire loaded tube-decor"
-else
-    warn "Wayfire did not get as far as loading plugins here (no GPU?); log tail:"
-    tail -15 "$SANDBOX/wayfire.log"
-fi
+for p in tube-decor tube-switch; do
+    if grep -q -e "error loading plugin.*$p" -e "Failed to load plugin \"$p\"" "$SANDBOX/wayfire.log"; then
+        fail "Wayfire could not load $p:"
+        grep -e "error loading" -e "Failed to load" "$SANDBOX/wayfire.log" | head -5
+    elif grep -q "Loaded plugin.*lib$p.so" "$SANDBOX/wayfire.log"; then
+        pass "Wayfire loaded $p"
+    elif grep -q "Loaded plugin" "$SANDBOX/wayfire.log"; then
+        fail "Wayfire loaded other plugins but not $p"
+    else
+        warn "Wayfire did not get as far as loading $p here (no GPU?); log tail:"
+        tail -15 "$SANDBOX/wayfire.log"
+    fi
+done
 finish

@@ -66,8 +66,10 @@ if [ "$uninstall" = 1 ]; then
     done
     rm -rf "$DEST"
     rm -f "$DATA/applications/tubewm-update.desktop"
-    # Title bars built by desktop/wayfire/plugins/build.sh, and its build dir.
-    rm -f "$DATA/wayfire/plugins/libtube-decor.so" "$DATA/wayfire/metadata/tube-decor.xml"
+    # Plugins built by desktop/wayfire/plugins/build.sh, and its build dir.
+    for p in tube-decor tube-switch; do
+        rm -f "$DATA/wayfire/plugins/lib$p.so" "$DATA/wayfire/metadata/$p.xml"
+    done
     rmdir "$DATA/wayfire/plugins" "$DATA/wayfire/metadata" "$DATA/wayfire" 2>/dev/null || true
     rm -rf "${XDG_CACHE_HOME:-$HOME/.cache}/tubewm/wayfire-plugins"
     for rel in "${MANAGED[@]}" sway/config.d/10-tubewm-keyboard.conf sway/config.d/50-tubewm-wallpaper.conf; do

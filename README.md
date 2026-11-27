@@ -43,7 +43,9 @@ and artwork are drawn for this project.
   square Metro close button that turns red under the mouse. Drag a title to a
   side for half the screen, a corner for a quarter, or the middle to fill it.
   New windows take free space, or the desktop is retiled so nothing is
-  covered; close one and its neighbours grow into the space it left. Full screen is only for when an app asks (F11, a video's
+  covered; close one and its neighbours grow into the space it left.
+  `Alt+Tab` (and `Alt+Shift+Tab`) goes through the windows on the desktop
+  you're on, minimised ones too, so a minimised window is never lost. Full screen is only for when an app asks (F11, a video's
   button): the strip slides away and nothing else moves.
 * **Desktops look after themselves.** There is always a spare `+` at the end
   of the strip. Open something there and it becomes a desktop named after it
