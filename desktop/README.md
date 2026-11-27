@@ -51,9 +51,10 @@ day to day. Everything is a click away; keys are extras.
   tiled window and the ones beside it grow into its space: of two halves
   the one left fills the screen, and a quarter grows to a half. File pickers
   and password prompts open centred and are never tiled. Hold Alt and tap
-  Tab (Shift+Tab to go back) to go through the windows on this desktop,
-  minimised ones included; let go and that one is in front, restored if it
-  was minimised. That is tubewm's own plugin too
+  Tab to go through the windows on this desktop, minimised ones included.
+  It opens on the window you're in, lit in your accent; each Tab (or
+  Shift+Tab, to go back) moves the accent on, and when you let go of Alt
+  the lit window is the one you're in, restored if it was minimised. That is tubewm's own plugin too
   ([`wayfire/plugins/tube-switch`](wayfire/plugins/tube-switch)); until it
   is built, Wayfire's fast-switcher stands in and skips minimised windows. Dragging a window
   to the screen's edge never sends it to another desktop. To move one on
