@@ -87,7 +87,7 @@ jobs:
       - uses: actions/checkout@v4
 
       - name: packages (what the installer adds on Arch / CachyOS)
-        run: pacman -S --noconfirm --needed wayfire meson ninja gcc pkgconf glm wayland-protocols vulkan-headers mesa
+        run: pacman -S --noconfirm --needed wayfire meson ninja gcc pkgconf glm wayland-protocols vulkan-headers mesa foot ttf-dejavu python
 
       - name: build and load the plugins
         run: tests/ci/check-plugins.sh

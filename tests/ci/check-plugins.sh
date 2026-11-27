@@ -43,7 +43,12 @@ if ! have wayfire; then
 fi
 cat >"$SANDBOX/wayfire.ini" <<'EOF'
 [core]
-plugins = tube-decor tube-switch
+plugins = ipc stipc ipc-rules wm-actions tube-decor tube-switch
+preferred_decoration_mode = server
+
+[tube-switch]
+activate = <alt> KEY_TAB
+activate_backward = <alt> <shift> KEY_TAB
 EOF
 # Wayfire refuses to run as root, so in a root container run it as an
 # ordinary user, pointed at the plugins built above.
@@ -59,6 +64,7 @@ mkdir -p "$XDG_RUNTIME_DIR" && chmod 700 "$XDG_RUNTIME_DIR"
 if [ -n "$user" ]; then chown "$user" "$XDG_RUNTIME_DIR"; fi
 touch "$SANDBOX/wayfire.log" && chmod a+w "$SANDBOX/wayfire.log"
 "${run[@]}" env HOME="$HOME" XDG_RUNTIME_DIR="$XDG_RUNTIME_DIR" \
+    _WAYFIRE_SOCKET="$XDG_RUNTIME_DIR/wayfire.socket" \
     WLR_BACKENDS=headless WLR_RENDERER=pixman WLR_LIBINPUT_NO_DEVICES=1 \
     WAYFIRE_PLUGIN_PATH="$lib" WAYFIRE_PLUGIN_XML_PATH="$meta" \
     wayfire -d -c "$SANDBOX/wayfire.ini" >>"$SANDBOX/wayfire.log" 2>&1 &
@@ -82,4 +88,21 @@ for p in tube-decor tube-switch; do
         tail -15 "$SANDBOX/wayfire.log"
     fi
 done
+
+section "Alt+Tab in a headless Wayfire"
+if ! have foot || ! have python3; then
+    skip "needs foot and python3"
+elif ! grep -q "Loaded plugin.*libtube-switch.so" "$SANDBOX/wayfire.log"; then
+    skip "tube-switch is not loaded"
+else
+    for _ in $(seq 1 40); do [ -S "$XDG_RUNTIME_DIR/wayfire.socket" ] && break; sleep 0.25; done
+    if out=$("${run[@]}" python3 "$CI_DIR/alt_tab.py" "$XDG_RUNTIME_DIR/wayfire.socket" 2>&1); then
+        echo "$out" | sed 's/^/        /'
+        pass "Alt+Tab lights the window it has chosen and focuses it on release"
+    else
+        echo "$out" | sed 's/^/        /'
+        fail "Alt+Tab (see above)"
+        tail -30 "$SANDBOX/wayfire.log"
+    fi
+fi
 finish
