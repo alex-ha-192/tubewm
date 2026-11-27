@@ -97,7 +97,7 @@ def title_bar_colour(wf, app):
         return None
     w, _h, rgb = shot
     g = by_app(wf)[app]["geometry"]
-    x, y = g["x"] + 4, g["y"] + 4
+    x, y = int(g["x"]) + 4, int(g["y"]) + 4
     i = (y * w + x) * 3
     return tuple(rgb[i:i + 3])
 
@@ -108,7 +108,7 @@ def check_drawn(what, wf, app):
     if colour is None:
         print("skip  %s (no grim)" % what)
         return
-    check(what, colour, ACCENT)
+    check(what + " at %s" % (by_app(wf)[app]["geometry"],), colour, ACCENT)
 
 
 def check(what, got, want):
