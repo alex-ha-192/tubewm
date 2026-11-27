@@ -86,8 +86,10 @@ day to day. Everything is a click away; keys are extras.
   notifications and power words at the bottom; everything between them
   scrolls, and an opened network or bluetooth list scrolls on its own, with
   a fade over its last row when there's more. While a row is open the clock
-  folds to one line, and if things still don't fit the notifications fold to
-  one row with a count: click it to open or fold them yourself.
+  folds to one line. Opening network or bluetooth folds the notifications to
+  one row with a count (so does anything else that leaves the rows without
+  room): click it to open or fold them yourself. Clearing them keeps the
+  panel open.
 * **Start**: tap the Windows key on its own, or click the start mark.
   It stays ready in the background, so it opens at once. It opens on every app from a to z in columns, nothing cut off. Just type:
   the list slides away and the best match comes up first (Enter opens it),
